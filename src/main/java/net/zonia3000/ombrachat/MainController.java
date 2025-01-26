@@ -8,6 +8,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.fxml.FXMLLoader;
+import net.zonia3000.ombrachat.login.AuthenticationCodeController;
+import net.zonia3000.ombrachat.login.AuthenticationPasswordController;
 import net.zonia3000.ombrachat.login.PhoneDialogController;
 
 public class MainController {
@@ -43,6 +45,54 @@ public class MainController {
                     PhoneDialogController controller = loader.getController();
                     currentController = controller;
                     controller.setPhoneNumberConsumer(phoneNumberConsumer);
+
+                    Scene scene = new Scene(root);
+                    primaryStage.setScene(scene);
+                    primaryStage.show();
+                } catch (IOException ex) {
+                    throw new IOError(ex);
+                }
+            }
+        });
+    }
+
+    public void showAuthenticationCodeDialog(Consumer<String> authenticationCodeConsumer) {
+        Platform.runLater(() -> {
+            if (currentController != null && currentController instanceof AuthenticationCodeController controller) {
+                controller.setAuthenticationCodeConsumer(authenticationCodeConsumer);
+            } else {
+                try {
+                    FXMLLoader loader = new FXMLLoader();
+
+                    loader.setLocation(MainController.class.getResource("/view/login/authentication-code-dialog.fxml"));
+                    Parent root = loader.load();
+                    AuthenticationCodeController controller = loader.getController();
+                    currentController = controller;
+                    controller.setAuthenticationCodeConsumer(authenticationCodeConsumer);
+
+                    Scene scene = new Scene(root);
+                    primaryStage.setScene(scene);
+                    primaryStage.show();
+                } catch (IOException ex) {
+                    throw new IOError(ex);
+                }
+            }
+        });
+    }
+
+    public void showAuthenticationPasswordDialog(Consumer<String> passwordConsumer) {
+        Platform.runLater(() -> {
+            if (currentController != null && currentController instanceof AuthenticationPasswordController controller) {
+                controller.setPasswordConsumer(passwordConsumer);
+            } else {
+                try {
+                    FXMLLoader loader = new FXMLLoader();
+
+                    loader.setLocation(MainController.class.getResource("/view/login/authentication-password-dialog.fxml"));
+                    Parent root = loader.load();
+                    AuthenticationPasswordController controller = loader.getController();
+                    currentController = controller;
+                    controller.setPasswordConsumer(passwordConsumer);
 
                     Scene scene = new Scene(root);
                     primaryStage.setScene(scene);

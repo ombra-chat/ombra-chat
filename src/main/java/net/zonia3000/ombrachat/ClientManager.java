@@ -67,6 +67,18 @@ public class ClientManager {
                     client.send(new TdApi.SetAuthenticationPhoneNumber(phoneNumber, null), new AuthorizationRequestHandler());
                 });
                 break;
+            case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR: {
+                mainController.showAuthenticationCodeDialog(code -> {
+                    client.send(new TdApi.CheckAuthenticationCode(code), new AuthorizationRequestHandler());
+                });
+                break;
+            }
+            case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR: {
+                mainController.showAuthenticationPasswordDialog(password -> {
+                    client.send(new TdApi.CheckAuthenticationPassword(password), new AuthorizationRequestHandler());
+                });
+                break;
+            }
             default:
                 System.out.println(lastAuthorizationState.toString());
                 break;
