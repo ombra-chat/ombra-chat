@@ -103,4 +103,25 @@ public class MainController {
             }
         });
     }
+
+    public void showMainWindow(ChatsLoader chatsLoader) {
+        Platform.runLater(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader();
+
+                loader.setLocation(MainController.class.getResource("/view/main-window.fxml"));
+                Parent root = loader.load();
+                MainWindowController controller = loader.getController();
+                currentController = controller;
+                controller.setChatsLoader(chatsLoader);
+
+                Scene scene = new Scene(root);
+                primaryStage.setScene(scene);
+                primaryStage.show();
+
+            } catch (IOException ex) {
+                throw new IOError(ex);
+            }
+        });
+    }
 }

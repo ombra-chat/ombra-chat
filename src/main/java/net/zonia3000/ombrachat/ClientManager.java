@@ -11,6 +11,7 @@ public class ClientManager {
     private final MainController mainController;
     private final Settings settings;
     private final Client client;
+    private final ChatsLoader chatsLoader;
 
     private TdApi.AuthorizationState lastAuthorizationState = null;
 
@@ -30,12 +31,16 @@ public class ClientManager {
 
         // create client
         client = Client.create(new UpdateHandler(), null, null);
+        chatsLoader = new ChatsLoader(client);
     }
 
     private class UpdateHandler implements Client.ResultHandler {
 
         @Override
         public void onResult(TdApi.Object object) {
+            if (chatsLoader.onResult(object)) {
+                return;
+            }
             if (object instanceof TdApi.UpdateAuthorizationState update) {
                 onAuthorizationStateUpdated(update.authorizationState);
             } else {
@@ -77,6 +82,11 @@ public class ClientManager {
                 mainController.showAuthenticationPasswordDialog(password -> {
                     client.send(new TdApi.CheckAuthenticationPassword(password), new AuthorizationRequestHandler());
                 });
+                break;
+            }
+            case TdApi.AuthorizationStateReady.CONSTRUCTOR: {
+                chatsLoader.loadChats();
+                mainController.showMainWindow(chatsLoader);
                 break;
             }
             default:
