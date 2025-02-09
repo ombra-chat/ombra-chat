@@ -11,6 +11,30 @@ import org.drinkless.tdlib.TdApi;
 
 public class ChatFoldersBox extends HBox {
 
+    private static class ChatFolderItem {
+
+        private final int id;
+        private final String label;
+
+        public ChatFolderItem(int id, String label) {
+            this.id = id;
+            this.label = label;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
     @FXML
     private ComboBox chatFolderComboBox;
 
@@ -31,14 +55,21 @@ public class ChatFoldersBox extends HBox {
 
     public void setChatsLoader(ChatsLoader chatsLoader) {
         this.chatsLoader = chatsLoader;
-        this.chatsLoader.onChatFoldersBoxReady((f) -> setChatFolders(f));
+        this.chatsLoader.setChatFoldersConsumer(this::setChatFolders);
     }
 
     public void setChatFolders(TdApi.ChatFolderInfo[] chatFolderInfos) {
         this.chatFolderInfos = chatFolderInfos;
-        chatFolderComboBox.getItems().add("All");
+
+        chatFolderComboBox.getItems().add(new ChatFolderItem(0, "All"));
+        chatFolderComboBox.setValue("All");
         for (var chatFolderInfo : chatFolderInfos) {
-            chatFolderComboBox.getItems().add(chatFolderInfo.name.text.text);
+            chatFolderComboBox.getItems().add(new ChatFolderItem(chatFolderInfo.id, chatFolderInfo.name.text.text));
         }
+
+        chatFolderComboBox.setOnAction(event -> {
+            ChatFolderItem selectedItem = (ChatFolderItem) chatFolderComboBox.getValue();
+            chatsLoader.onSelectedFolderChanged(selectedItem.id);
+        });
     }
 }
