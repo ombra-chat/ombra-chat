@@ -9,14 +9,24 @@
 
 <AnchorPane prefHeight="400.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.zonia3000.ombrachat.MainWindowController">
     <children>
-        <VBox alignment="CENTER" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0" spacing="10.0">
+        <VBox AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0">
             <children>
-                <ChatFoldersBox fx:id="chatFolders" />
-                <ChatsList fx:id="chatsList" />
+                <ChatFoldersBox fx:id="chatFolders" />                
+                <SplitPane fx:id="splitPane">
+                    <items>
+                        <VBox fx:id="chatsListContainer">
+                            <children>
+                                <ChatsList fx:id="chatsList" />
+                            </children>
+                        </VBox>
+                        <VBox fx:id="messagesContainer">
+                            <children>
+                                <Label text="TEST" />
+                            </children>
+                        </VBox>
+                    </items>
+                </SplitPane>
             </children>
-            <padding>
-                <Insets top="10.0" bottom="10.0" left="10.0" right="10.0" />
-            </padding>
         </VBox>
     </children>
 </AnchorPane>

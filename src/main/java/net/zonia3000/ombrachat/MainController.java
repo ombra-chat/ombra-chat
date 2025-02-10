@@ -4,6 +4,7 @@ import java.io.IOError;
 import java.io.IOException;
 import java.util.function.Consumer;
 import javafx.application.Platform;
+import javafx.beans.value.ObservableValue;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -116,6 +117,11 @@ public class MainController {
                 controller.setChatsLoader(chatsLoader);
 
                 Scene scene = new Scene(root);
+
+                scene.widthProperty().addListener((ObservableValue<? extends Number> observableValue, Number oldSceneWidth, Number newSceneWidth) -> {
+                    controller.setWindowWidth(newSceneWidth.intValue());
+                });
+
                 primaryStage.setScene(scene);
                 primaryStage.show();
 
