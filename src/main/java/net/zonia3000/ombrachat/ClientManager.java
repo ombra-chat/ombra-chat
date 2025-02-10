@@ -12,8 +12,10 @@ public class ClientManager {
     private final Settings settings;
     private final Client client;
     private final ChatsLoader chatsLoader;
+    private final MessagesLoader messagesLoader;
 
     private TdApi.AuthorizationState lastAuthorizationState = null;
+    private long myId;
 
     public ClientManager(MainController mainController) {
         this.mainController = mainController;
@@ -32,6 +34,7 @@ public class ClientManager {
         // create client
         client = Client.create(new UpdateHandler(), null, null);
         chatsLoader = new ChatsLoader(client);
+        messagesLoader = new MessagesLoader(client);
     }
 
     private class UpdateHandler implements Client.ResultHandler {
@@ -41,10 +44,15 @@ public class ClientManager {
             if (chatsLoader.onResult(object)) {
                 return;
             }
+            if (messagesLoader.onResult(object)) {
+                return;
+            }
             if (object instanceof TdApi.UpdateAuthorizationState update) {
                 onAuthorizationStateUpdated(update.authorizationState);
-            } else {
-                //System.out.println(object.toString());
+            } else if (object instanceof TdApi.UpdateOption option) {
+                if (option.name.equals("my_id")) {
+                    myId = ((TdApi.OptionValueInteger) option.value).value;
+                }
             }
         }
     }
@@ -86,7 +94,7 @@ public class ClientManager {
             }
             case TdApi.AuthorizationStateReady.CONSTRUCTOR: {
                 chatsLoader.loadChats();
-                mainController.showMainWindow(chatsLoader);
+                mainController.showMainWindow(chatsLoader, messagesLoader, myId);
                 break;
             }
             default:

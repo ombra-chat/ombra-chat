@@ -6,8 +6,9 @@
 <?import javafx.scene.layout.*?>
 <?import net.zonia3000.ombrachat.components.chat.ChatFoldersBox?>
 <?import net.zonia3000.ombrachat.components.chat.ChatsList?>
+<?import net.zonia3000.ombrachat.components.chat.ChatPage?>
 
-<AnchorPane prefHeight="400.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.zonia3000.ombrachat.MainWindowController">
+<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.zonia3000.ombrachat.MainWindowController">
     <children>
         <VBox AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0">
             <children>
@@ -19,11 +20,7 @@
                                 <ChatsList fx:id="chatsList" />
                             </children>
                         </VBox>
-                        <VBox fx:id="messagesContainer">
-                            <children>
-                                <Label text="TEST" />
-                            </children>
-                        </VBox>
+                        <ChatPage fx:id="chatPage" />
                     </items>
                 </SplitPane>
             </children>

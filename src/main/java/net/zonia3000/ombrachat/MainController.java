@@ -105,7 +105,7 @@ public class MainController {
         });
     }
 
-    public void showMainWindow(ChatsLoader chatsLoader) {
+    public void showMainWindow(ChatsLoader chatsLoader, MessagesLoader messagesLoader, long myId) {
         Platform.runLater(() -> {
             try {
                 FXMLLoader loader = new FXMLLoader();
@@ -114,9 +114,11 @@ public class MainController {
                 Parent root = loader.load();
                 MainWindowController controller = loader.getController();
                 currentController = controller;
-                controller.setChatsLoader(chatsLoader);
+                controller.setLoaders(chatsLoader, messagesLoader);
+                controller.setMyId(myId);
 
                 Scene scene = new Scene(root);
+                scene.getStylesheets().add(MainController.class.getResource("/view/common.css").toExternalForm());
 
                 scene.widthProperty().addListener((ObservableValue<? extends Number> observableValue, Number oldSceneWidth, Number newSceneWidth) -> {
                     controller.setWindowWidth(newSceneWidth.intValue());

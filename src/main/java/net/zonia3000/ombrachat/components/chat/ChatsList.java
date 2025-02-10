@@ -11,15 +11,18 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import net.zonia3000.ombrachat.ChatsLoader;
+import net.zonia3000.ombrachat.MessagesLoader;
 import org.drinkless.tdlib.TdApi;
 
 public class ChatsList extends ListView<TdApi.Chat> {
 
     private ChatsLoader chatsLoader;
+    private MessagesLoader messagesLoader;
 
     public ChatsList() {
         FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chats-list.fxml"));
@@ -31,11 +34,20 @@ public class ChatsList extends ListView<TdApi.Chat> {
             throw new IOError(ex);
         }
 
-        this.setCellFactory(lv -> new CustomListCell());
+        setCellFactory(lv -> new CustomListCell());
+
+        getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+
+        getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                messagesLoader.setSelectedChat(newValue);
+            }
+        });
     }
 
-    public void setChatsLoader(ChatsLoader chatsLoader) {
+    public void setLoaders(ChatsLoader chatsLoader, MessagesLoader messagesLoader) {
         this.chatsLoader = chatsLoader;
+        this.messagesLoader = messagesLoader;
         this.chatsLoader.setChatsListConsumer(this::setChatsList);
     }
 
@@ -77,7 +89,7 @@ public class ChatsList extends ListView<TdApi.Chat> {
                 hBox.setAlignment(Pos.CENTER);
                 hBox.setPrefHeight(40);
                 hBox.setPrefWidth(1);
-                
+
                 HBox.setHgrow(textLabel, Priority.ALWAYS);
 
                 setGraphic(hBox);
