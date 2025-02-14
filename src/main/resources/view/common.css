@@ -13,3 +13,7 @@
 .my-message {
     -fx-background-color: #effdde;
 }
+
+.bold {
+    -fx-font-weight: bold;
+}

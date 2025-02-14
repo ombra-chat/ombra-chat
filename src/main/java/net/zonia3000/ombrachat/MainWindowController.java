@@ -27,6 +27,8 @@ public class MainWindowController implements ErrorHandlerController {
         chatsList.setLoaders(chatsLoader, messagesLoader);
         messagesLoader.setChatPage(chatPage);
         chatPage.setMessagesLoader(messagesLoader);
+        chatPage.setChatsLoader(chatsLoader);
+        chatPage.setClient(chatsLoader.getClient());
         VBox.setVgrow(chatsList, Priority.ALWAYS);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
     }

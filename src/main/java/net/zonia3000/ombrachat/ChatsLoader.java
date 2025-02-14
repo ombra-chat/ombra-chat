@@ -46,6 +46,10 @@ public class ChatsLoader {
         this.client = client;
     }
 
+    public Client getClient() {
+        return this.client;
+    }
+
     public void loadChats() {
         getMainChatList();
     }
@@ -174,5 +178,9 @@ public class ChatsLoader {
             }
         }
         return 0;
+    }
+
+    public TdApi.Chat getChat(long chatId) {
+        return chats.get(chatId);
     }
 }
