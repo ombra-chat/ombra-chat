@@ -2,11 +2,13 @@ package net.zonia3000.ombrachat.components.chat;
 
 import java.io.IOError;
 import java.io.IOException;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.VBox;
 import net.zonia3000.ombrachat.MessagesLoader;
 import net.zonia3000.ombrachat.components.chat.message.MessageNotSupportedBox;
@@ -23,7 +25,12 @@ public class ChatPage extends VBox {
     private VBox chatContent;
 
     private MessagesLoader messagesLoader;
+
+    private TdApi.Chat selectedChat;
     private long myId;
+    private boolean scrollToBottom = true;
+
+    private boolean loading = false;
 
     public ChatPage() {
         FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chat-page.fxml"));
@@ -37,18 +44,38 @@ public class ChatPage extends VBox {
         chatScrollPane.setHbarPolicy(ScrollBarPolicy.NEVER);
         chatScrollPane.setFitToWidth(true);
         chatContent.setSpacing(10);
+
+        chatContent.heightProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+            if (scrollToBottom) {
+                chatScrollPane.setVvalue(1.0);
+            } else {
+                chatScrollPane.setVvalue((newValue.doubleValue() - oldValue.doubleValue()) / newValue.doubleValue());
+                loading = false;
+            }
+        });
+
+        chatScrollPane.addEventFilter(ScrollEvent.SCROLL, event -> {
+            if (chatScrollPane.getVvalue() <= 0.0 && !loading) {
+                // Top edge reached
+                scrollToBottom = false;
+                messagesLoader.loadPreviousMessages();
+                loading = true;
+            }
+        });
     }
 
-    public void setChatTitle(String title) {
-        chatTitleLabel.setText(title);
+    public void setMessagesLoader(MessagesLoader loader) {
+        this.messagesLoader = loader;
+    }
+
+    public void setSelectedChat(TdApi.Chat selectedChat) {
+        chatContent.getChildren().removeAll(chatContent.getChildren());
+        chatTitleLabel.setText(selectedChat.title);
+        scrollToBottom = true;
     }
 
     public void setMyId(long myId) {
         this.myId = myId;
-    }
-
-    public void setMessagesLoader(MessagesLoader messagesLoader) {
-        messagesLoader.setMessageConsumer(this::addMessage);
     }
 
     public void addMessage(TdApi.Message message) {

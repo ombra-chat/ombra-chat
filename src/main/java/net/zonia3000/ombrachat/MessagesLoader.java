@@ -1,7 +1,7 @@
 package net.zonia3000.ombrachat;
 
-import java.util.function.Consumer;
 import javafx.application.Platform;
+import net.zonia3000.ombrachat.components.chat.ChatPage;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 
@@ -14,19 +14,20 @@ public class MessagesLoader {
     private long lastMessageId = 0;
     private TdApi.Chat selectedChat;
 
-    private Consumer<TdApi.Message> messageConsumer;
+    private ChatPage chatPage;
 
     public MessagesLoader(Client client) {
         this.client = client;
     }
 
-    public void setMessageConsumer(Consumer<TdApi.Message> messageConsumer) {
-        this.messageConsumer = messageConsumer;
+    public void setChatPage(ChatPage chatPage) {
+        this.chatPage = chatPage;
     }
 
     public void setSelectedChat(TdApi.Chat selectedChat) {
         synchronized (lock) {
             this.selectedChat = selectedChat;
+            chatPage.setSelectedChat(selectedChat);
             lastMessageId = 0;
             client.send(new TdApi.OpenChat(selectedChat.id), null);
             client.send(new TdApi.GetChatHistory(selectedChat.id, 0, 0, 20, false),
@@ -60,14 +61,24 @@ public class MessagesLoader {
                                 });
                     }
                     lastMessageId = message.id;
-                    if (messageConsumer != null) {
+                    if (chatPage != null) {
                         Platform.runLater(() -> {
-                            messageConsumer.accept(message);
+                            chatPage.addMessage(message);
                         });
                     }
                 }
             }
             return true;
         }
+    }
+
+    public void loadPreviousMessages() {
+        if (lastMessageId == 0) {
+            return;
+        }
+        client.send(new TdApi.GetChatHistory(selectedChat.id, lastMessageId, 0, 20, false),
+                (TdApi.Object object) -> {
+                    MessagesLoader.this.onResult(object);
+                });
     }
 }

@@ -22,14 +22,10 @@ public class MainWindowController implements ErrorHandlerController {
     private ChatPage chatPage;
     boolean messagesContainerRemoved;
 
-    private ChatsLoader chatsLoader;
-    private MessagesLoader messagesLoader;
-
     public void setLoaders(ChatsLoader chatsLoader, MessagesLoader messagesLoader) {
-        this.chatsLoader = chatsLoader;
-        this.messagesLoader = messagesLoader;
         chatFolders.setChatsLoader(chatsLoader);
         chatsList.setLoaders(chatsLoader, messagesLoader);
+        messagesLoader.setChatPage(chatPage);
         chatPage.setMessagesLoader(messagesLoader);
         VBox.setVgrow(chatsList, Priority.ALWAYS);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
