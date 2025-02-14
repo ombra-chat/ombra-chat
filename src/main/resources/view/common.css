@@ -17,3 +17,15 @@
 .bold {
     -fx-font-weight: bold;
 }
+
+#chatSettingsBtn {
+    -fx-background-image: url("icons8-settings.png");
+    -fx-background-size: 24 24;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
+}
+
+#chatTitleLabel {
+    -fx-padding: 5px;
+    -fx-font-weight: bold;
+}

@@ -16,11 +16,13 @@ import net.zonia3000.ombrachat.login.PhoneDialogController;
 public class MainController {
 
     private final Stage primaryStage;
+    private final Settings settings;
 
     private ErrorHandlerController currentController;
 
-    public MainController(Stage stage) {
+    public MainController(Stage stage, Settings settings) {
         this.primaryStage = stage;
+        this.settings = settings;
     }
 
     public void displayError(String errorMessage) {
@@ -114,6 +116,7 @@ public class MainController {
                 Parent root = loader.load();
                 MainWindowController controller = loader.getController();
                 currentController = controller;
+                controller.setSettings(settings);
                 controller.setLoaders(chatsLoader, messagesLoader);
                 controller.setMyId(myId);
 
@@ -125,6 +128,7 @@ public class MainController {
                 });
 
                 primaryStage.setScene(scene);
+                primaryStage.setTitle("OmbraChat");
                 primaryStage.show();
 
             } catch (IOException ex) {

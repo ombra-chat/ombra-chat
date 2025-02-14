@@ -20,7 +20,13 @@ public class MainWindowController implements ErrorHandlerController {
     private SplitPane splitPane;
     @FXML
     private ChatPage chatPage;
-    boolean messagesContainerRemoved;
+    private boolean messagesContainerRemoved;
+
+    private Settings settings;
+
+    public void setSettings(Settings settings) {
+        this.settings = settings;
+    }
 
     public void setLoaders(ChatsLoader chatsLoader, MessagesLoader messagesLoader) {
         chatFolders.setChatsLoader(chatsLoader);
@@ -29,6 +35,7 @@ public class MainWindowController implements ErrorHandlerController {
         chatPage.setMessagesLoader(messagesLoader);
         chatPage.setChatsLoader(chatsLoader);
         chatPage.setClient(chatsLoader.getClient());
+        chatPage.setSettings(settings);
         VBox.setVgrow(chatsList, Priority.ALWAYS);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
     }

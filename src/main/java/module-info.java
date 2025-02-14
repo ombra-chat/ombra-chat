@@ -3,6 +3,8 @@ module net.zonia3000 {
     requires javafx.fxml;
     requires tdlib;
     requires java.prefs;
+    requires org.bouncycastle.provider;
+    requires org.bouncycastle.pg;
     exports net.zonia3000.ombrachat;
     exports net.zonia3000.ombrachat.login;
     exports net.zonia3000.ombrachat.components.chat;

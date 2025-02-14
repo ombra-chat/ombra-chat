@@ -17,9 +17,9 @@ public class ClientManager {
     private TdApi.AuthorizationState lastAuthorizationState = null;
     private long myId;
 
-    public ClientManager(MainController mainController) {
+    public ClientManager(MainController mainController, Settings settings) {
         this.mainController = mainController;
-        settings = new Settings();
+        this.settings = settings;
 
         Client.setLogMessageHandler(0, new LogMessageHandler());
 

@@ -5,6 +5,8 @@ import java.io.IOException;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
@@ -12,8 +14,10 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import net.zonia3000.ombrachat.ChatsLoader;
 import net.zonia3000.ombrachat.MessagesLoader;
+import net.zonia3000.ombrachat.Settings;
 import net.zonia3000.ombrachat.components.chat.message.MessageNotSupportedBox;
 import net.zonia3000.ombrachat.components.chat.message.MessagePhotoBox;
 import net.zonia3000.ombrachat.components.chat.message.MessageTextBox;
@@ -28,10 +32,13 @@ public class ChatPage extends VBox {
     private ScrollPane chatScrollPane;
     @FXML
     private VBox chatContent;
+    @FXML
+    private Label gpgKeyLabel;
 
     private Client client;
     private ChatsLoader chatsLoader;
     private MessagesLoader messagesLoader;
+    private Settings settings;
 
     private TdApi.Chat selectedChat;
     private long myId;
@@ -71,6 +78,10 @@ public class ChatPage extends VBox {
         });
     }
 
+    public void setSettings(Settings settings) {
+        this.settings = settings;
+    }
+
     public void setClient(Client client) {
         this.client = client;
     }
@@ -84,9 +95,23 @@ public class ChatPage extends VBox {
     }
 
     public void setSelectedChat(TdApi.Chat selectedChat) {
+        this.selectedChat = selectedChat;
+        setGpgKeyLabel();
         chatContent.getChildren().removeAll(chatContent.getChildren());
         chatTitleLabel.setText(selectedChat.title);
         scrollToBottom = true;
+    }
+
+    private void setGpgKeyLabel() {
+        String chatKeyFingerprint = settings.getChatKey(selectedChat.id);
+        gpgKeyLabel.managedProperty().bind(gpgKeyLabel.visibleProperty());
+        if (chatKeyFingerprint == null) {
+            gpgKeyLabel.setText("");
+            gpgKeyLabel.setVisible(false);
+        } else {
+            gpgKeyLabel.setText(chatKeyFingerprint);
+            gpgKeyLabel.setVisible(true);
+        }
     }
 
     public void setMyId(long myId) {
@@ -145,5 +170,28 @@ public class ChatPage extends VBox {
             return chatsLoader.getChat(senderUser.userId);
         }
         return null;
+    }
+
+    @FXML
+    private void openChatSettingsDialog() {
+        try {
+            FXMLLoader loader = new FXMLLoader();
+
+            loader.setLocation(ChatSettingsDialogController.class.getResource("/view/chat-settings-dialog.fxml"));
+            Parent root = loader.load();
+            ChatSettingsDialogController controller = loader.getController();
+
+            Scene scene = new Scene(root);
+            Stage newStage = new Stage();
+            newStage.setTitle("Chat settings");
+            newStage.setScene(scene);
+            newStage.show();
+
+            controller.init(settings, selectedChat, () -> {
+                setGpgKeyLabel();
+            });
+        } catch (IOException ex) {
+            throw new IOError(ex);
+        }
     }
 }
