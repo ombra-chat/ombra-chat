@@ -63,7 +63,7 @@ public class MessagesLoader {
                     lastMessageId = message.id;
                     if (chatPage != null) {
                         Platform.runLater(() -> {
-                            chatPage.addMessage(message);
+                            chatPage.prependMessage(message);
                         });
                     }
                 }

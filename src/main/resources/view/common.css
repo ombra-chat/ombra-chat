@@ -20,12 +20,45 @@
 
 #chatSettingsBtn {
     -fx-background-image: url("icons8-settings.png");
-    -fx-background-size: 24 24;
+    -fx-background-size: 30 30;
     -fx-background-repeat: no-repeat;
     -fx-background-position: center;
+    -fx-min-height: 30px;
+    -fx-min-width: 30px;
+}
+
+#attachFileBtn {
+    -fx-background-image: url("icons8-document.png");
+    -fx-background-size: 30 30;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
+    -fx-min-height: 30px;
+    -fx-min-width: 30px;
+}
+
+#sendMsgBtn {
+    -fx-background-image: url("icons8-send.png");
+    -fx-background-size: 30 30;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
+    -fx-min-height: 30px;
+    -fx-min-width: 30px;
+}
+
+#removeSelectedFileBtn {
+    -fx-background-image: url("icons8-remove.png");
+    -fx-background-size: 20 20;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
+    -fx-min-height: 20px;
+    -fx-min-width: 20px;    
 }
 
 #chatTitleLabel {
     -fx-padding: 5px;
     -fx-font-weight: bold;
+}
+
+#selectedFileLabel {
+    -fx-padding: 5px;
 }

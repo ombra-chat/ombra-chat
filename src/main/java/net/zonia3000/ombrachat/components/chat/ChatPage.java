@@ -1,19 +1,24 @@
 package net.zonia3000.ombrachat.components.chat;
 
+import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
+import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
+import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.ChatsLoader;
 import net.zonia3000.ombrachat.MessagesLoader;
@@ -34,6 +39,12 @@ public class ChatPage extends VBox {
     private VBox chatContent;
     @FXML
     private Label gpgKeyLabel;
+    @FXML
+    private Label selectedFileLabel;
+    @FXML
+    private TextField messageText;
+    @FXML
+    private Button removeSelectedFileBtn;
 
     private Client client;
     private ChatsLoader chatsLoader;
@@ -45,6 +56,8 @@ public class ChatPage extends VBox {
     private boolean scrollToBottom = true;
 
     private boolean loading = false;
+
+    private File selectedFile = null;
 
     public ChatPage() {
         FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chat-page.fxml"));
@@ -76,6 +89,11 @@ public class ChatPage extends VBox {
                 loading = true;
             }
         });
+
+        selectedFileLabel.managedProperty().bind(selectedFileLabel.visibleProperty());
+        removeSelectedFileBtn.managedProperty().bind(removeSelectedFileBtn.visibleProperty());
+        selectedFileLabel.setVisible(false);
+        removeSelectedFileBtn.setVisible(false);
     }
 
     public void setSettings(Settings settings) {
@@ -118,10 +136,12 @@ public class ChatPage extends VBox {
         this.myId = myId;
     }
 
-    public void addMessage(TdApi.Message message) {
-        var bubble = getMessageBubble(message);
-        bubble.getChildren().add(getMessageContentBox(message.content));
-        chatContent.getChildren().addFirst(bubble);
+    public void prependMessage(TdApi.Message message) {
+        chatContent.getChildren().addFirst(getMessageBubble(message));
+    }
+
+    public void appendMessage(TdApi.Message message) {
+        chatContent.getChildren().add(getMessageBubble(message));
     }
 
     private VBox getMessageContentBox(TdApi.MessageContent content) {
@@ -134,19 +154,69 @@ public class ChatPage extends VBox {
         }
     }
 
+    private void setSelectedFileLabel() {
+        if (selectedFile == null) {
+            selectedFileLabel.setText("");
+            selectedFileLabel.setVisible(false);
+            removeSelectedFileBtn.setVisible(false);
+        } else {
+            selectedFileLabel.setText(selectedFile.getName());
+            selectedFileLabel.setVisible(true);
+            removeSelectedFileBtn.setVisible(true);
+        }
+    }
+
     @FXML
-    private void handleSendMessageClick() {
+    private void openFileDialog() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Attach file");
+        selectedFile = fileChooser.showOpenDialog(messageText.getScene().getWindow());
+        setSelectedFileLabel();
+    }
+
+    @FXML
+    private void removeSelectedFile() {
+        selectedFile = null;
+        setSelectedFileLabel();
+    }
+
+    @FXML
+    private void sendMessage() {
+        client.send(new TdApi.SendMessage(selectedChat.id, 0, null, null, null, getInputMessageContent()), new Client.ResultHandler() {
+            @Override
+            public void onResult(TdApi.Object object) {
+                if (object instanceof TdApi.Message message) {
+                    Platform.runLater(() -> {
+                        scrollToBottom = true;
+                        appendMessage(message);
+                        removeSelectedFile();
+                    });
+                }
+            }
+        });
+        messageText.setText("");
+    }
+
+    private TdApi.InputMessageContent getInputMessageContent() {
+        var formattedText = new TdApi.FormattedText(messageText.getText(), new TdApi.TextEntity[]{});
+        if (selectedFile == null) {
+            return new TdApi.InputMessageText(formattedText, null, true);
+        } else {
+            var inputFileLocal = new TdApi.InputFileLocal(selectedFile.getAbsolutePath());
+            return new TdApi.InputMessageDocument(inputFileLocal, null, false, formattedText);
+        }
     }
 
     private VBox getMessageBubble(TdApi.Message message) {
-        VBox vbox = new VBox();
-        vbox.getStyleClass().add("message-bubble");
+        VBox bubble = new VBox();
+        bubble.getStyleClass().add("message-bubble");
         if (message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == myId) {
-            vbox.getStyleClass().add("my-message");
+            bubble.getStyleClass().add("my-message");
         } else {
-            addSenderLabel(vbox, message.senderId);
+            addSenderLabel(bubble, message.senderId);
         }
-        return vbox;
+        bubble.getChildren().add(getMessageContentBox(message.content));
+        return bubble;
     }
 
     private void addSenderLabel(VBox vbox, TdApi.MessageSender sender) {

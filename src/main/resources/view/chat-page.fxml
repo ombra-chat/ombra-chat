@@ -24,10 +24,21 @@
     <ScrollPane fx:id="chatScrollPane" VBox.vgrow="ALWAYS">
         <VBox fx:id="chatContent" VBox.vgrow="ALWAYS"></VBox>
     </ScrollPane>
-    <HBox>
+    <VBox>
         <children>
-            <TextField fx:id="messageText" HBox.hgrow="ALWAYS" />
-            <Button mnemonicParsing="false" fx:id="nextBtn" text="Send" onAction="#handleSendMessageClick" />
+            <HBox>
+                <children>
+                    <Button mnemonicParsing="false" fx:id="removeSelectedFileBtn" onAction="#removeSelectedFile" />
+                    <Label fx:id="selectedFileLabel" HBox.hgrow="ALWAYS" />
+                </children>
+            </HBox>
+            <HBox>
+                <children>
+                    <TextField fx:id="messageText" HBox.hgrow="ALWAYS" />
+                    <Button mnemonicParsing="false" fx:id="attachFileBtn" onAction="#openFileDialog" />
+                    <Button mnemonicParsing="false" fx:id="sendMsgBtn" onAction="#sendMessage" />
+                </children>                    
+            </HBox>
         </children>
-    </HBox>
+    </VBox>
 </fx:root>
