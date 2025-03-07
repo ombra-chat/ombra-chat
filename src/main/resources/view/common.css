@@ -18,6 +18,19 @@
     -fx-font-weight: bold;
 }
 
+.centered-label {
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+}
+
+.pt {
+    -fx-padding: 10 0 0 0;
+}
+
+.pt-2 {
+    -fx-padding: 20 0 0 0;
+}
+
 .btn {
     -fx-background-repeat: no-repeat;
     -fx-background-position: center;

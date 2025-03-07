@@ -1,22 +1,28 @@
 package net.zonia3000.ombrachat;
 
+import java.io.IOError;
+import java.io.IOException;
 import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
-import javafx.scene.control.Button;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 import net.zonia3000.ombrachat.components.chat.ChatFoldersBox;
 import net.zonia3000.ombrachat.components.chat.ChatPage;
 import net.zonia3000.ombrachat.components.chat.ChatsList;
 
 public class MainWindowController implements ErrorHandlerController {
-    
+
     @FXML
     private ChatFoldersBox chatFolders;
     @FXML
@@ -31,20 +37,20 @@ public class MainWindowController implements ErrorHandlerController {
     private Label usernameLabel;
     @FXML
     private AnchorPane sidebar;
-    
+
     private boolean messagesContainerRemoved;
-    
+
     private Settings settings;
-    
+
     @FXML
     public void initialize() {
         initSidebar();
     }
-    
+
     public void setSettings(Settings settings) {
         this.settings = settings;
     }
-    
+
     public void setLoaders(ChatsLoader chatsLoader, MessagesLoader messagesLoader) {
         chatFolders.setChatsLoader(chatsLoader);
         chatsList.setLoaders(chatsLoader, messagesLoader);
@@ -56,15 +62,15 @@ public class MainWindowController implements ErrorHandlerController {
         VBox.setVgrow(chatsList, Priority.ALWAYS);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
     }
-    
+
     public void setMyId(long myId) {
         chatPage.setMyId(myId);
     }
-    
+
     public void setMyUsername(String myUsername) {
         usernameLabel.setText(myUsername);
     }
-    
+
     public void setWindowWidth(int windowWidth) {
         if (windowWidth > 400) {
             if (messagesContainerRemoved) {
@@ -78,7 +84,7 @@ public class MainWindowController implements ErrorHandlerController {
             messagesContainerRemoved = true;
         }
     }
-    
+
     private void initSidebar() {
         // setting sidebar width to avoid overflow on small screens
         Rectangle2D screenBounds = Screen.getPrimary().getBounds();
@@ -87,7 +93,7 @@ public class MainWindowController implements ErrorHandlerController {
         sidebar.setPrefWidth(sidebarWidth);
         sidebar.setTranslateX(-1 * screenWidth);
     }
-    
+
     @FXML
     private void toggleSidebar() {
         TranslateTransition openNav = new TranslateTransition(new Duration(350), sidebar);
@@ -100,7 +106,28 @@ public class MainWindowController implements ErrorHandlerController {
             closeNav.play();
         }
     }
-    
+
+    @FXML
+    private void showAboutDialog() {
+        try {
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(MainWindowController.class.getResource("/view/about.fxml"));
+            Parent root = loader.load();
+            Label versionLabel = (Label) root.lookup("#versionLabel");
+            versionLabel.setText("Version: " + getClass().getPackage().getImplementationVersion());
+            Scene aboutScene = new Scene(root);
+            UiUtils.setCommonCss(aboutScene);
+            Stage aboutStage = new Stage();
+            aboutStage.setTitle("About");
+            aboutStage.setScene(aboutScene);
+            aboutStage.initOwner(aboutStage.getOwner());
+            aboutStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            aboutStage.showAndWait();
+        } catch (IOException ex) {
+            throw new IOError(ex);
+        }
+    }
+
     @Override
     public void displayError(String error) {
         // TODO

@@ -38,6 +38,7 @@
                         <Button styleClass="btn, btn-20" fx:id="closeSidebarBtn" onAction="#toggleSidebar" />                        
                     </children>
                 </HBox>
+                <Button styleClass="btn" text="About" onAction="#showAboutDialog" />
             </children>
         </AnchorPane>
     </children>

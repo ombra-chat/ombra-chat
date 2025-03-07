@@ -121,7 +121,7 @@ public class MainController {
                 controller.setMyId(myId);
 
                 Scene scene = new Scene(root);
-                scene.getStylesheets().add(MainController.class.getResource("/view/common.css").toExternalForm());
+                UiUtils.setCommonCss(scene);
 
                 scene.widthProperty().addListener((ObservableValue<? extends Number> observableValue, Number oldSceneWidth, Number newSceneWidth) -> {
                     controller.setWindowWidth(newSceneWidth.intValue());

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane prefHeight="300.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <VBox HBox.hgrow="ALWAYS" >
+            <children>
+                <Label text="OmbraChat" styleClass="bold, centered-label, pt" maxWidth="10000" />
+                <Label fx:id="versionLabel" styleClass="centered-label, pt" maxWidth="10000" />
+                <Label text="Written by zonia3000" styleClass="centered-label, pt" maxWidth="10000" />                
+            </children>
+        </VBox>
+    </children>
+</StackPane>
