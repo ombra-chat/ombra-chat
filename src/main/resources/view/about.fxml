@@ -11,7 +11,13 @@
             <children>
                 <Label text="OmbraChat" styleClass="bold, centered-label, pt" maxWidth="10000" />
                 <Label fx:id="versionLabel" styleClass="centered-label, pt" maxWidth="10000" />
-                <Label text="Written by zonia3000" styleClass="centered-label, pt" maxWidth="10000" />                
+                <Label text="Written by zonia3000" styleClass="centered-label, pt" maxWidth="10000" />
+                <HBox styleClass="centered-label, pt-2" maxWidth="10000">
+                    <children>
+                        <Label text="Icons by " /> 
+                        <Hyperlink fx:id="icons8link" text="Icons8" />
+                    </children>
+                </HBox>
             </children>
         </VBox>
     </children>

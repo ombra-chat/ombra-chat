@@ -13,7 +13,7 @@ public class App extends Application {
     @Override
     public void start(Stage stage) {
         var settings = new Settings();
-        var mainController = new MainController(stage, settings);
+        var mainController = new MainController(this, stage, settings);
         var clientManager = new ClientManager(mainController, settings);
     }
 

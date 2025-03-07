@@ -2,17 +2,19 @@ package net.zonia3000.ombrachat;
 
 import java.io.IOError;
 import java.io.IOException;
+import java.net.URI;
 import javafx.animation.TranslateTransition;
+import javafx.application.Application;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -22,6 +24,8 @@ import net.zonia3000.ombrachat.components.chat.ChatPage;
 import net.zonia3000.ombrachat.components.chat.ChatsList;
 
 public class MainWindowController implements ErrorHandlerController {
+
+    private Application app;
 
     @FXML
     private ChatFoldersBox chatFolders;
@@ -41,6 +45,10 @@ public class MainWindowController implements ErrorHandlerController {
     private boolean messagesContainerRemoved;
 
     private Settings settings;
+
+    public void setApplication(Application app) {
+        this.app = app;
+    }
 
     @FXML
     public void initialize() {
@@ -115,6 +123,8 @@ public class MainWindowController implements ErrorHandlerController {
             Parent root = loader.load();
             Label versionLabel = (Label) root.lookup("#versionLabel");
             versionLabel.setText("Version: " + getClass().getPackage().getImplementationVersion());
+            Hyperlink link = (Hyperlink) root.lookup("#icons8link");
+            link.setOnAction(event -> app.getHostServices().showDocument("https://icons8.com"));
             Scene aboutScene = new Scene(root);
             UiUtils.setCommonCss(aboutScene);
             Stage aboutStage = new Stage();

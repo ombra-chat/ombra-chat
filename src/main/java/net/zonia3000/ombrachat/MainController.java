@@ -3,6 +3,7 @@ package net.zonia3000.ombrachat;
 import java.io.IOError;
 import java.io.IOException;
 import java.util.function.Consumer;
+import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Parent;
@@ -15,12 +16,14 @@ import net.zonia3000.ombrachat.login.PhoneDialogController;
 
 public class MainController {
 
+    private final Application app;
     private final Stage primaryStage;
     private final Settings settings;
 
     private ErrorHandlerController currentController;
 
-    public MainController(Stage stage, Settings settings) {
+    public MainController(Application app, Stage stage, Settings settings) {
+        this.app = app;
         this.primaryStage = stage;
         this.settings = settings;
     }
@@ -116,6 +119,7 @@ public class MainController {
                 Parent root = loader.load();
                 MainWindowController controller = loader.getController();
                 currentController = controller;
+                controller.setApplication(app);
                 controller.setSettings(settings);
                 controller.setLoaders(chatsLoader, messagesLoader);
                 controller.setMyId(myId);
