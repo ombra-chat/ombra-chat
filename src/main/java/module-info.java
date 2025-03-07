@@ -1,7 +1,7 @@
-module net.zonia3000 {
+module ombrachat {
     requires javafx.controls;
     requires javafx.fxml;
-    requires tdlib;
+    requires org.drinkless.tdlib;
     requires java.prefs;
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pg;

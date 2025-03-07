@@ -7,7 +7,7 @@
 
 <StackPane prefHeight="300.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <VBox HBox.hgrow="ALWAYS" >
+        <VBox HBox.hgrow="ALWAYS">
             <children>
                 <Label text="OmbraChat" styleClass="bold, centered-label, pt" maxWidth="10000" />
                 <Label fx:id="versionLabel" styleClass="centered-label, pt" maxWidth="10000" />

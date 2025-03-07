@@ -2,7 +2,6 @@ package net.zonia3000.ombrachat;
 
 import java.io.IOError;
 import java.io.IOException;
-import java.net.URI;
 import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.fxml.FXML;
@@ -122,7 +121,7 @@ public class MainWindowController implements ErrorHandlerController {
             loader.setLocation(MainWindowController.class.getResource("/view/about.fxml"));
             Parent root = loader.load();
             Label versionLabel = (Label) root.lookup("#versionLabel");
-            versionLabel.setText("Version: " + getClass().getPackage().getImplementationVersion());
+            versionLabel.setText("Version: " + UiUtils.getVersion());
             Hyperlink link = (Hyperlink) root.lookup("#icons8link");
             link.setOnAction(event -> app.getHostServices().showDocument("https://icons8.com"));
             Scene aboutScene = new Scene(root);

@@ -42,6 +42,12 @@
         </dependency>
     </dependencies>
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -57,7 +63,11 @@
                 <version>0.0.8</version>
                 <configuration>
                     <source>21</source>
+                    <jlinkImageName>ombrachat</jlinkImageName>
+                    <launcher>launcher</launcher>
                     <mainClass>net.zonia3000.ombrachat.App</mainClass>
+                    <!-- Needed to avoid unsupported signed modular JAR error (bouncycastle) -->
+                    <ignoreSigningInformation>true</ignoreSigningInformation>
                 </configuration>
             </plugin>
         </plugins>
