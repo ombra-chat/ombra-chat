@@ -38,23 +38,23 @@
 }
 
 #chatSettingsBtn {
-    -fx-background-image: url("icons8-settings.png");
+    -fx-background-image: url("icons/icons8-settings.png");
 }
 
 #attachFileBtn {
-    -fx-background-image: url("icons8-document.png");
+    -fx-background-image: url("icons/icons8-document.png");
 }
 
 #sendMsgBtn {
-    -fx-background-image: url("icons8-send.png");
+    -fx-background-image: url("icons/icons8-send.png");
 }
 
 #removeSelectedFileBtn, #closeSidebarBtn {
-    -fx-background-image: url("icons8-remove.png");
+    -fx-background-image: url("icons/icons8-remove.png");
 }
 
 #toggleSidebarBtn {
-    -fx-background-image: url("icons8-menu.png");
+    -fx-background-image: url("icons/icons8-menu.png");
 }
 
 #chatTitleLabel {
