@@ -50,8 +50,10 @@ public class ClientManager {
             if (object instanceof TdApi.UpdateAuthorizationState update) {
                 onAuthorizationStateUpdated(update.authorizationState);
             } else if (object instanceof TdApi.UpdateOption option) {
-                if (option.name.equals("my_id")) {
-                    myId = ((TdApi.OptionValueInteger) option.value).value;
+                switch (option.name) {
+                    case "my_id":
+                        myId = ((TdApi.OptionValueInteger) option.value).value;
+                        break;
                 }
             }
         }

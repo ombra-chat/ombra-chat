@@ -18,40 +18,43 @@
     -fx-font-weight: bold;
 }
 
-#chatSettingsBtn {
-    -fx-background-image: url("icons8-settings.png");
-    -fx-background-size: 30 30;
+.btn {
     -fx-background-repeat: no-repeat;
     -fx-background-position: center;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.btn-20 {
+    -fx-background-size: 20 20;
+    -fx-min-height: 20px;
+    -fx-min-width: 20px;
+}
+
+.btn-30 {
+    -fx-background-size: 30 30;
     -fx-min-height: 30px;
     -fx-min-width: 30px;
+}
+
+#chatSettingsBtn {
+    -fx-background-image: url("icons8-settings.png");
 }
 
 #attachFileBtn {
     -fx-background-image: url("icons8-document.png");
-    -fx-background-size: 30 30;
-    -fx-background-repeat: no-repeat;
-    -fx-background-position: center;
-    -fx-min-height: 30px;
-    -fx-min-width: 30px;
 }
 
 #sendMsgBtn {
     -fx-background-image: url("icons8-send.png");
-    -fx-background-size: 30 30;
-    -fx-background-repeat: no-repeat;
-    -fx-background-position: center;
-    -fx-min-height: 30px;
-    -fx-min-width: 30px;
 }
 
-#removeSelectedFileBtn {
+#removeSelectedFileBtn, #closeSidebarBtn {
     -fx-background-image: url("icons8-remove.png");
-    -fx-background-size: 20 20;
-    -fx-background-repeat: no-repeat;
-    -fx-background-position: center;
-    -fx-min-height: 20px;
-    -fx-min-width: 20px;    
+}
+
+#toggleSidebarBtn {
+    -fx-background-image: url("icons8-menu.png");
 }
 
 #chatTitleLabel {

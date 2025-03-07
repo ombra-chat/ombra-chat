@@ -12,7 +12,12 @@
     <children>
         <VBox AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0">
             <children>
-                <ChatFoldersBox fx:id="chatFolders" />                
+                <HBox>
+                    <children>
+                        <Button styleClass="btn, btn-30" fx:id="toggleSidebarBtn" onAction="#toggleSidebar" />
+                    </children>
+                </HBox>
+                <ChatFoldersBox fx:id="chatFolders" />
                 <SplitPane fx:id="splitPane">
                     <items>
                         <VBox fx:id="chatsListContainer">
@@ -25,5 +30,15 @@
                 </SplitPane>
             </children>
         </VBox>
+        <AnchorPane fx:id="sidebar" style="-fx-background-color:white" AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0">
+            <children>
+                <HBox AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
+                    <children>
+                        <Label fx:id="usernameLabel" maxWidth="10000" HBox.hgrow="ALWAYS" />
+                        <Button styleClass="btn, btn-20" fx:id="closeSidebarBtn" onAction="#toggleSidebar" />                        
+                    </children>
+                </HBox>
+            </children>
+        </AnchorPane>
     </children>
 </AnchorPane>

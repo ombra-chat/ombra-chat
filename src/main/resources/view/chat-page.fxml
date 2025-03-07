@@ -10,7 +10,7 @@
         <children>
             <HBox>
                 <children>
-                    <Button fx:id="chatSettingsBtn" prefWidth="24.0" prefHeight="24.0" onAction="#openChatSettingsDialog"></Button>
+                    <Button fx:id="chatSettingsBtn" styleClass="btn, btn-30" prefWidth="24.0" prefHeight="24.0" onAction="#openChatSettingsDialog"></Button>
                     <Label fx:id="chatTitleLabel" HBox.hgrow="ALWAYS" />
                 </children>
             </HBox>
@@ -28,15 +28,15 @@
         <children>
             <HBox>
                 <children>
-                    <Button mnemonicParsing="false" fx:id="removeSelectedFileBtn" onAction="#removeSelectedFile" />
+                    <Button styleClass="btn, btn-20" fx:id="removeSelectedFileBtn" onAction="#removeSelectedFile" />
                     <Label fx:id="selectedFileLabel" HBox.hgrow="ALWAYS" />
                 </children>
             </HBox>
             <HBox>
                 <children>
                     <TextField fx:id="messageText" HBox.hgrow="ALWAYS" />
-                    <Button mnemonicParsing="false" fx:id="attachFileBtn" onAction="#openFileDialog" />
-                    <Button mnemonicParsing="false" fx:id="sendMsgBtn" onAction="#sendMessage" />
+                    <Button fx:id="attachFileBtn" styleClass="btn, btn-30" onAction="#openFileDialog" />
+                    <Button fx:id="sendMsgBtn" styleClass="btn, btn-30" onAction="#sendMessage" />
                 </children>                    
             </HBox>
         </children>
