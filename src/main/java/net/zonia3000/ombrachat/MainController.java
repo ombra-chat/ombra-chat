@@ -10,6 +10,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import net.zonia3000.ombrachat.login.AuthenticationCodeController;
 import net.zonia3000.ombrachat.login.AuthenticationPasswordController;
 import net.zonia3000.ombrachat.login.PhoneDialogController;
@@ -129,6 +131,13 @@ public class MainController {
 
                 scene.widthProperty().addListener((ObservableValue<? extends Number> observableValue, Number oldSceneWidth, Number newSceneWidth) -> {
                     controller.setWindowWidth(newSceneWidth.intValue());
+                });
+
+                // Detect escape key pressed
+                scene.addEventFilter(KeyEvent.KEY_PRESSED, (KeyEvent event) -> {
+                    if (event.getCode() == KeyCode.ESCAPE) {
+                        controller.hideChat();
+                    }
                 });
 
                 primaryStage.setScene(scene);

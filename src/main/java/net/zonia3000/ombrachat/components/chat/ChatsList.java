@@ -23,6 +23,7 @@ public class ChatsList extends ListView<TdApi.Chat> {
 
     private ChatsLoader chatsLoader;
     private MessagesLoader messagesLoader;
+    private TdApi.Chat selectedChat;
 
     public ChatsList() {
         FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chats-list.fxml"));
@@ -40,6 +41,7 @@ public class ChatsList extends ListView<TdApi.Chat> {
 
         getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
+                selectedChat = newValue;
                 messagesLoader.setSelectedChat(newValue);
             }
         });
@@ -59,7 +61,7 @@ public class ChatsList extends ListView<TdApi.Chat> {
         this.setItems(items);
     }
 
-    public static class CustomListCell extends ListCell<TdApi.Chat> {
+    public class CustomListCell extends ListCell<TdApi.Chat> {
 
         @Override
         protected void updateItem(TdApi.Chat item, boolean empty) {
@@ -93,6 +95,12 @@ public class ChatsList extends ListView<TdApi.Chat> {
                 HBox.setHgrow(textLabel, Priority.ALWAYS);
 
                 setGraphic(hBox);
+
+                hBox.setOnMouseClicked(event -> {
+                    if (selectedChat != null) {
+                        messagesLoader.setSelectedChat(selectedChat);
+                    }
+                });
             }
         }
     }

@@ -41,7 +41,10 @@ public class MainWindowController implements ErrorHandlerController {
     @FXML
     private AnchorPane sidebar;
 
-    private boolean messagesContainerRemoved;
+    // used to implement responsive behavior
+    private boolean mobileMode;
+    private boolean chatPageRemoved;
+    private boolean chatsListRemoved;
 
     private Settings settings;
 
@@ -62,12 +65,18 @@ public class MainWindowController implements ErrorHandlerController {
         chatFolders.setChatsLoader(chatsLoader);
         chatsList.setLoaders(chatsLoader, messagesLoader);
         messagesLoader.setChatPage(chatPage);
+        messagesLoader.setMainWindowController(this);
         chatPage.setMessagesLoader(messagesLoader);
         chatPage.setChatsLoader(chatsLoader);
         chatPage.setClient(chatsLoader.getClient());
         chatPage.setSettings(settings);
         VBox.setVgrow(chatsList, Priority.ALWAYS);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
+    }
+
+    public void hideChat() {
+        chatPage.setSelectedChat(null);
+        computeSplitPaneChildrenVisibility();
     }
 
     public void setMyId(long myId) {
@@ -79,16 +88,46 @@ public class MainWindowController implements ErrorHandlerController {
     }
 
     public void setWindowWidth(int windowWidth) {
-        if (windowWidth > 400) {
-            if (messagesContainerRemoved) {
-                SplitPane.setResizableWithParent(chatsListContainer, Boolean.FALSE);
-                splitPane.getItems().add(chatPage);
-                messagesContainerRemoved = false;
+        mobileMode = windowWidth < 400;
+        computeSplitPaneChildrenVisibility();
+    }
+
+    public void computeSplitPaneChildrenVisibility() {
+        if (mobileMode) {
+            if (chatPage.hasSelectedChat()) {
+                // show only chat page
+                if (!chatsListRemoved) {
+                    splitPane.getItems().remove(chatsListContainer);
+                    chatsListRemoved = true;
+                }
+                if (chatPageRemoved) {
+                    splitPane.getItems().add(chatPage);
+                    chatPageRemoved = false;
+                }
+            } else {
+                // show only chats list
+                if (!chatPageRemoved) {
+                    splitPane.getItems().remove(chatPage);
+                    chatPageRemoved = true;
+                }
+                if (chatsListRemoved) {
+                    // chat list must follow parent size when parent is resized
+                    SplitPane.setResizableWithParent(chatsListContainer, Boolean.TRUE);
+                    splitPane.getItems().add(chatsListContainer);
+                    chatsListRemoved = false;
+                }
             }
-        } else if (!messagesContainerRemoved) {
-            SplitPane.setResizableWithParent(chatsListContainer, Boolean.TRUE);
-            splitPane.getItems().remove(chatPage);
-            messagesContainerRemoved = true;
+        } else {
+            if (chatsListRemoved) {
+                // chat list should not be resized when parent is resized
+                SplitPane.setResizableWithParent(chatsListContainer, Boolean.FALSE);
+                splitPane.getItems().add(chatsListContainer);
+                chatsListRemoved = false;
+            }
+            if (chatPageRemoved) {
+                splitPane.getItems().add(chatPage);
+                chatPageRemoved = false;
+            }
         }
     }
 

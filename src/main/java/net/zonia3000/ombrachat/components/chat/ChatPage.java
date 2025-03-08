@@ -60,6 +60,8 @@ public class ChatPage extends VBox {
     private File selectedFile = null;
 
     public ChatPage() {
+        setVisible(false);
+
         FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chat-page.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -96,6 +98,10 @@ public class ChatPage extends VBox {
         removeSelectedFileBtn.setVisible(false);
     }
 
+    public boolean hasSelectedChat() {
+        return selectedChat != null;
+    }
+
     public void setSettings(Settings settings) {
         this.settings = settings;
     }
@@ -114,10 +120,15 @@ public class ChatPage extends VBox {
 
     public void setSelectedChat(TdApi.Chat selectedChat) {
         this.selectedChat = selectedChat;
-        setGpgKeyLabel();
-        chatContent.getChildren().removeAll(chatContent.getChildren());
-        chatTitleLabel.setText(selectedChat.title);
-        scrollToBottom = true;
+        if (selectedChat == null) {
+            setVisible(false);
+        } else {
+            setGpgKeyLabel();
+            chatContent.getChildren().removeAll(chatContent.getChildren());
+            chatTitleLabel.setText(selectedChat.title);
+            scrollToBottom = true;
+            setVisible(true);
+        }
     }
 
     private void setGpgKeyLabel() {

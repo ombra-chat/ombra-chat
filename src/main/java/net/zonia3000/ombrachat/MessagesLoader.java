@@ -15,6 +15,7 @@ public class MessagesLoader {
     private TdApi.Chat selectedChat;
 
     private ChatPage chatPage;
+    private MainWindowController mainWindowController;
 
     public MessagesLoader(Client client) {
         this.client = client;
@@ -24,10 +25,15 @@ public class MessagesLoader {
         this.chatPage = chatPage;
     }
 
+    public void setMainWindowController(MainWindowController mainWindowController) {
+        this.mainWindowController = mainWindowController;
+    }
+
     public void setSelectedChat(TdApi.Chat selectedChat) {
         synchronized (lock) {
             this.selectedChat = selectedChat;
             chatPage.setSelectedChat(selectedChat);
+            mainWindowController.computeSplitPaneChildrenVisibility();
             lastMessageId = 0;
             client.send(new TdApi.OpenChat(selectedChat.id), null);
             client.send(new TdApi.GetChatHistory(selectedChat.id, 0, 0, 20, false),
