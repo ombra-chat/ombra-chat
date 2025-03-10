@@ -20,8 +20,12 @@ import net.zonia3000.ombrachat.events.WindowWidthChanged;
 import net.zonia3000.ombrachat.login.AuthenticationCodeController;
 import net.zonia3000.ombrachat.login.AuthenticationPasswordController;
 import net.zonia3000.ombrachat.login.PhoneDialogController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MainController {
+
+    private static final Logger logger = LoggerFactory.getLogger(MainController.class);
 
     private final Mediator mediator;
     private final Stage primaryStage;
@@ -41,7 +45,7 @@ public class MainController {
 
     private void displayError(String errorMessage) {
         Platform.runLater(() -> {
-            System.err.println(errorMessage);
+            logger.warn("Received error: {}", errorMessage);
             if (currentController == null) {
                 return;
             }

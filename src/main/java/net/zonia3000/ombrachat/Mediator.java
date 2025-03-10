@@ -15,6 +15,8 @@ import net.zonia3000.ombrachat.events.Event;
 import net.zonia3000.ombrachat.events.EventListener;
 import net.zonia3000.ombrachat.events.MyIdReceived;
 import org.drinkless.tdlib.TdApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Allows for loose coupling between the components by centralizing the
@@ -22,6 +24,8 @@ import org.drinkless.tdlib.TdApi;
  * notifications.
  */
 public final class Mediator {
+
+    private static final Logger logger = LoggerFactory.getLogger(Mediator.class);
 
     private final Map<Class<?>, List<EventListener>> eventListeners = new HashMap<>();
 
@@ -55,24 +59,24 @@ public final class Mediator {
     }
 
     public synchronized <T extends Event> void subscribe(Class<T> eventType, EventListener<T> listener) {
-        System.out.println("Subscribing to event " + eventType.getName());
+        logger.debug("Subscribing to event {}", eventType.getSimpleName());
         eventListeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(listener);
     }
 
     public void publish(Event event) {
         var dependentEvent = queueRules.get(event.getClass());
         if (dependentEvent != null) {
-            System.out.println("Queueing event " + event.getClass().getName());
+            logger.debug("Queueing event {}", event.getClass().getSimpleName());
             queuedEvents.computeIfAbsent(dependentEvent, k -> new ArrayList<>()).add(event);
         } else {
             List<Event> queue = queuedEvents.remove(event.getClass());
             if (queue == null) {
                 publishImmediately(event);
             } else {
-                System.out.println("Found events depending on " + event.getClass().getName());
+                logger.debug("Found events depending on {}", event.getClass().getSimpleName());
                 for (Event e : queue) {
                     queueRules.remove(e.getClass());
-                    System.out.println("Dequeueing event " + e.getClass().getName());
+                    logger.debug("Dequeueing event {}", e.getClass().getSimpleName());
                     publishImmediately(e);
                 }
             }
@@ -83,11 +87,11 @@ public final class Mediator {
         List<EventListener> listeners = eventListeners.get(event.getClass());
         if (listeners != null) {
             for (EventListener listener : listeners) {
-                System.out.println("Handling event " + event.getClass().getName());
+                logger.debug("Handling event {}", event.getClass().getSimpleName());
                 listener.handleEvent(event);
             }
         } else {
-            System.err.println("No listener defined for event " + event.getClass().getName());
+            logger.warn("No listener defined for event {}", event.getClass().getSimpleName());
         }
     }
 

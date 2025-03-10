@@ -5,6 +5,7 @@ module ombrachat {
     requires java.prefs;
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pg;
+    requires org.slf4j;
     exports net.zonia3000.ombrachat;
     exports net.zonia3000.ombrachat.login;
     exports net.zonia3000.ombrachat.components.chat;

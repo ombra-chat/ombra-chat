@@ -13,8 +13,12 @@ import net.zonia3000.ombrachat.events.LoadChats;
 import net.zonia3000.ombrachat.events.SelectedChatFolderChanged;
 import net.zonia3000.ombrachat.events.SendClientMessage;
 import org.drinkless.tdlib.TdApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChatsLoader {
+
+    private static final Logger logger = LoggerFactory.getLogger(ChatsLoader.class);
 
     private final ConcurrentMap<Integer, List<Long>> chatFolders = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, TdApi.Chat> chats = new ConcurrentHashMap<>();
@@ -119,7 +123,7 @@ public class ChatsLoader {
                                 haveFullMainChatList = true;
                                 mediator.publish(new ChatsListUpdated(getSelectedChatsList()));
                             } else {
-                                System.err.println("Receive an error for LoadChats:\n" + object);
+                                logger.error("Receive an error for LoadChats: {}", object);
                             }
                             break;
                         case TdApi.Ok.CONSTRUCTOR:
@@ -127,7 +131,8 @@ public class ChatsLoader {
                             getMainChatList();
                             break;
                         default:
-                            System.err.println("Receive wrong response from TDLib:\n" + object);
+                            logger.error("Received unexpected response from TDLib: {}", object);
+                            break;
                     }
                 }));
             }

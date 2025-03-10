@@ -18,7 +18,15 @@ public class App extends Application {
     }
 
     public static void main(String[] args) {
+        configureLogger();
         Security.addProvider(new BouncyCastleProvider());
         launch();
+    }
+
+    private static void configureLogger() {
+        var logLevel = System.getenv("LOG_LEVEL");
+        if (logLevel != null) {
+            System.setProperty("org.slf4j.simpleLogger.log.net.zonia3000.ombrachat", logLevel);
+        }
     }
 }

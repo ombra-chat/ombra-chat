@@ -15,8 +15,12 @@ import net.zonia3000.ombrachat.events.ShowAuthenticationPasswordDialog;
 import net.zonia3000.ombrachat.events.ShowPhoneNumberDialog;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClientManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(ClientManager.class);
 
     private final Mediator mediator;
     private final ChatsLoader chatsLoader;
@@ -81,6 +85,7 @@ public class ClientManager {
 
     private void onAuthorizationStateUpdated(TdApi.AuthorizationState authorizationState) {
         if (authorizationState != null) {
+            logger.debug("Authorization state {}", authorizationState.getClass().getSimpleName());
             lastAuthorizationState = authorizationState;
         }
         switch (lastAuthorizationState.getConstructor()) {
@@ -113,7 +118,7 @@ public class ClientManager {
                 break;
             }
             default:
-                System.out.println(lastAuthorizationState.toString());
+                logger.warn("Unsupported authorization state {}", lastAuthorizationState.toString());
                 break;
         }
     }
@@ -126,7 +131,7 @@ public class ClientManager {
                 mediator.publish(new ErrorReceived(error.message));
                 onAuthorizationStateUpdated(null); // repeat last action
             } else if (!(object instanceof TdApi.Ok)) {
-                System.err.println("Receive wrong response from TDLib:\n" + object);
+                logger.error("Received wrong response from TDLib {}", object);
             }
         }
     }
@@ -139,7 +144,7 @@ public class ClientManager {
                 onFatalError(message);
                 return;
             }
-            System.err.println(message);
+            logger.error("Received error {}", message);
         }
     }
 
