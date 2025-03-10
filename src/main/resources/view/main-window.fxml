@@ -32,13 +32,18 @@
         </VBox>
         <AnchorPane fx:id="sidebar" style="-fx-background-color:white" AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0">
             <children>
-                <HBox AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
+                <VBox AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
                     <children>
-                        <Label fx:id="usernameLabel" maxWidth="10000" HBox.hgrow="ALWAYS" />
-                        <Button styleClass="btn, btn-20" fx:id="closeSidebarBtn" onAction="#toggleSidebar" />                        
+                        <HBox>
+                            <children>
+                                <Label fx:id="usernameLabel" maxWidth="10000" HBox.hgrow="ALWAYS" />
+                                <Button styleClass="btn, btn-20" fx:id="closeSidebarBtn" onAction="#toggleSidebar" />                        
+                            </children>
+                        </HBox>
+                        <Button styleClass="btn, text-left" text="Settings" onAction="#showSettingsDialog" maxWidth="10000" HBox.hgrow="ALWAYS" />
+                        <Button styleClass="btn, text-left" text="About" onAction="#showAboutDialog" maxWidth="10000" HBox.hgrow="ALWAYS" />                        
                     </children>
-                </HBox>
-                <Button styleClass="btn" text="About" onAction="#showAboutDialog" />
+                </VBox>
             </children>
         </AnchorPane>
     </children>

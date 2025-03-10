@@ -17,6 +17,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import net.zonia3000.ombrachat.components.SettingsDialogController;
 import net.zonia3000.ombrachat.components.chat.ChatFoldersBox;
 import net.zonia3000.ombrachat.components.chat.ChatPage;
 import net.zonia3000.ombrachat.components.chat.ChatsList;
@@ -126,6 +127,24 @@ public class MainWindowController implements ErrorHandlerController {
         } else {
             closeNav.setToX(-(sidebar.getWidth()));
             closeNav.play();
+        }
+    }
+
+    @FXML
+    private void showSettingsDialog() {
+        try {
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(MainWindowController.class.getResource("/view/settings-dialog.fxml"));
+            Parent root = loader.load();
+            SettingsDialogController controller = loader.getController();
+            controller.setMediator(mediator);
+            Scene scene = new Scene(root);
+            Stage newStage = new Stage();
+            newStage.setTitle("Settings");
+            newStage.setScene(scene);
+            newStage.show();
+        } catch (IOException ex) {
+            throw new IOError(ex);
         }
     }
 

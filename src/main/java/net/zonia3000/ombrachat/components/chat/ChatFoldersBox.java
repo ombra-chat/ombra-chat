@@ -14,34 +14,11 @@ import org.drinkless.tdlib.TdApi;
 
 public class ChatFoldersBox extends HBox {
 
-    private static class ChatFolderItem {
-
-        private final int id;
-        private final String label;
-
-        public ChatFolderItem(int id, String label) {
-            this.id = id;
-            this.label = label;
-        }
-
-        public int getId() {
-            return id;
-        }
-
-        public String getLabel() {
-            return label;
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
-
     @FXML
     private ComboBox chatFolderComboBox;
 
     private Mediator mediator;
+    private TdApi.ChatFolderInfo[] chatFolderInfos;
 
     public ChatFoldersBox() {
         FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chat-folders.fxml"));
@@ -58,18 +35,37 @@ public class ChatFoldersBox extends HBox {
         this.mediator = mediator;
         mediator.subscribe(ChatFolderInfosUpdated.class, (e) -> setChatFolders(e.getChatFolderInfos()));
         mediator.publish(new ChatFoldersBoxLoaded());
+        mediator.registerChatFolderInfosProvider(() -> chatFolderInfos);
     }
 
     private void setChatFolders(TdApi.ChatFolderInfo[] chatFolderInfos) {
+        this.chatFolderInfos = chatFolderInfos;
+
         chatFolderComboBox.getItems().add(new ChatFolderItem(0, "All"));
         chatFolderComboBox.setValue("All");
         for (var chatFolderInfo : chatFolderInfos) {
             chatFolderComboBox.getItems().add(new ChatFolderItem(chatFolderInfo.id, chatFolderInfo.name.text.text));
         }
 
+        setSelectedValue();
+
         chatFolderComboBox.setOnAction(event -> {
             ChatFolderItem selectedItem = (ChatFolderItem) chatFolderComboBox.getValue();
-            mediator.publish(new SelectedChatFolderChanged(selectedItem.id));
+            mediator.publish(new SelectedChatFolderChanged(selectedItem.getId()));
         });
+    }
+
+    private void setSelectedValue() {
+        int selectedFolderId = mediator.getSettings().getDefaultFolder();
+        for (var item : chatFolderComboBox.getItems()) {
+            ChatFolderItem cfi = (ChatFolderItem) item;
+            if (cfi.getId() == selectedFolderId) {
+                if (cfi.getId() != 0) {
+                    mediator.publish(new SelectedChatFolderChanged(cfi.getId()));
+                }
+                chatFolderComboBox.setValue(cfi.getLabel());
+                return;
+            }
+        }
     }
 }

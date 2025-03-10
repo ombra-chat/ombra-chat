@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import net.zonia3000.ombrachat.events.ChatFolderInfosUpdated;
 import net.zonia3000.ombrachat.events.ChatFoldersBoxLoaded;
 import net.zonia3000.ombrachat.events.ChatSelected;
@@ -33,7 +34,9 @@ public final class Mediator {
     private final Settings settings;
     private long myId;
     private TdApi.Chat selectedChat;
+
     private Function<Long, TdApi.Chat> chatProvider;
+    private Supplier<TdApi.ChatFolderInfo[]> chatFolderInfosProvider;
 
     /**
      * Defines which events should be queued until a depended event happens.
@@ -119,7 +122,15 @@ public final class Mediator {
         this.chatProvider = chatProvider;
     }
 
+    public void registerChatFolderInfosProvider(Supplier<TdApi.ChatFolderInfo[]> chatFolderInfosProvider) {
+        this.chatFolderInfosProvider = chatFolderInfosProvider;
+    }
+
     public TdApi.Chat getChat(long id) {
         return chatProvider.apply(id);
+    }
+    
+    public TdApi.ChatFolderInfo[] getChatFolderInfos() {
+        return chatFolderInfosProvider.get();
     }
 }
