@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat.components.chat;
+package net.zonia3000.ombrachat.chat;
 
 import java.io.File;
 import java.io.IOError;
@@ -21,9 +21,9 @@ import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.Mediator;
-import net.zonia3000.ombrachat.components.chat.message.MessageNotSupportedBox;
-import net.zonia3000.ombrachat.components.chat.message.MessagePhotoBox;
-import net.zonia3000.ombrachat.components.chat.message.MessageTextBox;
+import net.zonia3000.ombrachat.chat.message.MessageNotSupportedBox;
+import net.zonia3000.ombrachat.chat.message.MessagePhotoBox;
+import net.zonia3000.ombrachat.chat.message.MessageTextBox;
 import net.zonia3000.ombrachat.events.ChatSelected;
 import net.zonia3000.ombrachat.events.ChatSettingsSaved;
 import net.zonia3000.ombrachat.events.LoadPreviousMessages;

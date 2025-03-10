@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat.components.chat.message;
+package net.zonia3000.ombrachat.chat.message;
 
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;

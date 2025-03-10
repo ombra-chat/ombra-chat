@@ -4,9 +4,9 @@
 <?import javafx.scene.control.*?>
 <?import java.lang.*?>
 <?import javafx.scene.layout.*?>
-<?import net.zonia3000.ombrachat.components.chat.ChatFoldersBox?>
-<?import net.zonia3000.ombrachat.components.chat.ChatsList?>
-<?import net.zonia3000.ombrachat.components.chat.ChatPage?>
+<?import net.zonia3000.ombrachat.chat.ChatFoldersBox?>
+<?import net.zonia3000.ombrachat.chat.ChatsList?>
+<?import net.zonia3000.ombrachat.chat.ChatPage?>
 
 <AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.zonia3000.ombrachat.MainWindowController">
     <children>

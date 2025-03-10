@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat.components.chat;
+package net.zonia3000.ombrachat.chat;
 
 public class ChatFolderItem {
 

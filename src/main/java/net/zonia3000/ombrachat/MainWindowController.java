@@ -17,10 +17,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import net.zonia3000.ombrachat.components.SettingsDialogController;
-import net.zonia3000.ombrachat.components.chat.ChatFoldersBox;
-import net.zonia3000.ombrachat.components.chat.ChatPage;
-import net.zonia3000.ombrachat.components.chat.ChatsList;
+import net.zonia3000.ombrachat.chat.ChatFoldersBox;
+import net.zonia3000.ombrachat.chat.ChatPage;
+import net.zonia3000.ombrachat.chat.ChatsList;
 import net.zonia3000.ombrachat.events.ChatSelected;
 import net.zonia3000.ombrachat.events.WindowWidthChanged;
 

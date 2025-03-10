@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat.components.chat.message;
+package net.zonia3000.ombrachat.chat.message;
 
 import javafx.application.Platform;
 import javafx.scene.Scene;
