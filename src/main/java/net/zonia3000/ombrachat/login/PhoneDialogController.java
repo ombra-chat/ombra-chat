@@ -1,10 +1,11 @@
 package net.zonia3000.ombrachat.login;
 
-import java.util.function.Consumer;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import net.zonia3000.ombrachat.ErrorHandlerController;
+import net.zonia3000.ombrachat.Mediator;
+import net.zonia3000.ombrachat.events.PhoneNumberSet;
 
 public class PhoneDialogController implements ErrorHandlerController {
 
@@ -13,10 +14,10 @@ public class PhoneDialogController implements ErrorHandlerController {
     @FXML
     private Label errorLabel;
 
-    private Consumer<String> phoneNumberConsumer;
+    private Mediator mediator;
 
-    public void setPhoneNumberConsumer(Consumer<String> phoneNumberConsumer) {
-        this.phoneNumberConsumer = phoneNumberConsumer;
+    public void setMediator(Mediator mediator) {
+        this.mediator = mediator;
     }
 
     @FXML
@@ -26,7 +27,7 @@ public class PhoneDialogController implements ErrorHandlerController {
         if (phoneNumber.trim().equals("")) {
             return;
         }
-        phoneNumberConsumer.accept(phoneNumber);
+        mediator.publish(new PhoneNumberSet(phoneNumber));
     }
 
     @Override

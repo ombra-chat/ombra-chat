@@ -12,9 +12,9 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) {
-        var settings = new Settings();
-        var mainController = new MainController(this, stage, settings);
-        var clientManager = new ClientManager(mainController, settings);
+        Mediator mediator = new Mediator(this);
+        new MainController(mediator, stage);
+        new ClientManager(mediator);
     }
 
     public static void main(String[] args) {

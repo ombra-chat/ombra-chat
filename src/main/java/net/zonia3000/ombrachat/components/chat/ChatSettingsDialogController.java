@@ -6,8 +6,8 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.GpgUtils;
-import net.zonia3000.ombrachat.Settings;
-import org.drinkless.tdlib.TdApi;
+import net.zonia3000.ombrachat.Mediator;
+import net.zonia3000.ombrachat.events.ChatSettingsSaved;
 
 public class ChatSettingsDialogController {
 
@@ -18,20 +18,16 @@ public class ChatSettingsDialogController {
     @FXML
     private Button saveBtn;
 
-    private Settings settings;
-    private TdApi.Chat selectedChat;
-    private Runnable onClose;
+    private Mediator mediator;
 
-    public void init(Settings settings, TdApi.Chat selectedChat, Runnable onClose) {
-        this.settings = settings;
-        this.selectedChat = selectedChat;
-        this.onClose = onClose;
+    public void setMediator(Mediator mediator) {
+        this.mediator = mediator;
 
         var keys = GpgUtils.listKeys();
         for (var k : keys) {
             keysComboBox.getItems().add(k);
         }
-        String chatKeyFingerprint = settings.getChatKey(selectedChat.id);
+        String chatKeyFingerprint = mediator.getSettings().getChatKey(mediator.getSelectedChat().id);
         if (chatKeyFingerprint != null) {
             var key = keys.stream().filter(k -> k.getFingerprint().equals(chatKeyFingerprint)).findFirst();
             if (key.isPresent()) {
@@ -48,13 +44,13 @@ public class ChatSettingsDialogController {
             if (selected == null) {
                 return;
             }
-            settings.setChatKey(selectedChat.id, selected.getFingerprint());
+            mediator.getSettings().setChatKey(mediator.getSelectedChat().id, selected.getFingerprint());
         } else {
-            settings.setChatKey(selectedChat.id, null);
+            mediator.getSettings().setChatKey(mediator.getSelectedChat().id, null);
         }
 
         Stage stage = (Stage) saveBtn.getScene().getWindow();
         stage.close();
-        onClose.run();
+        mediator.publish(new ChatSettingsSaved());
     }
 }

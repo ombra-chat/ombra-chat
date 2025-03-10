@@ -3,23 +3,29 @@ package net.zonia3000.ombrachat;
 import java.io.IOError;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
+import net.zonia3000.ombrachat.events.AuthenticationCodeSet;
+import net.zonia3000.ombrachat.events.AuthenticationPasswordSet;
+import net.zonia3000.ombrachat.events.ErrorReceived;
+import net.zonia3000.ombrachat.events.LoadChats;
+import net.zonia3000.ombrachat.events.MyIdReceived;
+import net.zonia3000.ombrachat.events.PhoneNumberSet;
+import net.zonia3000.ombrachat.events.SendClientMessage;
+import net.zonia3000.ombrachat.events.ShowAuthenticationCodeDialog;
+import net.zonia3000.ombrachat.events.ShowAuthenticationPasswordDialog;
+import net.zonia3000.ombrachat.events.ShowPhoneNumberDialog;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 
 public class ClientManager {
 
-    private final MainController mainController;
-    private final Settings settings;
-    private final Client client;
+    private final Mediator mediator;
     private final ChatsLoader chatsLoader;
     private final MessagesLoader messagesLoader;
 
     private TdApi.AuthorizationState lastAuthorizationState = null;
-    private long myId;
 
-    public ClientManager(MainController mainController, Settings settings) {
-        this.mainController = mainController;
-        this.settings = settings;
+    public ClientManager(Mediator mediator) {
+        this.mediator = mediator;
 
         Client.setLogMessageHandler(0, new LogMessageHandler());
 
@@ -31,10 +37,24 @@ public class ClientManager {
             throw new IOError(new IOException("Write access to the current directory is required"));
         }
 
+        mediator.subscribe(PhoneNumberSet.class, (e) -> {
+            mediator.publish(new SendClientMessage(new TdApi.SetAuthenticationPhoneNumber(e.getPhoneNumber(), null), new AuthorizationRequestHandler()));
+        });
+        mediator.subscribe(AuthenticationCodeSet.class, (e) -> {
+            mediator.publish(new SendClientMessage(new TdApi.CheckAuthenticationCode(e.getCode()), new AuthorizationRequestHandler()));
+        });
+        mediator.subscribe(AuthenticationPasswordSet.class, (e) -> {
+            mediator.publish(new SendClientMessage(new TdApi.CheckAuthenticationPassword(e.getPassword()), new AuthorizationRequestHandler()));
+        });
+
+        chatsLoader = new ChatsLoader(mediator);
+        messagesLoader = new MessagesLoader(mediator);
+
         // create client
-        client = Client.create(new UpdateHandler(), null, null);
-        chatsLoader = new ChatsLoader(client);
-        messagesLoader = new MessagesLoader(client);
+        var client = Client.create(new UpdateHandler(), null, null);
+        mediator.subscribe(SendClientMessage.class, (e) -> {
+            client.send(e.getFunction(), e.getResultHandler());
+        });
     }
 
     private class UpdateHandler implements Client.ResultHandler {
@@ -52,7 +72,7 @@ public class ClientManager {
             } else if (object instanceof TdApi.UpdateOption option) {
                 switch (option.name) {
                     case "my_id":
-                        myId = ((TdApi.OptionValueInteger) option.value).value;
+                        mediator.publish(new MyIdReceived(((TdApi.OptionValueInteger) option.value).value));
                         break;
                 }
             }
@@ -65,6 +85,7 @@ public class ClientManager {
         }
         switch (lastAuthorizationState.getConstructor()) {
             case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
+                var settings = mediator.getSettings();
                 TdApi.SetTdlibParameters request = new TdApi.SetTdlibParameters();
                 request.databaseDirectory = "tdlib";
                 request.useMessageDatabase = true;
@@ -74,29 +95,21 @@ public class ClientManager {
                 request.systemLanguageCode = "en";
                 request.deviceModel = "Desktop";
                 request.applicationVersion = "1.0";
-
-                client.send(request, new AuthorizationRequestHandler());
+                mediator.publish(new SendClientMessage(request, new AuthorizationRequestHandler()));
                 break;
             case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR:
-                mainController.showPhoneNumberDialog(phoneNumber -> {
-                    client.send(new TdApi.SetAuthenticationPhoneNumber(phoneNumber, null), new AuthorizationRequestHandler());
-                });
+                mediator.publish(new ShowPhoneNumberDialog());
                 break;
             case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR: {
-                mainController.showAuthenticationCodeDialog(code -> {
-                    client.send(new TdApi.CheckAuthenticationCode(code), new AuthorizationRequestHandler());
-                });
+                mediator.publish(new ShowAuthenticationCodeDialog());
                 break;
             }
             case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR: {
-                mainController.showAuthenticationPasswordDialog(password -> {
-                    client.send(new TdApi.CheckAuthenticationPassword(password), new AuthorizationRequestHandler());
-                });
+                mediator.publish(new ShowAuthenticationPasswordDialog());
                 break;
             }
             case TdApi.AuthorizationStateReady.CONSTRUCTOR: {
-                chatsLoader.loadChats();
-                mainController.showMainWindow(chatsLoader, messagesLoader, myId);
+                mediator.publish(new LoadChats());
                 break;
             }
             default:
@@ -110,7 +123,7 @@ public class ClientManager {
         @Override
         public void onResult(TdApi.Object object) {
             if (object instanceof TdApi.Error error) {
-                mainController.displayError(error.message);
+                mediator.publish(new ErrorReceived(error.message));
                 onAuthorizationStateUpdated(null); // repeat last action
             } else if (!(object instanceof TdApi.Ok)) {
                 System.err.println("Receive wrong response from TDLib:\n" + object);

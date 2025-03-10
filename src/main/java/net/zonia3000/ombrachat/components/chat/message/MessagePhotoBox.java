@@ -8,15 +8,16 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import org.drinkless.tdlib.Client;
+import net.zonia3000.ombrachat.Mediator;
+import net.zonia3000.ombrachat.events.SendClientMessage;
 import org.drinkless.tdlib.TdApi;
 
 public class MessagePhotoBox extends VBox {
 
-    private final Client client;
+    private final Mediator mediator;
 
-    public MessagePhotoBox(TdApi.MessagePhoto messagePhoto, Client client) {
-        this.client = client;
+    public MessagePhotoBox(Mediator mediator, TdApi.MessagePhoto messagePhoto) {
+        this.mediator = mediator;
 
         setPhoto(messagePhoto);
 
@@ -50,14 +51,11 @@ public class MessagePhotoBox extends VBox {
                 getChildren().addFirst(imageView);
             });
         } else {
-            client.send(new TdApi.DownloadFile(photo.id, 1, 0, 0, false), new Client.ResultHandler() {
-                @Override
-                public void onResult(TdApi.Object object) {
-                    if (object instanceof TdApi.File file) {
-                        setPhoto(messagePhoto, file, size);
-                    }
+            mediator.publish(new SendClientMessage(new TdApi.DownloadFile(photo.id, 1, 0, 0, false), (TdApi.Object object) -> {
+                if (object instanceof TdApi.File file) {
+                    setPhoto(messagePhoto, file, size);
                 }
-            });
+            }));
         }
     }
 
@@ -80,14 +78,11 @@ public class MessagePhotoBox extends VBox {
                 newStage.show();
             });
         } else {
-            client.send(new TdApi.DownloadFile(photo.id, 1, 0, 0, false), new Client.ResultHandler() {
-                @Override
-                public void onResult(TdApi.Object object) {
-                    if (object instanceof TdApi.File file) {
-                        openImageInNewWindow(file, size);
-                    }
+            mediator.publish(new SendClientMessage(new TdApi.DownloadFile(photo.id, 1, 0, 0, false), (TdApi.Object object) -> {
+                if (object instanceof TdApi.File file) {
+                    openImageInNewWindow(file, size);
                 }
-            });
+            }));
         }
     }
 }

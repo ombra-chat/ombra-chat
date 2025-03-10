@@ -15,15 +15,15 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
-import net.zonia3000.ombrachat.ChatsLoader;
-import net.zonia3000.ombrachat.MessagesLoader;
+import net.zonia3000.ombrachat.Mediator;
+import net.zonia3000.ombrachat.events.ChatSelected;
+import net.zonia3000.ombrachat.events.ChatsListComponentLoaded;
+import net.zonia3000.ombrachat.events.ChatsListUpdated;
 import org.drinkless.tdlib.TdApi;
 
 public class ChatsList extends ListView<TdApi.Chat> {
 
-    private ChatsLoader chatsLoader;
-    private MessagesLoader messagesLoader;
-    private TdApi.Chat selectedChat;
+    private Mediator mediator;
 
     public ChatsList() {
         FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chats-list.fxml"));
@@ -41,19 +41,18 @@ public class ChatsList extends ListView<TdApi.Chat> {
 
         getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
-                selectedChat = newValue;
-                messagesLoader.setSelectedChat(newValue);
+                mediator.publish(new ChatSelected(newValue));
             }
         });
     }
 
-    public void setLoaders(ChatsLoader chatsLoader, MessagesLoader messagesLoader) {
-        this.chatsLoader = chatsLoader;
-        this.messagesLoader = messagesLoader;
-        this.chatsLoader.setChatsListConsumer(this::setChatsList);
+    public void setMediator(Mediator mediator) {
+        this.mediator = mediator;
+        mediator.subscribe(ChatsListUpdated.class, (e) -> setChatsList(e.getChats()));
+        mediator.publish(new ChatsListComponentLoaded());
     }
 
-    public void setChatsList(Collection<TdApi.Chat> collection) {
+    private void setChatsList(Collection<TdApi.Chat> collection) {
         ObservableList<TdApi.Chat> items = FXCollections.observableArrayList();
         for (var chat : collection) {
             items.add(chat);
@@ -97,8 +96,8 @@ public class ChatsList extends ListView<TdApi.Chat> {
                 setGraphic(hBox);
 
                 hBox.setOnMouseClicked(event -> {
-                    if (selectedChat != null) {
-                        messagesLoader.setSelectedChat(selectedChat);
+                    if (mediator.getSelectedChat() != null) {
+                        mediator.publish(new ChatSelected(mediator.getSelectedChat()));
                     }
                 });
             }

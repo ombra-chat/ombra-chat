@@ -2,8 +2,6 @@ package net.zonia3000.ombrachat;
 
 import java.io.IOError;
 import java.io.IOException;
-import java.util.function.Consumer;
-import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Parent;
@@ -12,25 +10,36 @@ import javafx.stage.Stage;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import net.zonia3000.ombrachat.events.ChatSelected;
+import net.zonia3000.ombrachat.events.ErrorReceived;
+import net.zonia3000.ombrachat.events.LoadChats;
+import net.zonia3000.ombrachat.events.ShowAuthenticationCodeDialog;
+import net.zonia3000.ombrachat.events.ShowAuthenticationPasswordDialog;
+import net.zonia3000.ombrachat.events.ShowPhoneNumberDialog;
+import net.zonia3000.ombrachat.events.WindowWidthChanged;
 import net.zonia3000.ombrachat.login.AuthenticationCodeController;
 import net.zonia3000.ombrachat.login.AuthenticationPasswordController;
 import net.zonia3000.ombrachat.login.PhoneDialogController;
 
 public class MainController {
 
-    private final Application app;
+    private final Mediator mediator;
     private final Stage primaryStage;
-    private final Settings settings;
 
     private ErrorHandlerController currentController;
 
-    public MainController(Application app, Stage stage, Settings settings) {
-        this.app = app;
-        this.primaryStage = stage;
-        this.settings = settings;
+    public MainController(Mediator mediator, Stage primaryStage) {
+        this.mediator = mediator;
+        this.primaryStage = primaryStage;
+
+        mediator.subscribe(ShowPhoneNumberDialog.class, (e) -> showPhoneNumberDialog());
+        mediator.subscribe(ShowAuthenticationCodeDialog.class, (e) -> showAuthenticationCodeDialog());
+        mediator.subscribe(ShowAuthenticationPasswordDialog.class, (e) -> showAuthenticationPasswordDialog());
+        mediator.subscribe(LoadChats.class, (e) -> showMainWindow());
+        mediator.subscribe(ErrorReceived.class, (e) -> displayError(e.getError()));
     }
 
-    public void displayError(String errorMessage) {
+    private void displayError(String errorMessage) {
         Platform.runLater(() -> {
             System.err.println(errorMessage);
             if (currentController == null) {
@@ -40,79 +49,67 @@ public class MainController {
         });
     }
 
-    public void showPhoneNumberDialog(Consumer<String> phoneNumberConsumer) {
+    private void showPhoneNumberDialog() {
         Platform.runLater(() -> {
-            if (currentController != null && currentController instanceof PhoneDialogController controller) {
-                controller.setPhoneNumberConsumer(phoneNumberConsumer);
-            } else {
-                try {
-                    FXMLLoader loader = new FXMLLoader();
+            try {
+                FXMLLoader loader = new FXMLLoader();
 
-                    loader.setLocation(MainController.class.getResource("/view/login/phone-dialog.fxml"));
-                    Parent root = loader.load();
-                    PhoneDialogController controller = loader.getController();
-                    currentController = controller;
-                    controller.setPhoneNumberConsumer(phoneNumberConsumer);
+                loader.setLocation(MainController.class.getResource("/view/login/phone-dialog.fxml"));
+                Parent root = loader.load();
+                PhoneDialogController controller = loader.getController();
+                currentController = controller;
+                controller.setMediator(mediator);
 
-                    Scene scene = new Scene(root);
-                    primaryStage.setScene(scene);
-                    primaryStage.show();
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
+                Scene scene = new Scene(root);
+                primaryStage.setScene(scene);
+                primaryStage.show();
+            } catch (IOException ex) {
+                throw new IOError(ex);
             }
         });
     }
 
-    public void showAuthenticationCodeDialog(Consumer<String> authenticationCodeConsumer) {
+    private void showAuthenticationCodeDialog() {
         Platform.runLater(() -> {
-            if (currentController != null && currentController instanceof AuthenticationCodeController controller) {
-                controller.setAuthenticationCodeConsumer(authenticationCodeConsumer);
-            } else {
-                try {
-                    FXMLLoader loader = new FXMLLoader();
+            try {
+                FXMLLoader loader = new FXMLLoader();
 
-                    loader.setLocation(MainController.class.getResource("/view/login/authentication-code-dialog.fxml"));
-                    Parent root = loader.load();
-                    AuthenticationCodeController controller = loader.getController();
-                    currentController = controller;
-                    controller.setAuthenticationCodeConsumer(authenticationCodeConsumer);
+                loader.setLocation(MainController.class.getResource("/view/login/authentication-code-dialog.fxml"));
+                Parent root = loader.load();
+                AuthenticationCodeController controller = loader.getController();
+                currentController = controller;
+                controller.setMediator(mediator);
 
-                    Scene scene = new Scene(root);
-                    primaryStage.setScene(scene);
-                    primaryStage.show();
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
+                Scene scene = new Scene(root);
+                primaryStage.setScene(scene);
+                primaryStage.show();
+            } catch (IOException ex) {
+                throw new IOError(ex);
             }
         });
     }
 
-    public void showAuthenticationPasswordDialog(Consumer<String> passwordConsumer) {
+    private void showAuthenticationPasswordDialog() {
         Platform.runLater(() -> {
-            if (currentController != null && currentController instanceof AuthenticationPasswordController controller) {
-                controller.setPasswordConsumer(passwordConsumer);
-            } else {
-                try {
-                    FXMLLoader loader = new FXMLLoader();
+            try {
+                FXMLLoader loader = new FXMLLoader();
 
-                    loader.setLocation(MainController.class.getResource("/view/login/authentication-password-dialog.fxml"));
-                    Parent root = loader.load();
-                    AuthenticationPasswordController controller = loader.getController();
-                    currentController = controller;
-                    controller.setPasswordConsumer(passwordConsumer);
+                loader.setLocation(MainController.class.getResource("/view/login/authentication-password-dialog.fxml"));
+                Parent root = loader.load();
+                AuthenticationPasswordController controller = loader.getController();
+                currentController = controller;
+                controller.setMediator(mediator);
 
-                    Scene scene = new Scene(root);
-                    primaryStage.setScene(scene);
-                    primaryStage.show();
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
+                Scene scene = new Scene(root);
+                primaryStage.setScene(scene);
+                primaryStage.show();
+            } catch (IOException ex) {
+                throw new IOError(ex);
             }
         });
     }
 
-    public void showMainWindow(ChatsLoader chatsLoader, MessagesLoader messagesLoader, long myId) {
+    private void showMainWindow() {
         Platform.runLater(() -> {
             try {
                 FXMLLoader loader = new FXMLLoader();
@@ -121,22 +118,20 @@ public class MainController {
                 Parent root = loader.load();
                 MainWindowController controller = loader.getController();
                 currentController = controller;
-                controller.setApplication(app);
-                controller.setSettings(settings);
-                controller.setLoaders(chatsLoader, messagesLoader);
-                controller.setMyId(myId);
+                controller.setMediator(mediator);
 
                 Scene scene = new Scene(root);
                 UiUtils.setCommonCss(scene);
 
                 scene.widthProperty().addListener((ObservableValue<? extends Number> observableValue, Number oldSceneWidth, Number newSceneWidth) -> {
-                    controller.setWindowWidth(newSceneWidth.intValue());
+                    mediator.publish(new WindowWidthChanged(newSceneWidth.intValue()));
                 });
 
                 // Detect escape key pressed
                 scene.addEventFilter(KeyEvent.KEY_PRESSED, (KeyEvent event) -> {
                     if (event.getCode() == KeyCode.ESCAPE) {
-                        controller.hideChat();
+                        // hide chat
+                        mediator.publish(new ChatSelected(null));
                     }
                 });
 

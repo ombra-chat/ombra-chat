@@ -20,13 +20,15 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import net.zonia3000.ombrachat.ChatsLoader;
-import net.zonia3000.ombrachat.MessagesLoader;
-import net.zonia3000.ombrachat.Settings;
+import net.zonia3000.ombrachat.Mediator;
 import net.zonia3000.ombrachat.components.chat.message.MessageNotSupportedBox;
 import net.zonia3000.ombrachat.components.chat.message.MessagePhotoBox;
 import net.zonia3000.ombrachat.components.chat.message.MessageTextBox;
-import org.drinkless.tdlib.Client;
+import net.zonia3000.ombrachat.events.ChatSelected;
+import net.zonia3000.ombrachat.events.ChatSettingsSaved;
+import net.zonia3000.ombrachat.events.LoadPreviousMessages;
+import net.zonia3000.ombrachat.events.MessageReceived;
+import net.zonia3000.ombrachat.events.SendClientMessage;
 import org.drinkless.tdlib.TdApi;
 
 public class ChatPage extends VBox {
@@ -46,17 +48,10 @@ public class ChatPage extends VBox {
     @FXML
     private Button removeSelectedFileBtn;
 
-    private Client client;
-    private ChatsLoader chatsLoader;
-    private MessagesLoader messagesLoader;
-    private Settings settings;
+    private Mediator mediator;
 
-    private TdApi.Chat selectedChat;
-    private long myId;
     private boolean scrollToBottom = true;
-
     private boolean loading = false;
-
     private File selectedFile = null;
 
     public ChatPage() {
@@ -87,7 +82,7 @@ public class ChatPage extends VBox {
             if (chatScrollPane.getVvalue() <= 0.0 && !loading) {
                 // Top edge reached
                 scrollToBottom = false;
-                messagesLoader.loadPreviousMessages();
+                mediator.publish(new LoadPreviousMessages());
                 loading = true;
             }
         });
@@ -98,28 +93,18 @@ public class ChatPage extends VBox {
         removeSelectedFileBtn.setVisible(false);
     }
 
-    public boolean hasSelectedChat() {
-        return selectedChat != null;
+    public void setMediator(Mediator mediator) {
+        this.mediator = mediator;
+        mediator.subscribe(ChatSelected.class, (e) -> setSelectedChat(e.getChat()));
+        mediator.subscribe(MessageReceived.class, (e) -> {
+            Platform.runLater(() -> {
+                prependMessage(e.getMessage());
+            });
+        });
+        mediator.subscribe(ChatSettingsSaved.class, (e) -> setGpgKeyLabel());
     }
 
-    public void setSettings(Settings settings) {
-        this.settings = settings;
-    }
-
-    public void setClient(Client client) {
-        this.client = client;
-    }
-
-    public void setChatsLoader(ChatsLoader loader) {
-        this.chatsLoader = loader;
-    }
-
-    public void setMessagesLoader(MessagesLoader loader) {
-        this.messagesLoader = loader;
-    }
-
-    public void setSelectedChat(TdApi.Chat selectedChat) {
-        this.selectedChat = selectedChat;
+    private void setSelectedChat(TdApi.Chat selectedChat) {
         if (selectedChat == null) {
             setVisible(false);
         } else {
@@ -132,7 +117,7 @@ public class ChatPage extends VBox {
     }
 
     private void setGpgKeyLabel() {
-        String chatKeyFingerprint = settings.getChatKey(selectedChat.id);
+        String chatKeyFingerprint = mediator.getChatKeyFingerprint();
         gpgKeyLabel.managedProperty().bind(gpgKeyLabel.visibleProperty());
         if (chatKeyFingerprint == null) {
             gpgKeyLabel.setText("");
@@ -143,15 +128,11 @@ public class ChatPage extends VBox {
         }
     }
 
-    public void setMyId(long myId) {
-        this.myId = myId;
-    }
-
-    public void prependMessage(TdApi.Message message) {
+    private void prependMessage(TdApi.Message message) {
         chatContent.getChildren().addFirst(getMessageBubble(message));
     }
 
-    public void appendMessage(TdApi.Message message) {
+    private void appendMessage(TdApi.Message message) {
         chatContent.getChildren().add(getMessageBubble(message));
     }
 
@@ -159,7 +140,7 @@ public class ChatPage extends VBox {
         if (content instanceof TdApi.MessageText messageText) {
             return new MessageTextBox(messageText);
         } else if (content instanceof TdApi.MessagePhoto messagePhoto) {
-            return new MessagePhotoBox(messagePhoto, client);
+            return new MessagePhotoBox(mediator, messagePhoto);
         } else {
             return new MessageNotSupportedBox(content);
         }
@@ -193,18 +174,15 @@ public class ChatPage extends VBox {
 
     @FXML
     private void sendMessage() {
-        client.send(new TdApi.SendMessage(selectedChat.id, 0, null, null, null, getInputMessageContent()), new Client.ResultHandler() {
-            @Override
-            public void onResult(TdApi.Object object) {
-                if (object instanceof TdApi.Message message) {
-                    Platform.runLater(() -> {
-                        scrollToBottom = true;
-                        appendMessage(message);
-                        removeSelectedFile();
-                    });
-                }
+        mediator.publish(new SendClientMessage(new TdApi.SendMessage(mediator.getSelectedChat().id, 0, null, null, null, getInputMessageContent()), (TdApi.Object object) -> {
+            if (object instanceof TdApi.Message message) {
+                Platform.runLater(() -> {
+                    scrollToBottom = true;
+                    appendMessage(message);
+                    removeSelectedFile();
+                });
             }
-        });
+        }));
         messageText.setText("");
     }
 
@@ -221,7 +199,7 @@ public class ChatPage extends VBox {
     private VBox getMessageBubble(TdApi.Message message) {
         VBox bubble = new VBox();
         bubble.getStyleClass().add("message-bubble");
-        if (message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == myId) {
+        if (message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == mediator.getMyId()) {
             bubble.getStyleClass().add("my-message");
         } else {
             addSenderLabel(bubble, message.senderId);
@@ -246,9 +224,9 @@ public class ChatPage extends VBox {
 
     private TdApi.Chat getSenderChat(TdApi.MessageSender sender) {
         if (sender instanceof TdApi.MessageSenderChat senderChat) {
-            return chatsLoader.getChat(senderChat.chatId);
+            return mediator.getChat(senderChat.chatId);
         } else if (sender instanceof TdApi.MessageSenderUser senderUser) {
-            return chatsLoader.getChat(senderUser.userId);
+            return mediator.getChat(senderUser.userId);
         }
         return null;
     }
@@ -261,16 +239,13 @@ public class ChatPage extends VBox {
             loader.setLocation(ChatSettingsDialogController.class.getResource("/view/chat-settings-dialog.fxml"));
             Parent root = loader.load();
             ChatSettingsDialogController controller = loader.getController();
+            controller.setMediator(mediator);
 
             Scene scene = new Scene(root);
             Stage newStage = new Stage();
             newStage.setTitle("Chat settings");
             newStage.setScene(scene);
             newStage.show();
-
-            controller.init(settings, selectedChat, () -> {
-                setGpgKeyLabel();
-            });
         } catch (IOException ex) {
             throw new IOError(ex);
         }

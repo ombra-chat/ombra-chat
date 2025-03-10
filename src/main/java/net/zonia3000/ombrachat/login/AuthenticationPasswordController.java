@@ -1,10 +1,11 @@
 package net.zonia3000.ombrachat.login;
 
-import java.util.function.Consumer;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import net.zonia3000.ombrachat.ErrorHandlerController;
+import net.zonia3000.ombrachat.Mediator;
+import net.zonia3000.ombrachat.events.AuthenticationPasswordSet;
 
 public class AuthenticationPasswordController implements ErrorHandlerController {
 
@@ -13,10 +14,10 @@ public class AuthenticationPasswordController implements ErrorHandlerController 
     @FXML
     private Label errorLabel;
 
-    private Consumer<String> passwordConsumer;
+    private Mediator mediator;
 
-    public void setPasswordConsumer(Consumer<String> passwordConsumer) {
-        this.passwordConsumer = passwordConsumer;
+    public void setMediator(Mediator mediator) {
+        this.mediator = mediator;
     }
 
     @FXML
@@ -26,7 +27,7 @@ public class AuthenticationPasswordController implements ErrorHandlerController 
         if (password.trim().equals("")) {
             return;
         }
-        passwordConsumer.accept(password);
+        mediator.publish(new AuthenticationPasswordSet(password));
     }
 
     @Override

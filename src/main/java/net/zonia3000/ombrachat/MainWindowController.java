@@ -3,7 +3,6 @@ package net.zonia3000.ombrachat;
 import java.io.IOError;
 import java.io.IOException;
 import javafx.animation.TranslateTransition;
-import javafx.application.Application;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
@@ -21,10 +20,12 @@ import javafx.util.Duration;
 import net.zonia3000.ombrachat.components.chat.ChatFoldersBox;
 import net.zonia3000.ombrachat.components.chat.ChatPage;
 import net.zonia3000.ombrachat.components.chat.ChatsList;
+import net.zonia3000.ombrachat.events.ChatSelected;
+import net.zonia3000.ombrachat.events.WindowWidthChanged;
 
 public class MainWindowController implements ErrorHandlerController {
 
-    private Application app;
+    private Mediator mediator;
 
     @FXML
     private ChatFoldersBox chatFolders;
@@ -46,65 +47,30 @@ public class MainWindowController implements ErrorHandlerController {
     private boolean chatPageRemoved;
     private boolean chatsListRemoved;
 
-    private Settings settings;
-
-    public void setApplication(Application app) {
-        this.app = app;
-    }
-
     @FXML
     public void initialize() {
         initSidebar();
-    }
-
-    public void setSettings(Settings settings) {
-        this.settings = settings;
-    }
-
-    public void setLoaders(ChatsLoader chatsLoader, MessagesLoader messagesLoader) {
-        chatFolders.setChatsLoader(chatsLoader);
-        chatsList.setLoaders(chatsLoader, messagesLoader);
-        messagesLoader.setChatPage(chatPage);
-        messagesLoader.setMainWindowController(this);
-        chatPage.setMessagesLoader(messagesLoader);
-        chatPage.setChatsLoader(chatsLoader);
-        chatPage.setClient(chatsLoader.getClient());
-        chatPage.setSettings(settings);
         VBox.setVgrow(chatsList, Priority.ALWAYS);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
     }
 
-    public void hideChat() {
-        chatPage.setSelectedChat(null);
-        computeSplitPaneChildrenVisibility();
+    public void setMediator(Mediator mediator) {
+        this.mediator = mediator;
+        mediator.subscribe(ChatSelected.class, (e) -> computeSplitPaneChildrenVisibility());
+        mediator.subscribe(WindowWidthChanged.class, (e) -> setWindowWidth(e.getWidth()));
+        chatFolders.setMediator(mediator);
+        chatsList.setMediator(mediator);
+        chatPage.setMediator(mediator);
     }
 
-    public void setMyId(long myId) {
-        chatPage.setMyId(myId);
-    }
-
-    public void setMyUsername(String myUsername) {
-        usernameLabel.setText(myUsername);
-    }
-
-    public void setWindowWidth(int windowWidth) {
+    private void setWindowWidth(int windowWidth) {
         mobileMode = windowWidth < 400;
         computeSplitPaneChildrenVisibility();
     }
 
-    public void computeSplitPaneChildrenVisibility() {
+    private void computeSplitPaneChildrenVisibility() {
         if (mobileMode) {
-            if (chatPage.hasSelectedChat()) {
-                // show only chat page
-                if (!chatsListRemoved) {
-                    splitPane.getItems().remove(chatsListContainer);
-                    chatsListRemoved = true;
-                }
-                if (chatPageRemoved) {
-                    splitPane.getItems().add(chatPage);
-                    chatPageRemoved = false;
-                }
-            } else {
+            if (mediator.getSelectedChat() == null) {
                 // show only chats list
                 if (!chatPageRemoved) {
                     splitPane.getItems().remove(chatPage);
@@ -115,6 +81,16 @@ public class MainWindowController implements ErrorHandlerController {
                     SplitPane.setResizableWithParent(chatsListContainer, Boolean.TRUE);
                     splitPane.getItems().add(chatsListContainer);
                     chatsListRemoved = false;
+                }
+            } else {
+                // show only chat page
+                if (!chatsListRemoved) {
+                    splitPane.getItems().remove(chatsListContainer);
+                    chatsListRemoved = true;
+                }
+                if (chatPageRemoved) {
+                    splitPane.getItems().add(chatPage);
+                    chatPageRemoved = false;
                 }
             }
         } else {
@@ -162,7 +138,7 @@ public class MainWindowController implements ErrorHandlerController {
             Label versionLabel = (Label) root.lookup("#versionLabel");
             versionLabel.setText("Version: " + UiUtils.getVersion());
             Hyperlink link = (Hyperlink) root.lookup("#icons8link");
-            link.setOnAction(event -> app.getHostServices().showDocument("https://icons8.com"));
+            link.setOnAction(event -> mediator.showDocument("https://icons8.com"));
             Scene aboutScene = new Scene(root);
             UiUtils.setCommonCss(aboutScene);
             Stage aboutStage = new Stage();

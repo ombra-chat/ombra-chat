@@ -6,7 +6,10 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ComboBox;
 import javafx.scene.layout.HBox;
-import net.zonia3000.ombrachat.ChatsLoader;
+import net.zonia3000.ombrachat.Mediator;
+import net.zonia3000.ombrachat.events.ChatFolderInfosUpdated;
+import net.zonia3000.ombrachat.events.ChatFoldersBoxLoaded;
+import net.zonia3000.ombrachat.events.SelectedChatFolderChanged;
 import org.drinkless.tdlib.TdApi;
 
 public class ChatFoldersBox extends HBox {
@@ -38,9 +41,7 @@ public class ChatFoldersBox extends HBox {
     @FXML
     private ComboBox chatFolderComboBox;
 
-    private ChatsLoader chatsLoader;
-
-    private TdApi.ChatFolderInfo[] chatFolderInfos;
+    private Mediator mediator;
 
     public ChatFoldersBox() {
         FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chat-folders.fxml"));
@@ -53,14 +54,13 @@ public class ChatFoldersBox extends HBox {
         }
     }
 
-    public void setChatsLoader(ChatsLoader chatsLoader) {
-        this.chatsLoader = chatsLoader;
-        this.chatsLoader.setChatFoldersConsumer(this::setChatFolders);
+    public void setMediator(Mediator mediator) {
+        this.mediator = mediator;
+        mediator.subscribe(ChatFolderInfosUpdated.class, (e) -> setChatFolders(e.getChatFolderInfos()));
+        mediator.publish(new ChatFoldersBoxLoaded());
     }
 
-    public void setChatFolders(TdApi.ChatFolderInfo[] chatFolderInfos) {
-        this.chatFolderInfos = chatFolderInfos;
-
+    private void setChatFolders(TdApi.ChatFolderInfo[] chatFolderInfos) {
         chatFolderComboBox.getItems().add(new ChatFolderItem(0, "All"));
         chatFolderComboBox.setValue("All");
         for (var chatFolderInfo : chatFolderInfos) {
@@ -69,7 +69,7 @@ public class ChatFoldersBox extends HBox {
 
         chatFolderComboBox.setOnAction(event -> {
             ChatFolderItem selectedItem = (ChatFolderItem) chatFolderComboBox.getValue();
-            chatsLoader.onSelectedFolderChanged(selectedItem.id);
+            mediator.publish(new SelectedChatFolderChanged(selectedItem.id));
         });
     }
 }
