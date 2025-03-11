@@ -35,11 +35,13 @@ public class MessagesLoader {
         synchronized (lock) {
             this.selectedChat = selectedChat;
             lastMessageId = 0;
-            mediator.publish(new SendClientMessage(new TdApi.OpenChat(selectedChat.id), null));
-            mediator.publish(new SendClientMessage(new TdApi.GetChatHistory(selectedChat.id, 0, 0, 20, false),
-                    (TdApi.Object object) -> {
-                        MessagesLoader.this.onResult(object);
-                    }));
+            if (selectedChat != null) {
+                mediator.publish(new SendClientMessage(new TdApi.OpenChat(selectedChat.id), null));
+                mediator.publish(new SendClientMessage(new TdApi.GetChatHistory(selectedChat.id, 0, 0, 20, false),
+                        (TdApi.Object object) -> {
+                            MessagesLoader.this.onResult(object);
+                        }));
+            }
         }
     }
 

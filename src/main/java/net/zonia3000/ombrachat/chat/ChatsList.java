@@ -25,6 +25,8 @@ public class ChatsList extends ListView<TdApi.Chat> {
 
     private Mediator mediator;
 
+    private TdApi.Chat lastSelectedChat;
+
     public ChatsList() {
         FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chats-list.fxml"));
         fxmlLoader.setRoot(this);
@@ -41,6 +43,7 @@ public class ChatsList extends ListView<TdApi.Chat> {
 
         getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
+                lastSelectedChat = newValue;
                 mediator.publish(new ChatSelected(newValue));
             }
         });
@@ -96,8 +99,8 @@ public class ChatsList extends ListView<TdApi.Chat> {
                 setGraphic(hBox);
 
                 hBox.setOnMouseClicked(event -> {
-                    if (mediator.getSelectedChat() != null) {
-                        mediator.publish(new ChatSelected(mediator.getSelectedChat()));
+                    if (mediator.getSelectedChat() == null && lastSelectedChat != null) {
+                        mediator.publish(new ChatSelected(lastSelectedChat));
                     }
                 });
             }
