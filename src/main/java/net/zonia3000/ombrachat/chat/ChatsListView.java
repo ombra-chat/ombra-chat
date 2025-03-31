@@ -1,11 +1,8 @@
 package net.zonia3000.ombrachat.chat;
 
-import java.io.IOError;
-import java.io.IOException;
 import java.util.Collection;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -15,27 +12,24 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
-import net.zonia3000.ombrachat.Mediator;
-import net.zonia3000.ombrachat.events.ChatSelected;
-import net.zonia3000.ombrachat.events.ChatsListComponentLoaded;
-import net.zonia3000.ombrachat.events.ChatsListUpdated;
+import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.events.telegram.ChatsListUpdated;
+import net.zonia3000.ombrachat.services.ChatsService;
+import net.zonia3000.ombrachat.services.GuiService;
 import org.drinkless.tdlib.TdApi;
 
-public class ChatsList extends ListView<TdApi.Chat> {
-
-    private Mediator mediator;
+public class ChatsListView extends ListView<TdApi.Chat> {
 
     private TdApi.Chat lastSelectedChat;
 
-    public ChatsList() {
-        FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chats-list.fxml"));
-        fxmlLoader.setRoot(this);
-        fxmlLoader.setController(this);
-        try {
-            fxmlLoader.load();
-        } catch (IOException ex) {
-            throw new IOError(ex);
-        }
+    private final GuiService guiService;
+    private final ChatsService chatsService;
+
+    public ChatsListView() {
+        guiService = ServiceLocator.getService(GuiService.class);
+        chatsService = ServiceLocator.getService(ChatsService.class);
+
+        guiService.subscribe(ChatsListUpdated.class, (e) -> setChatsList(e.getChats()));
 
         setCellFactory(lv -> new CustomListCell());
 
@@ -44,15 +38,11 @@ public class ChatsList extends ListView<TdApi.Chat> {
         getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 lastSelectedChat = newValue;
-                mediator.publish(new ChatSelected(newValue));
+                chatsService.setSelectedChat(newValue);
             }
         });
-    }
 
-    public void setMediator(Mediator mediator) {
-        this.mediator = mediator;
-        mediator.subscribe(ChatsListUpdated.class, (e) -> setChatsList(e.getChats()));
-        mediator.publish(new ChatsListComponentLoaded());
+        chatsService.loadChats();
     }
 
     private void setChatsList(Collection<TdApi.Chat> collection) {
@@ -99,8 +89,8 @@ public class ChatsList extends ListView<TdApi.Chat> {
                 setGraphic(hBox);
 
                 hBox.setOnMouseClicked(event -> {
-                    if (mediator.getSelectedChat() == null && lastSelectedChat != null) {
-                        mediator.publish(new ChatSelected(lastSelectedChat));
+                    if (chatsService.getSelectedChat() == null && lastSelectedChat != null) {
+                        chatsService.setSelectedChat(lastSelectedChat);
                     }
                 });
             }

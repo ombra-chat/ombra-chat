@@ -4,6 +4,12 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import java.security.Security;
 import javafx.application.Application;
 import javafx.stage.Stage;
+import net.zonia3000.ombrachat.services.ChatsService;
+import net.zonia3000.ombrachat.services.UserService;
+import net.zonia3000.ombrachat.services.GuiService;
+import net.zonia3000.ombrachat.services.MessagesService;
+import net.zonia3000.ombrachat.services.SettingsService;
+import net.zonia3000.ombrachat.services.TelegramClientService;
 
 /**
  * JavaFX App
@@ -12,9 +18,8 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) {
-        Mediator mediator = new Mediator(this);
-        new MainController(mediator, stage);
-        new ClientManager(mediator);
+        registerServices(this, stage);
+        ServiceLocator.getService(TelegramClientService.class).startClient();
     }
 
     public static void main(String[] args) {
@@ -28,5 +33,14 @@ public class App extends Application {
         if (logLevel != null) {
             System.setProperty("org.slf4j.simpleLogger.log.net.zonia3000.ombrachat", logLevel);
         }
+    }
+
+    private static void registerServices(App app, Stage stage) {
+        ServiceLocator.registerService(SettingsService.class, new SettingsService());
+        ServiceLocator.registerService(UserService.class, new UserService());
+        ServiceLocator.registerService(GuiService.class, new GuiService(app, stage));
+        ServiceLocator.registerService(TelegramClientService.class, new TelegramClientService());
+        ServiceLocator.registerService(ChatsService.class, new ChatsService());
+        ServiceLocator.registerService(MessagesService.class, new MessagesService());
     }
 }

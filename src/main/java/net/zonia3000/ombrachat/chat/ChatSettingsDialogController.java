@@ -6,8 +6,11 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.GpgUtils;
-import net.zonia3000.ombrachat.Mediator;
+import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.events.ChatSettingsSaved;
+import net.zonia3000.ombrachat.services.ChatsService;
+import net.zonia3000.ombrachat.services.GuiService;
+import net.zonia3000.ombrachat.services.SettingsService;
 
 public class ChatSettingsDialogController {
 
@@ -18,16 +21,23 @@ public class ChatSettingsDialogController {
     @FXML
     private Button saveBtn;
 
-    private Mediator mediator;
+    private final SettingsService settings;
+    private final ChatsService chatsService;
+    private final GuiService guiService;
 
-    public void setMediator(Mediator mediator) {
-        this.mediator = mediator;
+    public ChatSettingsDialogController() {
+        this.settings = ServiceLocator.getService(SettingsService.class);
+        this.chatsService = ServiceLocator.getService(ChatsService.class);
+        this.guiService = ServiceLocator.getService(GuiService.class);
+    }
 
+    @FXML
+    public void initialize() {
         var keys = GpgUtils.listKeys();
         for (var k : keys) {
             keysComboBox.getItems().add(k);
         }
-        String chatKeyFingerprint = mediator.getSettings().getChatKey(mediator.getSelectedChat().id);
+        String chatKeyFingerprint = settings.getChatKey(chatsService.getSelectedChat().id);
         if (chatKeyFingerprint != null) {
             var key = keys.stream().filter(k -> k.getFingerprint().equals(chatKeyFingerprint)).findFirst();
             if (key.isPresent()) {
@@ -39,18 +49,19 @@ public class ChatSettingsDialogController {
 
     @FXML
     private void handleSaveButtonClick() {
+        var selectedChat = chatsService.getSelectedChat();
         if (enableGPGCheckBox.isSelected()) {
             var selected = keysComboBox.getSelectionModel().getSelectedItem();
             if (selected == null) {
                 return;
             }
-            mediator.getSettings().setChatKey(mediator.getSelectedChat().id, selected.getFingerprint());
+            settings.setChatKey(selectedChat.id, selected.getFingerprint());
         } else {
-            mediator.getSettings().setChatKey(mediator.getSelectedChat().id, null);
+            settings.setChatKey(selectedChat.id, null);
         }
 
         Stage stage = (Stage) saveBtn.getScene().getWindow();
         stage.close();
-        mediator.publish(new ChatSettingsSaved());
+        guiService.publish(new ChatSettingsSaved());
     }
 }

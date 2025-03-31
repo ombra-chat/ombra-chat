@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat;
+package net.zonia3000.ombrachat.services;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,18 +7,17 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
-import net.zonia3000.ombrachat.events.ChatFolderInfosUpdated;
-import net.zonia3000.ombrachat.events.ChatsListUpdated;
-import net.zonia3000.ombrachat.events.LoadChats;
+import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.events.ChatSelected;
 import net.zonia3000.ombrachat.events.SelectedChatFolderChanged;
-import net.zonia3000.ombrachat.events.SendClientMessage;
+import net.zonia3000.ombrachat.events.telegram.ChatsListUpdated;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ChatsLoader {
+public class ChatsService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ChatsLoader.class);
+    private static final Logger logger = LoggerFactory.getLogger(ChatsService.class);
 
     private final ConcurrentMap<Integer, List<Long>> chatFolders = new ConcurrentHashMap<>();
     private final ConcurrentMap<Long, TdApi.Chat> chats = new ConcurrentHashMap<>();
@@ -26,15 +25,17 @@ public class ChatsLoader {
     private boolean haveFullMainChatList = false;
     private int selectedChatFolder;
 
-    private final Mediator mediator;
-
+    private final Object lock = new Object();
     private TdApi.ChatFolderInfo[] chatFoldersInfo = null;
+    private TdApi.Chat selectedChat;
 
-    public ChatsLoader(Mediator mediator) {
-        this.mediator = mediator;
-        mediator.registerChatProvider((chatId) -> chats.get(chatId));
-        mediator.subscribe(LoadChats.class, (e) -> getMainChatList());
-        mediator.subscribe(SelectedChatFolderChanged.class, (e) -> onSelectedFolderChanged(e.getId()));
+    private final TelegramClientService telegramClientService;
+    private final GuiService guiService;
+
+    public ChatsService() {
+        this.telegramClientService = ServiceLocator.getService(TelegramClientService.class);
+        this.guiService = ServiceLocator.getService(GuiService.class);
+        guiService.subscribe(SelectedChatFolderChanged.class, (e) -> setSelectedFolder(e.getId()));
     }
 
     public boolean onResult(TdApi.Object object) {
@@ -50,10 +51,33 @@ public class ChatsLoader {
         return false;
     }
 
+    public TdApi.Chat getSelectedChat() {
+        return selectedChat;
+    }
+
+    public void setSelectedChat(TdApi.Chat selectedChat) {
+        synchronized (lock) {
+            this.selectedChat = selectedChat;
+            guiService.publish(new ChatSelected(selectedChat));
+            var messagesService = ServiceLocator.getService(MessagesService.class);
+            messagesService.resetLastMessage();
+            if (selectedChat != null) {
+                telegramClientService.sendClientMessage(new TdApi.OpenChat(selectedChat.id), null);
+                telegramClientService.sendClientMessage(new TdApi.GetChatHistory(selectedChat.id, 0, 0, 20, false),
+                        (TdApi.Object object) -> {
+                            messagesService.onResult(object);
+                        });
+            }
+        }
+    }
+
     private boolean handleUpdateChatFolders(TdApi.UpdateChatFolders update) {
         chatFoldersInfo = update.chatFolders;
-        mediator.publish(new ChatFolderInfosUpdated(chatFoldersInfo));
         return true;
+    }
+
+    public TdApi.ChatFolderInfo[] getChatFolderInfos() {
+        return chatFoldersInfo;
     }
 
     private boolean handleUpdateChatAddedToList(TdApi.UpdateChatAddedToList update) {
@@ -76,9 +100,9 @@ public class ChatsLoader {
         return true;
     }
 
-    private void onSelectedFolderChanged(int selectedFolder) {
+    public void setSelectedFolder(int selectedFolder) {
         this.selectedChatFolder = selectedFolder;
-        mediator.publish(new ChatsListUpdated(getSelectedChatsList()));
+        this.guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
     }
 
     private boolean handleUpdateNewChat(TdApi.UpdateNewChat update) {
@@ -112,31 +136,35 @@ public class ChatsLoader {
         return true;
     }
 
-    private void getMainChatList() {
+    public void loadChats() {
         synchronized (loadChatsLock) {
             if (!haveFullMainChatList) {
                 // send LoadChats request if there are some unknown chats and have not enough known chats
-                mediator.publish(new SendClientMessage(new TdApi.LoadChats(new TdApi.ChatListMain(), 20), (TdApi.Object object) -> {
+                telegramClientService.sendClientMessage(new TdApi.LoadChats(new TdApi.ChatListMain(), 20), (TdApi.Object object) -> {
                     switch (object.getConstructor()) {
                         case TdApi.Error.CONSTRUCTOR:
                             if (((TdApi.Error) object).code == 404) {
                                 haveFullMainChatList = true;
-                                mediator.publish(new ChatsListUpdated(getSelectedChatsList()));
+                                guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
                             } else {
                                 logger.error("Receive an error for LoadChats: {}", object);
                             }
                             break;
                         case TdApi.Ok.CONSTRUCTOR:
                             // chats had already been received through updates, let's retry request
-                            getMainChatList();
+                            loadChats();
                             break;
                         default:
                             logger.error("Received unexpected response from TDLib: {}", object);
                             break;
                     }
-                }));
+                });
             }
         }
+    }
+
+    public TdApi.Chat getChat(long chatId) {
+        return chats.get(chatId);
     }
 
     private Collection<TdApi.Chat> getSelectedChatsList() {

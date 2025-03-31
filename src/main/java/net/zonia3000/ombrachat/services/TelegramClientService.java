@@ -1,35 +1,31 @@
-package net.zonia3000.ombrachat;
+package net.zonia3000.ombrachat.services;
 
 import java.io.IOError;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
-import net.zonia3000.ombrachat.events.AuthenticationCodeSet;
-import net.zonia3000.ombrachat.events.AuthenticationPasswordSet;
-import net.zonia3000.ombrachat.events.ErrorReceived;
-import net.zonia3000.ombrachat.events.LoadChats;
-import net.zonia3000.ombrachat.events.MyIdReceived;
-import net.zonia3000.ombrachat.events.PhoneNumberSet;
-import net.zonia3000.ombrachat.events.SendClientMessage;
-import net.zonia3000.ombrachat.events.ShowAuthenticationCodeDialog;
-import net.zonia3000.ombrachat.events.ShowAuthenticationPasswordDialog;
-import net.zonia3000.ombrachat.events.ShowPhoneNumberDialog;
+import net.zonia3000.ombrachat.ServiceLocator;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClientManager {
+public class TelegramClientService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ClientManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(TelegramClientService.class);
 
-    private final Mediator mediator;
-    private final ChatsLoader chatsLoader;
-    private final MessagesLoader messagesLoader;
+    private UserService dataService;
+    private ChatsService chatsService;
+    private MessagesService messagesService;
+    private GuiService guiService;
 
     private TdApi.AuthorizationState lastAuthorizationState = null;
+    private Client client;
 
-    public ClientManager(Mediator mediator) {
-        this.mediator = mediator;
+    public void startClient() {
+        dataService = ServiceLocator.getService(UserService.class);
+        chatsService = ServiceLocator.getService(ChatsService.class);
+        messagesService = ServiceLocator.getService(MessagesService.class);
+        guiService = ServiceLocator.getService(GuiService.class);
 
         Client.setLogMessageHandler(0, new LogMessageHandler());
 
@@ -41,44 +37,51 @@ public class ClientManager {
             throw new IOError(new IOException("Write access to the current directory is required"));
         }
 
-        mediator.subscribe(PhoneNumberSet.class, (e) -> {
-            mediator.publish(new SendClientMessage(new TdApi.SetAuthenticationPhoneNumber(e.getPhoneNumber(), null), new AuthorizationRequestHandler()));
-        });
-        mediator.subscribe(AuthenticationCodeSet.class, (e) -> {
-            mediator.publish(new SendClientMessage(new TdApi.CheckAuthenticationCode(e.getCode()), new AuthorizationRequestHandler()));
-        });
-        mediator.subscribe(AuthenticationPasswordSet.class, (e) -> {
-            mediator.publish(new SendClientMessage(new TdApi.CheckAuthenticationPassword(e.getPassword()), new AuthorizationRequestHandler()));
-        });
+        logger.debug("Starting Telegram client");
+        client = Client.create(new UpdateHandler(), null, null);
+    }
 
-        chatsLoader = new ChatsLoader(mediator);
-        messagesLoader = new MessagesLoader(mediator);
+    public void sendClientMessage(TdApi.Function function, Client.ResultHandler resultHandler) {
+        client.send(function, resultHandler);
+    }
 
-        // create client
-        var client = Client.create(new UpdateHandler(), null, null);
-        mediator.subscribe(SendClientMessage.class, (e) -> {
-            client.send(e.getFunction(), e.getResultHandler());
-        });
+    public void setPhoneNumber(String phoneNumber) {
+        logger.debug("Setting phone number");
+        sendClientMessage(new TdApi.SetAuthenticationPhoneNumber(phoneNumber, null), new AuthorizationRequestHandler());
+    }
+
+    public void setAuthenticationCode(String code) {
+        logger.debug("Setting authentication code");
+        sendClientMessage(new TdApi.CheckAuthenticationCode(code), new AuthorizationRequestHandler());
+    }
+
+    public void setAuthenticationPassword(String password) {
+        logger.debug("Setting authentication password");
+        sendClientMessage(new TdApi.CheckAuthenticationPassword(password), new AuthorizationRequestHandler());
     }
 
     private class UpdateHandler implements Client.ResultHandler {
 
         @Override
         public void onResult(TdApi.Object object) {
-            if (chatsLoader.onResult(object)) {
-                return;
-            }
-            if (messagesLoader.onResult(object)) {
-                return;
-            }
-            if (object instanceof TdApi.UpdateAuthorizationState update) {
-                onAuthorizationStateUpdated(update.authorizationState);
-            } else if (object instanceof TdApi.UpdateOption option) {
-                switch (option.name) {
-                    case "my_id":
-                        mediator.publish(new MyIdReceived(((TdApi.OptionValueInteger) option.value).value));
-                        break;
+            try {
+                if (chatsService.onResult(object)) {
+                    return;
                 }
+                if (messagesService.onResult(object)) {
+                    return;
+                }
+                if (object instanceof TdApi.UpdateAuthorizationState update) {
+                    onAuthorizationStateUpdated(update.authorizationState);
+                } else if (object instanceof TdApi.UpdateOption option) {
+                    switch (option.name) {
+                        case "my_id":
+                            dataService.setMyId(((TdApi.OptionValueInteger) option.value).value);
+                            break;
+                    }
+                }
+            } catch (Exception ex) {
+                logger.error("Exception inside onResult", ex);
             }
         }
     }
@@ -90,7 +93,7 @@ public class ClientManager {
         }
         switch (lastAuthorizationState.getConstructor()) {
             case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
-                var settings = mediator.getSettings();
+                var settings = ServiceLocator.getService(SettingsService.class);
                 TdApi.SetTdlibParameters request = new TdApi.SetTdlibParameters();
                 request.databaseDirectory = "tdlib";
                 request.useMessageDatabase = true;
@@ -100,21 +103,21 @@ public class ClientManager {
                 request.systemLanguageCode = "en";
                 request.deviceModel = "Desktop";
                 request.applicationVersion = "1.0";
-                mediator.publish(new SendClientMessage(request, new AuthorizationRequestHandler()));
+                client.send(request, new AuthorizationRequestHandler());
                 break;
             case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR:
-                mediator.publish(new ShowPhoneNumberDialog());
+                guiService.showPhoneNumberDialog();
                 break;
             case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR: {
-                mediator.publish(new ShowAuthenticationCodeDialog());
+                guiService.showAuthenticationCodeDialog();
                 break;
             }
             case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR: {
-                mediator.publish(new ShowAuthenticationPasswordDialog());
+                guiService.showAuthenticationPasswordDialog();
                 break;
             }
             case TdApi.AuthorizationStateReady.CONSTRUCTOR: {
-                mediator.publish(new LoadChats());
+                guiService.showMainWindow();
                 break;
             }
             default:
@@ -128,7 +131,7 @@ public class ClientManager {
         @Override
         public void onResult(TdApi.Object object) {
             if (object instanceof TdApi.Error error) {
-                mediator.publish(new ErrorReceived(error.message));
+                guiService.handleError(error.message);
                 onAuthorizationStateUpdated(null); // repeat last action
             } else if (!(object instanceof TdApi.Ok)) {
                 logger.error("Received wrong response from TDLib {}", object);

@@ -1,49 +1,50 @@
-package net.zonia3000.ombrachat;
+package net.zonia3000.ombrachat.services;
 
 import java.io.IOError;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.stage.Stage;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import net.zonia3000.ombrachat.events.ChatSelected;
-import net.zonia3000.ombrachat.events.ErrorReceived;
-import net.zonia3000.ombrachat.events.LoadChats;
-import net.zonia3000.ombrachat.events.ShowAuthenticationCodeDialog;
-import net.zonia3000.ombrachat.events.ShowAuthenticationPasswordDialog;
-import net.zonia3000.ombrachat.events.ShowPhoneNumberDialog;
-import net.zonia3000.ombrachat.events.WindowWidthChanged;
+import javafx.stage.Stage;
+import net.zonia3000.ombrachat.App;
+import net.zonia3000.ombrachat.ErrorHandlerController;
+import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiUtils;
+import net.zonia3000.ombrachat.events.Event;
+import net.zonia3000.ombrachat.events.EventListener;
+import net.zonia3000.ombrachat.events.gui.WindowWidthChanged;
 import net.zonia3000.ombrachat.login.AuthenticationCodeController;
 import net.zonia3000.ombrachat.login.AuthenticationPasswordController;
 import net.zonia3000.ombrachat.login.PhoneDialogController;
+import net.zonia3000.ombrachat.ui.controllers.MainWindowController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MainController {
+public class GuiService {
 
-    private static final Logger logger = LoggerFactory.getLogger(MainController.class);
+    private static final Logger logger = LoggerFactory.getLogger(GuiService.class);
 
-    private final Mediator mediator;
+    private final Map<Class<?>, List<EventListener>> telegramEventListeners = new HashMap<>();
+
+    private final App app;
     private final Stage primaryStage;
 
     private ErrorHandlerController currentController;
 
-    public MainController(Mediator mediator, Stage primaryStage) {
-        this.mediator = mediator;
+    public GuiService(App app, Stage primaryStage) {
+        this.app = app;
         this.primaryStage = primaryStage;
-
-        mediator.subscribe(ShowPhoneNumberDialog.class, (e) -> showPhoneNumberDialog());
-        mediator.subscribe(ShowAuthenticationCodeDialog.class, (e) -> showAuthenticationCodeDialog());
-        mediator.subscribe(ShowAuthenticationPasswordDialog.class, (e) -> showAuthenticationPasswordDialog());
-        mediator.subscribe(LoadChats.class, (e) -> showMainWindow());
-        mediator.subscribe(ErrorReceived.class, (e) -> displayError(e.getError()));
     }
 
-    private void displayError(String errorMessage) {
+    public void handleError(String errorMessage) {
         Platform.runLater(() -> {
             logger.warn("Received error: {}", errorMessage);
             if (currentController == null) {
@@ -53,16 +54,14 @@ public class MainController {
         });
     }
 
-    private void showPhoneNumberDialog() {
+    public void showPhoneNumberDialog() {
         Platform.runLater(() -> {
             try {
-                FXMLLoader loader = new FXMLLoader();
-
-                loader.setLocation(MainController.class.getResource("/view/login/phone-dialog.fxml"));
+                logger.debug("Showing phone number dialog");
+                FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/login/phone-dialog.fxml"));
                 Parent root = loader.load();
                 PhoneDialogController controller = loader.getController();
                 currentController = controller;
-                controller.setMediator(mediator);
 
                 Scene scene = new Scene(root);
                 primaryStage.setScene(scene);
@@ -73,16 +72,14 @@ public class MainController {
         });
     }
 
-    private void showAuthenticationCodeDialog() {
+    public void showAuthenticationCodeDialog() {
         Platform.runLater(() -> {
             try {
-                FXMLLoader loader = new FXMLLoader();
-
-                loader.setLocation(MainController.class.getResource("/view/login/authentication-code-dialog.fxml"));
+                logger.debug("Showing authentication code dialog");
+                FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/login/authentication-code-dialog.fxml"));
                 Parent root = loader.load();
                 AuthenticationCodeController controller = loader.getController();
                 currentController = controller;
-                controller.setMediator(mediator);
 
                 Scene scene = new Scene(root);
                 primaryStage.setScene(scene);
@@ -93,16 +90,14 @@ public class MainController {
         });
     }
 
-    private void showAuthenticationPasswordDialog() {
+    public void showAuthenticationPasswordDialog() {
         Platform.runLater(() -> {
             try {
-                FXMLLoader loader = new FXMLLoader();
-
-                loader.setLocation(MainController.class.getResource("/view/login/authentication-password-dialog.fxml"));
+                logger.debug("Showing authentication password dialog");
+                FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/login/authentication-password-dialog.fxml"));
                 Parent root = loader.load();
                 AuthenticationPasswordController controller = loader.getController();
                 currentController = controller;
-                controller.setMediator(mediator);
 
                 Scene scene = new Scene(root);
                 primaryStage.setScene(scene);
@@ -113,29 +108,28 @@ public class MainController {
         });
     }
 
-    private void showMainWindow() {
+    public void showMainWindow() {
         Platform.runLater(() -> {
             try {
-                FXMLLoader loader = new FXMLLoader();
-
-                loader.setLocation(MainController.class.getResource("/view/main-window.fxml"));
+                logger.debug("Showing main window");
+                FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/main-window.fxml"));
                 Parent root = loader.load();
                 MainWindowController controller = loader.getController();
                 currentController = controller;
-                controller.setMediator(mediator);
 
                 Scene scene = new Scene(root);
                 UiUtils.setCommonCss(scene);
 
                 scene.widthProperty().addListener((ObservableValue<? extends Number> observableValue, Number oldSceneWidth, Number newSceneWidth) -> {
-                    mediator.publish(new WindowWidthChanged(newSceneWidth.intValue()));
+                    publish(new WindowWidthChanged(newSceneWidth.intValue()));
                 });
 
                 // Detect escape key pressed
                 scene.addEventFilter(KeyEvent.KEY_PRESSED, (KeyEvent event) -> {
                     if (event.getCode() == KeyCode.ESCAPE) {
                         // hide chat
-                        mediator.publish(new ChatSelected(null));
+                        var chatService = ServiceLocator.getService(ChatsService.class);
+                        chatService.setSelectedChat(null);
                     }
                 });
 
@@ -147,5 +141,28 @@ public class MainController {
                 throw new IOError(ex);
             }
         });
+    }
+
+    public void publish(Event event) {
+        List<EventListener> listeners = telegramEventListeners.get(event.getClass());
+        if (listeners != null) {
+            for (EventListener listener : listeners) {
+                Platform.runLater(() -> {
+                    logger.debug("Handling event {}", event.getClass().getSimpleName());
+                    listener.handleEvent(event);
+                });
+            }
+        } else {
+            logger.warn("No listener defined for event {}", event.getClass().getSimpleName());
+        }
+    }
+
+    public synchronized <T extends Event> void subscribe(Class<T> eventType, EventListener<T> listener) {
+        logger.debug("Subscribing to Telegram event {}", eventType.getSimpleName());
+        telegramEventListeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(listener);
+    }
+
+    public void showDocument(String url) {
+        app.getHostServices().showDocument(url);
     }
 }

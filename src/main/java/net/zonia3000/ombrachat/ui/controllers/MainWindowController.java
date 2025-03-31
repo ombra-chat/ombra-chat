@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat;
+package net.zonia3000.ombrachat.ui.controllers;
 
 import java.io.IOError;
 import java.io.IOException;
@@ -13,16 +13,20 @@ import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import net.zonia3000.ombrachat.chat.ChatFoldersBox;
-import net.zonia3000.ombrachat.chat.ChatPage;
-import net.zonia3000.ombrachat.chat.ChatsList;
+import net.zonia3000.ombrachat.ErrorHandlerController;
+import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiUtils;
+import net.zonia3000.ombrachat.chat.ChatsListView;
 import net.zonia3000.ombrachat.events.ChatSelected;
-import net.zonia3000.ombrachat.events.WindowWidthChanged;
+import net.zonia3000.ombrachat.events.gui.WindowWidthChanged;
+import net.zonia3000.ombrachat.services.ChatsService;
+import net.zonia3000.ombrachat.services.GuiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,18 +36,16 @@ public class MainWindowController implements ErrorHandlerController {
 
     private static final int MOBILE_WIDTH = 400;
 
-    private Mediator mediator;
-
     @FXML
-    private ChatFoldersBox chatFolders;
+    private HBox chatFolders;
     @FXML
     private VBox chatsListContainer;
     @FXML
-    private ChatsList chatsList;
+    private ChatsListView chatsList;
     @FXML
     private SplitPane splitPane;
     @FXML
-    private ChatPage chatPage;
+    private VBox chatPage;
     @FXML
     private Label usernameLabel;
     @FXML
@@ -54,21 +56,25 @@ public class MainWindowController implements ErrorHandlerController {
     private boolean chatPageRemoved;
     private boolean chatsListRemoved;
 
+    private final GuiService guiService;
+    private final ChatsService chatsService;
+
+    public MainWindowController() {
+        guiService = ServiceLocator.getService(GuiService.class);
+        chatsService = ServiceLocator.getService(ChatsService.class);
+    }
+
     @FXML
     public void initialize() {
         initSidebar();
         initSplitPaneDivider();
+        initChatFoldersBox();
+        initChatPage();
         VBox.setVgrow(chatsList, Priority.ALWAYS);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
-    }
-
-    public void setMediator(Mediator mediator) {
-        this.mediator = mediator;
-        mediator.subscribe(ChatSelected.class, (e) -> computeSplitPaneChildrenVisibility());
-        mediator.subscribe(WindowWidthChanged.class, (e) -> setWindowWidth(e.getWidth()));
-        chatFolders.setMediator(mediator);
-        chatsList.setMediator(mediator);
-        chatPage.setMediator(mediator);
+        guiService.subscribe(ChatSelected.class, (e) -> computeSplitPaneChildrenVisibility());
+        guiService.subscribe(WindowWidthChanged.class, (e) -> onWindowWidthChanged(e.getWidth()));
+        logger.debug("{} initialized", MainWindowController.class.getSimpleName());
     }
 
     private void initSplitPaneDivider() {
@@ -81,14 +87,40 @@ public class MainWindowController implements ErrorHandlerController {
         });
     }
 
-    private void setWindowWidth(int windowWidth) {
+    private void initChatFoldersBox() {
+        ChatFoldersBoxController chatFoldersBoxController = new ChatFoldersBoxController();
+        ServiceLocator.registerService(ChatFoldersBoxController.class, chatFoldersBoxController);
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(MainWindowController.class.getResource("/view/chat-folders.fxml"));
+            fxmlLoader.setController(chatFoldersBoxController);
+            fxmlLoader.setRoot(chatFolders);
+            fxmlLoader.load();
+        } catch (IOException ex) {
+            throw new IOError(ex);
+        }
+    }
+
+    private void initChatPage() {
+        ChatPageController chatPageController = new ChatPageController(chatPage);
+        ServiceLocator.registerService(ChatPageController.class, chatPageController);
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(MainWindowController.class.getResource("/view/chat-page.fxml"));
+            fxmlLoader.setController(chatPageController);
+            fxmlLoader.setRoot(chatPage);
+            fxmlLoader.load();
+        } catch (IOException ex) {
+            throw new IOError(ex);
+        }
+    }
+
+    private void onWindowWidthChanged(int windowWidth) {
         mobileMode = windowWidth < MOBILE_WIDTH;
         computeSplitPaneChildrenVisibility();
     }
 
     private void computeSplitPaneChildrenVisibility() {
         if (mobileMode) {
-            if (mediator.getSelectedChat() == null) {
+            if (chatsService.getSelectedChat() == null) {
                 // show only chats list
                 if (!chatPageRemoved) {
                     logger.debug("Hiding chat page");
@@ -147,8 +179,10 @@ public class MainWindowController implements ErrorHandlerController {
         openNav.setToX(0);
         TranslateTransition closeNav = new TranslateTransition(new Duration(350), sidebar);
         if (sidebar.getTranslateX() != 0) {
+            logger.debug("opening sidebar");
             openNav.play();
         } else {
+            logger.debug("closing sidebar");
             closeNav.setToX(-(sidebar.getWidth()));
             closeNav.play();
         }
@@ -157,11 +191,9 @@ public class MainWindowController implements ErrorHandlerController {
     @FXML
     private void showSettingsDialog() {
         try {
-            FXMLLoader loader = new FXMLLoader();
-            loader.setLocation(MainWindowController.class.getResource("/view/settings-dialog.fxml"));
+            logger.debug("Showing settings dialog");
+            FXMLLoader loader = new FXMLLoader(MainWindowController.class.getResource("/view/settings-dialog.fxml"));
             Parent root = loader.load();
-            SettingsDialogController controller = loader.getController();
-            controller.setMediator(mediator);
             Scene scene = new Scene(root);
             Stage newStage = new Stage();
             newStage.setTitle("Settings");
@@ -175,13 +207,13 @@ public class MainWindowController implements ErrorHandlerController {
     @FXML
     private void showAboutDialog() {
         try {
-            FXMLLoader loader = new FXMLLoader();
-            loader.setLocation(MainWindowController.class.getResource("/view/about.fxml"));
+            logger.debug("Showing about dialog");
+            FXMLLoader loader = new FXMLLoader(MainWindowController.class.getResource("/view/about.fxml"));
             Parent root = loader.load();
             Label versionLabel = (Label) root.lookup("#versionLabel");
             versionLabel.setText("Version: " + UiUtils.getVersion());
             Hyperlink link = (Hyperlink) root.lookup("#icons8link");
-            link.setOnAction(event -> mediator.showDocument("https://icons8.com"));
+            link.setOnAction(event -> guiService.showDocument("https://icons8.com"));
             Scene aboutScene = new Scene(root);
             UiUtils.setCommonCss(aboutScene);
             Stage aboutStage = new Stage();

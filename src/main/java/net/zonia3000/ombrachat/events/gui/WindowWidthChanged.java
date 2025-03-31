@@ -1,4 +1,6 @@
-package net.zonia3000.ombrachat.events;
+package net.zonia3000.ombrachat.events.gui;
+
+import net.zonia3000.ombrachat.events.Event;
 
 public class WindowWidthChanged implements Event {
 

@@ -3,32 +3,36 @@ package net.zonia3000.ombrachat;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.stage.Stage;
-import net.zonia3000.ombrachat.Mediator;
 import net.zonia3000.ombrachat.chat.ChatFolderItem;
+import net.zonia3000.ombrachat.services.ChatsService;
+import net.zonia3000.ombrachat.services.SettingsService;
 
 public class SettingsDialogController {
 
     @FXML
     private ComboBox chatFolderComboBox;
 
-    private Mediator mediator;
+    private SettingsService settings;
+    private ChatsService chatsService;
 
-    public void setMediator(Mediator mediator) {
-        this.mediator = mediator;
+    @FXML
+    public void initialize() {
+        this.settings = ServiceLocator.getService(SettingsService.class);
+        this.chatsService = ServiceLocator.getService(ChatsService.class);
         setChatFolders();
     }
 
     private void setChatFolders() {
         chatFolderComboBox.getItems().add(new ChatFolderItem(0, "All"));
         chatFolderComboBox.setValue("All");
-        for (var chatFolderInfo : mediator.getChatFolderInfos()) {
+        for (var chatFolderInfo : chatsService.getChatFolderInfos()) {
             chatFolderComboBox.getItems().add(new ChatFolderItem(chatFolderInfo.id, chatFolderInfo.name.text.text));
         }
         setSelectedValue();
     }
 
     private void setSelectedValue() {
-        int selectedFolderId = mediator.getSettings().getDefaultFolder();
+        int selectedFolderId = settings.getDefaultFolder();
         for (var item : chatFolderComboBox.getItems()) {
             ChatFolderItem cfi = (ChatFolderItem) item;
             if (cfi.getId() == selectedFolderId) {
@@ -41,7 +45,7 @@ public class SettingsDialogController {
     @FXML
     private void saveSettings() {
         ChatFolderItem selectedFolder = (ChatFolderItem) chatFolderComboBox.getValue();
-        mediator.getSettings().setDefaultFolder(selectedFolder.getId());
+        settings.setDefaultFolder(selectedFolder.getId());
         Stage stage = (Stage) chatFolderComboBox.getScene().getWindow();
         stage.close();
     }

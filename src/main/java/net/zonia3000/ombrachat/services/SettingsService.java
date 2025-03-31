@@ -1,14 +1,15 @@
-package net.zonia3000.ombrachat;
+package net.zonia3000.ombrachat.services;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.prefs.Preferences;
 
-public class Settings {
+public class SettingsService {
 
     private static final String API_ID = "api_id";
     private static final String API_HASH = "api_hash";
     private static final String CHATS = "chats";
+    private static final String DEFAULT_FOLDER = "default_folder";
 
     public int getApiId() {
         return getPreferences().getInt(API_ID, 0);
@@ -63,7 +64,15 @@ public class Settings {
         return null;
     }
 
+    public int getDefaultFolder() {
+        return getPreferences().getInt(DEFAULT_FOLDER, 0);
+    }
+
+    public void setDefaultFolder(int defaultFolderId) {
+        getPreferences().putInt(DEFAULT_FOLDER, defaultFolderId);
+    }
+
     private Preferences getPreferences() {
-        return Preferences.userNodeForPackage(Settings.class);
+        return Preferences.userNodeForPackage(SettingsService.class);
     }
 }

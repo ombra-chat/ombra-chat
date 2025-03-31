@@ -4,8 +4,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import net.zonia3000.ombrachat.ErrorHandlerController;
-import net.zonia3000.ombrachat.Mediator;
-import net.zonia3000.ombrachat.events.PhoneNumberSet;
+import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.services.TelegramClientService;
 
 public class PhoneDialogController implements ErrorHandlerController {
 
@@ -14,12 +14,6 @@ public class PhoneDialogController implements ErrorHandlerController {
     @FXML
     private Label errorLabel;
 
-    private Mediator mediator;
-
-    public void setMediator(Mediator mediator) {
-        this.mediator = mediator;
-    }
-
     @FXML
     private void handleNextButtonClick() {
         errorLabel.setText("");
@@ -27,7 +21,8 @@ public class PhoneDialogController implements ErrorHandlerController {
         if (phoneNumber.trim().equals("")) {
             return;
         }
-        mediator.publish(new PhoneNumberSet(phoneNumber));
+        var clientService = ServiceLocator.getService(TelegramClientService.class);
+        clientService.setPhoneNumber(phoneNumber);
     }
 
     @Override

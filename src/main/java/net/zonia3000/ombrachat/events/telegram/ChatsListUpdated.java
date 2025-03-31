@@ -1,6 +1,7 @@
-package net.zonia3000.ombrachat.events;
+package net.zonia3000.ombrachat.events.telegram;
 
 import java.util.Collection;
+import net.zonia3000.ombrachat.events.Event;
 import org.drinkless.tdlib.TdApi;
 
 public class ChatsListUpdated implements Event {

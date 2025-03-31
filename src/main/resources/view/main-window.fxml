@@ -4,11 +4,9 @@
 <?import javafx.scene.control.*?>
 <?import java.lang.*?>
 <?import javafx.scene.layout.*?>
-<?import net.zonia3000.ombrachat.chat.ChatFoldersBox?>
-<?import net.zonia3000.ombrachat.chat.ChatsList?>
-<?import net.zonia3000.ombrachat.chat.ChatPage?>
+<?import net.zonia3000.ombrachat.chat.ChatsListView?>
 
-<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.zonia3000.ombrachat.MainWindowController">
+<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.zonia3000.ombrachat.ui.controllers.MainWindowController">
     <children>
         <VBox AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0">
             <children>
@@ -17,15 +15,15 @@
                         <Button styleClass="btn, btn-30" fx:id="toggleSidebarBtn" onAction="#toggleSidebar" />
                     </children>
                 </HBox>
-                <ChatFoldersBox fx:id="chatFolders" />
+                <HBox fx:id="chatFolders" />
                 <SplitPane fx:id="splitPane">
                     <items>
                         <VBox fx:id="chatsListContainer">
                             <children>
-                                <ChatsList fx:id="chatsList" />
+                                <ChatsListView fx:id="chatsList" />
                             </children>
                         </VBox>
-                        <ChatPage fx:id="chatPage" />
+                        <VBox fx:id="chatPage" />
                     </items>
                 </SplitPane>
             </children>

@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat.chat;
+package net.zonia3000.ombrachat.ui.controllers;
 
 import java.io.File;
 import java.io.IOError;
@@ -20,18 +20,27 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import net.zonia3000.ombrachat.Mediator;
+import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.chat.ChatSettingsDialogController;
 import net.zonia3000.ombrachat.chat.message.MessageNotSupportedBox;
 import net.zonia3000.ombrachat.chat.message.MessagePhotoBox;
 import net.zonia3000.ombrachat.chat.message.MessageTextBox;
 import net.zonia3000.ombrachat.events.ChatSelected;
 import net.zonia3000.ombrachat.events.ChatSettingsSaved;
-import net.zonia3000.ombrachat.events.LoadPreviousMessages;
 import net.zonia3000.ombrachat.events.MessageReceived;
-import net.zonia3000.ombrachat.events.SendClientMessage;
+import net.zonia3000.ombrachat.services.ChatsService;
+import net.zonia3000.ombrachat.services.GuiService;
+import net.zonia3000.ombrachat.services.MessagesService;
+import net.zonia3000.ombrachat.services.SettingsService;
+import net.zonia3000.ombrachat.services.TelegramClientService;
+import net.zonia3000.ombrachat.services.UserService;
 import org.drinkless.tdlib.TdApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ChatPage extends VBox {
+public class ChatPageController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ChatPageController.class);
 
     @FXML
     private Label chatTitleLabel;
@@ -48,23 +57,38 @@ public class ChatPage extends VBox {
     @FXML
     private Button removeSelectedFileBtn;
 
-    private Mediator mediator;
-
     private boolean scrollToBottom = true;
     private boolean loading = false;
     private File selectedFile = null;
 
-    public ChatPage() {
-        setVisible(false);
+    private final GuiService guiService;
+    private final ChatsService chatsService;
+    private final MessagesService messagesService;
+    private final UserService userService;
+    private final SettingsService settings;
+    private final TelegramClientService clientService;
 
-        FXMLLoader fxmlLoader = new FXMLLoader(ChatFoldersBox.class.getResource("/view/chat-page.fxml"));
-        fxmlLoader.setRoot(this);
-        fxmlLoader.setController(this);
-        try {
-            fxmlLoader.load();
-        } catch (IOException ex) {
-            throw new IOError(ex);
-        }
+    private final VBox container;
+
+    public ChatPageController(VBox container) {
+        this.guiService = ServiceLocator.getService(GuiService.class);
+        this.chatsService = ServiceLocator.getService(ChatsService.class);
+        this.messagesService = ServiceLocator.getService(MessagesService.class);
+        this.userService = ServiceLocator.getService(UserService.class);
+        this.settings = ServiceLocator.getService(SettingsService.class);
+        this.clientService = ServiceLocator.getService(TelegramClientService.class);
+
+        this.container = container;
+    }
+
+    private void setVisible(boolean visible) {
+        container.setVisible(visible);
+    }
+
+    @FXML
+    public void initialize() {
+        container.setVisible(false);
+
         chatScrollPane.setHbarPolicy(ScrollBarPolicy.NEVER);
         chatScrollPane.setFitToWidth(true);
         chatContent.setSpacing(10);
@@ -82,7 +106,7 @@ public class ChatPage extends VBox {
             if (chatScrollPane.getVvalue() <= 0.0 && !loading) {
                 // Top edge reached
                 scrollToBottom = false;
-                mediator.publish(new LoadPreviousMessages());
+                messagesService.loadPreviousMessages();
                 loading = true;
             }
         });
@@ -91,17 +115,15 @@ public class ChatPage extends VBox {
         removeSelectedFileBtn.managedProperty().bind(removeSelectedFileBtn.visibleProperty());
         selectedFileLabel.setVisible(false);
         removeSelectedFileBtn.setVisible(false);
-    }
 
-    public void setMediator(Mediator mediator) {
-        this.mediator = mediator;
-        mediator.subscribe(ChatSelected.class, (e) -> setSelectedChat(e.getChat()));
-        mediator.subscribe(MessageReceived.class, (e) -> {
+        guiService.subscribe(ChatSelected.class, (e) -> setSelectedChat(e.getChat()));
+        guiService.subscribe(MessageReceived.class, (e) -> {
             Platform.runLater(() -> {
                 prependMessage(e.getMessage());
             });
         });
-        mediator.subscribe(ChatSettingsSaved.class, (e) -> setGpgKeyLabel());
+        guiService.subscribe(ChatSettingsSaved.class, (e) -> setGpgKeyLabel());
+        logger.debug("{} initialized", ChatPageController.class.getSimpleName());
     }
 
     private void setSelectedChat(TdApi.Chat selectedChat) {
@@ -117,7 +139,7 @@ public class ChatPage extends VBox {
     }
 
     private void setGpgKeyLabel() {
-        String chatKeyFingerprint = mediator.getChatKeyFingerprint();
+        String chatKeyFingerprint = settings.getChatKey(chatsService.getSelectedChat().id);
         gpgKeyLabel.managedProperty().bind(gpgKeyLabel.visibleProperty());
         if (chatKeyFingerprint == null) {
             gpgKeyLabel.setText("");
@@ -140,7 +162,7 @@ public class ChatPage extends VBox {
         if (content instanceof TdApi.MessageText messageText) {
             return new MessageTextBox(messageText);
         } else if (content instanceof TdApi.MessagePhoto messagePhoto) {
-            return new MessagePhotoBox(mediator, messagePhoto);
+            return new MessagePhotoBox(messagePhoto);
         } else {
             return new MessageNotSupportedBox(content);
         }
@@ -174,7 +196,7 @@ public class ChatPage extends VBox {
 
     @FXML
     private void sendMessage() {
-        mediator.publish(new SendClientMessage(new TdApi.SendMessage(mediator.getSelectedChat().id, 0, null, null, null, getInputMessageContent()), (TdApi.Object object) -> {
+        clientService.sendClientMessage(new TdApi.SendMessage(chatsService.getSelectedChat().id, 0, null, null, null, getInputMessageContent()), (TdApi.Object object) -> {
             if (object instanceof TdApi.Message message) {
                 Platform.runLater(() -> {
                     scrollToBottom = true;
@@ -182,7 +204,7 @@ public class ChatPage extends VBox {
                     removeSelectedFile();
                 });
             }
-        }));
+        });
         messageText.setText("");
     }
 
@@ -199,7 +221,7 @@ public class ChatPage extends VBox {
     private VBox getMessageBubble(TdApi.Message message) {
         VBox bubble = new VBox();
         bubble.getStyleClass().add("message-bubble");
-        if (message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == mediator.getMyId()) {
+        if (message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == userService.getMyId()) {
             bubble.getStyleClass().add("my-message");
         } else {
             addSenderLabel(bubble, message.senderId);
@@ -224,9 +246,9 @@ public class ChatPage extends VBox {
 
     private TdApi.Chat getSenderChat(TdApi.MessageSender sender) {
         if (sender instanceof TdApi.MessageSenderChat senderChat) {
-            return mediator.getChat(senderChat.chatId);
+            return chatsService.getChat(senderChat.chatId);
         } else if (sender instanceof TdApi.MessageSenderUser senderUser) {
-            return mediator.getChat(senderUser.userId);
+            return chatsService.getChat(senderUser.userId);
         }
         return null;
     }
@@ -235,12 +257,8 @@ public class ChatPage extends VBox {
     private void openChatSettingsDialog() {
         try {
             FXMLLoader loader = new FXMLLoader();
-
             loader.setLocation(ChatSettingsDialogController.class.getResource("/view/chat-settings-dialog.fxml"));
             Parent root = loader.load();
-            ChatSettingsDialogController controller = loader.getController();
-            controller.setMediator(mediator);
-
             Scene scene = new Scene(root);
             Stage newStage = new Stage();
             newStage.setTitle("Chat settings");
