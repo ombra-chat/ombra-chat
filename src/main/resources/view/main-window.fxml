@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.*?>
 <?import net.zonia3000.ombrachat.chat.ChatsListView?>
 
-<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.zonia3000.ombrachat.ui.controllers.MainWindowController">
+<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.zonia3000.ombrachat.controllers.MainWindowController">
     <children>
         <VBox AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0">
             <children>

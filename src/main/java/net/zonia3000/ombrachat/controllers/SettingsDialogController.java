@@ -1,8 +1,9 @@
-package net.zonia3000.ombrachat;
+package net.zonia3000.ombrachat.controllers;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.stage.Stage;
+import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.chat.ChatFolderItem;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.SettingsService;

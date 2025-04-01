@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat.events.telegram;
+package net.zonia3000.ombrachat.events;
 
 import java.util.Collection;
 import net.zonia3000.ombrachat.events.Event;

@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat.chat;
+package net.zonia3000.ombrachat.controllers;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;

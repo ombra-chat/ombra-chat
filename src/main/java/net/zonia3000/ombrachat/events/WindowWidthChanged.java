@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat.events.gui;
+package net.zonia3000.ombrachat.events;
 
 import net.zonia3000.ombrachat.events.Event;
 

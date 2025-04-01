@@ -13,7 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import net.zonia3000.ombrachat.ServiceLocator;
-import net.zonia3000.ombrachat.events.telegram.ChatsListUpdated;
+import net.zonia3000.ombrachat.events.ChatsListUpdated;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
 import org.drinkless.tdlib.TdApi;

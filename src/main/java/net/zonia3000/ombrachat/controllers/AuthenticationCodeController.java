@@ -1,28 +1,27 @@
-package net.zonia3000.ombrachat.login;
+package net.zonia3000.ombrachat.controllers;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import net.zonia3000.ombrachat.ErrorHandlerController;
+import javafx.scene.control.TextField;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 
-public class AuthenticationPasswordController implements ErrorHandlerController {
+public class AuthenticationCodeController implements ErrorHandlerController {
 
     @FXML
-    private PasswordField authenticationPasswordField;
+    private TextField authenticationCodeTextField;
     @FXML
     private Label errorLabel;
 
     @FXML
     private void handleNextButtonClick() {
         errorLabel.setText("");
-        String password = authenticationPasswordField.getText();
-        if (password.trim().equals("")) {
+        String authenticationCode = authenticationCodeTextField.getText();
+        if (authenticationCode.trim().equals("")) {
             return;
         }
         var clientService = ServiceLocator.getService(TelegramClientService.class);
-        clientService.setAuthenticationPassword(password);
+        clientService.setAuthenticationCode(authenticationCode);
     }
 
     @Override

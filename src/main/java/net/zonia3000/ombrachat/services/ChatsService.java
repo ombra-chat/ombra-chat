@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.events.ChatSelected;
 import net.zonia3000.ombrachat.events.SelectedChatFolderChanged;
-import net.zonia3000.ombrachat.events.telegram.ChatsListUpdated;
+import net.zonia3000.ombrachat.events.ChatsListUpdated;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

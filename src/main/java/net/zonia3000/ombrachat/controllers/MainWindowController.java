@@ -1,4 +1,4 @@
-package net.zonia3000.ombrachat.ui.controllers;
+package net.zonia3000.ombrachat.controllers;
 
 import java.io.IOError;
 import java.io.IOException;
@@ -19,12 +19,11 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import net.zonia3000.ombrachat.ErrorHandlerController;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.chat.ChatsListView;
 import net.zonia3000.ombrachat.events.ChatSelected;
-import net.zonia3000.ombrachat.events.gui.WindowWidthChanged;
+import net.zonia3000.ombrachat.events.WindowWidthChanged;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
 import org.slf4j.Logger;
