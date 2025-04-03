@@ -14,10 +14,15 @@ public class PhoneDialogController implements ErrorHandlerController {
     private Label errorLabel;
 
     @FXML
+    private void initialize() {
+        errorLabel.setManaged(false);
+    }
+
+    @FXML
     private void handleNextButtonClick() {
-        errorLabel.setText("");
+        displayError("");
         String phoneNumber = phoneTextField.getText();
-        if (phoneNumber.trim().equals("")) {
+        if (phoneNumber.isBlank()) {
             return;
         }
         var clientService = ServiceLocator.getService(TelegramClientService.class);
@@ -26,6 +31,7 @@ public class PhoneDialogController implements ErrorHandlerController {
 
     @Override
     public void displayError(String error) {
+        errorLabel.setManaged(!error.isBlank());
         errorLabel.setText(error);
     }
 }

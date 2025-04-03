@@ -3,6 +3,7 @@ package net.zonia3000.ombrachat.services;
 import java.io.IOError;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
+import net.zonia3000.ombrachat.CryptoUtils;
 import net.zonia3000.ombrachat.ServiceLocator;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
@@ -13,7 +14,7 @@ public class TelegramClientService {
 
     private static final Logger logger = LoggerFactory.getLogger(TelegramClientService.class);
 
-    private UserService dataService;
+    private UserService userService;
     private ChatsService chatsService;
     private MessagesService messagesService;
     private GuiService guiService;
@@ -22,7 +23,7 @@ public class TelegramClientService {
     private Client client;
 
     public void startClient() {
-        dataService = ServiceLocator.getService(UserService.class);
+        userService = ServiceLocator.getService(UserService.class);
         chatsService = ServiceLocator.getService(ChatsService.class);
         messagesService = ServiceLocator.getService(MessagesService.class);
         guiService = ServiceLocator.getService(GuiService.class);
@@ -76,7 +77,7 @@ public class TelegramClientService {
                 } else if (object instanceof TdApi.UpdateOption option) {
                     switch (option.name) {
                         case "my_id":
-                            dataService.setMyId(((TdApi.OptionValueInteger) option.value).value);
+                            userService.setMyId(((TdApi.OptionValueInteger) option.value).value);
                             break;
                     }
                 }
@@ -95,7 +96,7 @@ public class TelegramClientService {
             case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
                 var settings = ServiceLocator.getService(SettingsService.class);
                 TdApi.SetTdlibParameters request = new TdApi.SetTdlibParameters();
-                request.databaseDirectory = "tdlib";
+                request.databaseDirectory = settings.getTdlibFolderPath();
                 request.useMessageDatabase = true;
                 request.useSecretChats = false;
                 request.apiId = settings.getApiId();
@@ -103,6 +104,11 @@ public class TelegramClientService {
                 request.systemLanguageCode = "en";
                 request.deviceModel = "Desktop";
                 request.applicationVersion = "1.0";
+                if (settings.isTdlibDatabaseEncrypted()) {
+                    var password = userService.getEncryptionPassword();
+                    var salt = settings.getTdlibEncryptionSalt();
+                    request.databaseEncryptionKey = CryptoUtils.generateDerivedKey(password, salt);
+                }
                 client.send(request, new AuthorizationRequestHandler());
                 break;
             case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR:
@@ -116,8 +122,19 @@ public class TelegramClientService {
                 guiService.showAuthenticationPasswordDialog();
                 break;
             }
-            case TdApi.AuthorizationStateReady.CONSTRUCTOR: {
-                guiService.showMainWindow();
+            case TdApi.AuthorizationStateReady.CONSTRUCTOR:
+            case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR: {
+                // ignored states
+                break;
+            }
+            case TdApi.AuthorizationStateClosed.CONSTRUCTOR: {
+                client.send(new TdApi.Close(), (res) -> {
+                    userService.performCleanupAfterLogout();
+                    // Exiting the application. For the moment, restarting the app is the
+                    // simplest way to handle the logout.
+                    logger.info("Quitting after logout...");
+                    System.exit(0);
+                });
                 break;
             }
             default:

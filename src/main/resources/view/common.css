@@ -54,6 +54,10 @@
     -fx-alignment: center-left;
 }
 
+.error {
+    -fx-text-fill: red;
+}
+
 #chatSettingsBtn {
     -fx-background-image: url("icons/icons8-settings.png");
 }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.zonia3000.ombrachat.controllers.InitialConfigDialogController">
+    <children>
+        <VBox AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" spacing="10.0">
+            <children>
+                <Label text="API ID" styleClass="pt" />
+                <TextField fx:id="apiIdTextField" HBox.hgrow="ALWAYS" />
+                <Label text="API Hash" />
+                <TextField fx:id="apiHashTextField" HBox.hgrow="ALWAYS" />
+                <Hyperlink fx:id="myTelegramLink" text="Obtain API credentials" />
+                
+                <Label text="Telegram folder" styleClass="pt" />
+                <TextField fx:id="telegramFolderTextField" HBox.hgrow="ALWAYS" />                
+                
+                <CheckBox styleClass="pt" fx:id="encryptTdlib" text="Encrypt Telegram database with password" onAction="#handleEncryptCheckboxSelection" />
+                <PasswordField fx:id="passwordField" HBox.hgrow="ALWAYS" visible="false" />
+                <Label fx:id="errorLabel" styleClass="error" />
+                <Button mnemonicParsing="false" fx:id="nextBtn" text="Next" onAction="#handleNextButtonClick" />
+            </children>
+            <padding>
+                <Insets left="10.0" right="10.0" />
+            </padding>
+        </VBox>
+    </children>
+</AnchorPane>

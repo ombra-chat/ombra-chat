@@ -19,7 +19,17 @@ public class App extends Application {
     @Override
     public void start(Stage stage) {
         registerServices(this, stage);
-        ServiceLocator.getService(TelegramClientService.class).startClient();
+        var guiService = ServiceLocator.getService(GuiService.class);
+        var settings = ServiceLocator.getService(SettingsService.class);
+        if (settings.isInitialConfigDone()) {
+            if (settings.isTdlibDatabaseEncrypted()) {
+                guiService.showEncryptionPasswordDialog();
+            } else {
+                ServiceLocator.getService(TelegramClientService.class).startClient();
+            }
+        } else {
+            guiService.showInitialConfigDialog();
+        }
     }
 
     public static void main(String[] args) {

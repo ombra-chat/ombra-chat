@@ -18,13 +18,15 @@ import net.zonia3000.ombrachat.App;
 import net.zonia3000.ombrachat.controllers.ErrorHandlerController;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
+import net.zonia3000.ombrachat.controllers.AuthenticationCodeController;
+import net.zonia3000.ombrachat.controllers.AuthenticationPasswordController;
+import net.zonia3000.ombrachat.controllers.EncryptionPasswordController;
+import net.zonia3000.ombrachat.controllers.InitialConfigDialogController;
+import net.zonia3000.ombrachat.controllers.MainWindowController;
+import net.zonia3000.ombrachat.controllers.PhoneDialogController;
 import net.zonia3000.ombrachat.events.Event;
 import net.zonia3000.ombrachat.events.EventListener;
 import net.zonia3000.ombrachat.events.WindowWidthChanged;
-import net.zonia3000.ombrachat.controllers.AuthenticationCodeController;
-import net.zonia3000.ombrachat.controllers.AuthenticationPasswordController;
-import net.zonia3000.ombrachat.controllers.PhoneDialogController;
-import net.zonia3000.ombrachat.controllers.MainWindowController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +34,7 @@ public class GuiService {
 
     private static final Logger logger = LoggerFactory.getLogger(GuiService.class);
 
-    private final Map<Class<?>, List<EventListener>> telegramEventListeners = new HashMap<>();
+    private final Map<Class<?>, List<EventListener>> eventListeners = new HashMap<>();
 
     private final App app;
     private final Stage primaryStage;
@@ -54,16 +56,64 @@ public class GuiService {
         });
     }
 
+    public void showInitialConfigDialog() {
+        Platform.runLater(() -> {
+            try {
+                if (currentController instanceof InitialConfigDialogController) {
+                    return;
+                }
+                logger.debug("Showing initial config dialog");
+                FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/login/initial-config-dialog.fxml"));
+                Parent root = loader.load();
+                currentController = loader.getController();
+
+                Scene scene = new Scene(root);
+                UiUtils.setCommonCss(scene);
+                primaryStage.setTitle("Initial configuration");
+                primaryStage.setScene(scene);
+                primaryStage.show();
+            } catch (IOException ex) {
+                throw new IOError(ex);
+            }
+        });
+    }
+
+    public void showEncryptionPasswordDialog() {
+        Platform.runLater(() -> {
+            try {
+                if (currentController instanceof EncryptionPasswordController) {
+                    return;
+                }
+                logger.debug("Showing encryption password dialog");
+                FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/login/encryption-password-dialog.fxml"));
+                Parent root = loader.load();
+                currentController = loader.getController();
+
+                Scene scene = new Scene(root);
+                UiUtils.setCommonCss(scene);
+                primaryStage.setTitle("Encryption password");
+                primaryStage.setScene(scene);
+                primaryStage.show();
+            } catch (IOException ex) {
+                throw new IOError(ex);
+            }
+        });
+    }
+
     public void showPhoneNumberDialog() {
         Platform.runLater(() -> {
             try {
+                if (currentController instanceof PhoneDialogController) {
+                    return;
+                }
                 logger.debug("Showing phone number dialog");
                 FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/login/phone-dialog.fxml"));
                 Parent root = loader.load();
-                PhoneDialogController controller = loader.getController();
-                currentController = controller;
+                currentController = loader.getController();
 
                 Scene scene = new Scene(root);
+                UiUtils.setCommonCss(scene);
+                primaryStage.setTitle("Phone number");
                 primaryStage.setScene(scene);
                 primaryStage.show();
             } catch (IOException ex) {
@@ -75,13 +125,17 @@ public class GuiService {
     public void showAuthenticationCodeDialog() {
         Platform.runLater(() -> {
             try {
+                if (currentController instanceof AuthenticationCodeController) {
+                    return;
+                }
                 logger.debug("Showing authentication code dialog");
                 FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/login/authentication-code-dialog.fxml"));
                 Parent root = loader.load();
-                AuthenticationCodeController controller = loader.getController();
-                currentController = controller;
+                currentController = loader.getController();
 
                 Scene scene = new Scene(root);
+                UiUtils.setCommonCss(scene);
+                primaryStage.setTitle("Authentication code");
                 primaryStage.setScene(scene);
                 primaryStage.show();
             } catch (IOException ex) {
@@ -93,13 +147,17 @@ public class GuiService {
     public void showAuthenticationPasswordDialog() {
         Platform.runLater(() -> {
             try {
+                if (currentController instanceof AuthenticationPasswordController) {
+                    return;
+                }
                 logger.debug("Showing authentication password dialog");
                 FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/login/authentication-password-dialog.fxml"));
                 Parent root = loader.load();
-                AuthenticationPasswordController controller = loader.getController();
-                currentController = controller;
+                currentController = loader.getController();
 
                 Scene scene = new Scene(root);
+                UiUtils.setCommonCss(scene);
+                primaryStage.setTitle("Authentication password");
                 primaryStage.setScene(scene);
                 primaryStage.show();
             } catch (IOException ex) {
@@ -111,11 +169,13 @@ public class GuiService {
     public void showMainWindow() {
         Platform.runLater(() -> {
             try {
+                if (currentController instanceof MainWindowController) {
+                    return;
+                }
                 logger.debug("Showing main window");
                 FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/main-window.fxml"));
                 Parent root = loader.load();
-                MainWindowController controller = loader.getController();
-                currentController = controller;
+                currentController = loader.getController();
 
                 Scene scene = new Scene(root);
                 UiUtils.setCommonCss(scene);
@@ -144,7 +204,7 @@ public class GuiService {
     }
 
     public void publish(Event event) {
-        List<EventListener> listeners = telegramEventListeners.get(event.getClass());
+        List<EventListener> listeners = eventListeners.get(event.getClass());
         if (listeners != null) {
             for (EventListener listener : listeners) {
                 Platform.runLater(() -> {
@@ -158,8 +218,8 @@ public class GuiService {
     }
 
     public synchronized <T extends Event> void subscribe(Class<T> eventType, EventListener<T> listener) {
-        logger.debug("Subscribing to Telegram event {}", eventType.getSimpleName());
-        telegramEventListeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(listener);
+        logger.debug("Subscribing to event {}", eventType.getSimpleName());
+        eventListeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(listener);
     }
 
     public void showDocument(String url) {

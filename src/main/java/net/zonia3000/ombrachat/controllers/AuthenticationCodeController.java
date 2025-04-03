@@ -14,10 +14,15 @@ public class AuthenticationCodeController implements ErrorHandlerController {
     private Label errorLabel;
 
     @FXML
+    private void initialize() {
+        errorLabel.setManaged(false);
+    }
+
+    @FXML
     private void handleNextButtonClick() {
-        errorLabel.setText("");
+        displayError("");
         String authenticationCode = authenticationCodeTextField.getText();
-        if (authenticationCode.trim().equals("")) {
+        if (authenticationCode.isBlank()) {
             return;
         }
         var clientService = ServiceLocator.getService(TelegramClientService.class);
@@ -26,6 +31,7 @@ public class AuthenticationCodeController implements ErrorHandlerController {
 
     @Override
     public void displayError(String error) {
+        errorLabel.setManaged(!error.isBlank());
         errorLabel.setText(error);
     }
 }

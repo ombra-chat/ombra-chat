@@ -30,7 +30,8 @@ public class ChatFoldersBoxController extends HBox {
 
     @FXML
     public void initialize() {
-        setChatFolders(chatsService.getChatFolderInfos());
+        var info = chatsService.getChatFolderInfos();
+        setChatFolders(info);
     }
 
     public void setChatFolders(TdApi.ChatFolderInfo[] chatFolderInfos) {

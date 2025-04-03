@@ -1,7 +1,5 @@
 package net.zonia3000.ombrachat.events;
 
-import net.zonia3000.ombrachat.events.Event;
-
 public class WindowWidthChanged implements Event {
 
     private final int width;

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane prefHeight="300.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.zonia3000.ombrachat.controllers.LogoutController">
+    <children>
+        <VBox HBox.hgrow="ALWAYS" spacing="10.0">
+            <children>
+                <Label text="Are you sure to logout?" styleClass="pt" maxWidth="10000" />
+                <CheckBox fx:id="deleteAllDataCheckBox" text="Delete all stored data" />
+                <Button fx:id="confirmBtn" text="Confirm" onAction="#confirmLogout" />
+            </children>
+            <padding>
+                <Insets left="10.0" right="10.0" />
+            </padding>
+        </VBox>
+    </children>
+</StackPane>

@@ -72,7 +72,11 @@ public class ChatsService {
     }
 
     private boolean handleUpdateChatFolders(TdApi.UpdateChatFolders update) {
+        var firstLoad = chatFoldersInfo == null;
         chatFoldersInfo = update.chatFolders;
+        if (firstLoad) {
+            guiService.showMainWindow();
+        }
         return true;
     }
 

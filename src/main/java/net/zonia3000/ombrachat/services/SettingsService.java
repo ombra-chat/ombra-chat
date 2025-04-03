@@ -2,14 +2,24 @@ package net.zonia3000.ombrachat.services;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
+import net.zonia3000.ombrachat.CryptoUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SettingsService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SettingsService.class);
 
     private static final String API_ID = "api_id";
     private static final String API_HASH = "api_hash";
     private static final String CHATS = "chats";
     private static final String DEFAULT_FOLDER = "default_folder";
+    private static final String INITIAL_CONFIG_DONE = "initial_config_done";
+    private static final String TDLIB_FOLDER_PATH = "tdlib_folder_path";
+    private static final String TDLIB_ENCRYPT = "tdlib_encrypt";
+    private static final String TDLIB_ENCRYPTION_SALT = "tdlib_encryption_salt";
 
     public int getApiId() {
         return getPreferences().getInt(API_ID, 0);
@@ -25,6 +35,44 @@ public class SettingsService {
 
     public void setApiHash(String apiHash) {
         getPreferences().put(API_HASH, apiHash);
+    }
+
+    public boolean isInitialConfigDone() {
+        return getPreferences().getBoolean(INITIAL_CONFIG_DONE, false);
+    }
+
+    public void setInitialConfigDone(boolean value) {
+        getPreferences().putBoolean(INITIAL_CONFIG_DONE, value);
+    }
+
+    public String getTdlibFolderPath() {
+        return getPreferences().get(TDLIB_FOLDER_PATH, "tdlib");
+    }
+
+    public void setTdllibFolderPath(String path) {
+        getPreferences().put(TDLIB_FOLDER_PATH, path);
+    }
+
+    public boolean isTdlibDatabaseEncrypted() {
+        return getPreferences().getBoolean(TDLIB_ENCRYPT, false);
+    }
+
+    public void setTdlibDatabaseEncrypted(boolean value) {
+        getPreferences().putBoolean(TDLIB_ENCRYPT, value);
+    }
+
+    public String getTdlibEncryptionSalt() {
+        var preferences = getPreferences();
+        var salt = preferences.get(TDLIB_ENCRYPTION_SALT, "");
+        if (salt.isBlank()) {
+            salt = CryptoUtils.generateRandomSalt();
+            preferences.put(TDLIB_ENCRYPTION_SALT, salt);
+        }
+        return salt;
+    }
+
+    public void setEncryptionSalt(String salt) {
+        getPreferences().put(TDLIB_ENCRYPTION_SALT, salt);
     }
 
     public String getChatKey(long chatId) {
@@ -70,6 +118,14 @@ public class SettingsService {
 
     public void setDefaultFolder(int defaultFolderId) {
         getPreferences().putInt(DEFAULT_FOLDER, defaultFolderId);
+    }
+
+    public void deletePreferences() {
+        try {
+            getPreferences().removeNode();
+        } catch (BackingStoreException ex) {
+            logger.error("Unable to delete preferences", ex);
+        }
     }
 
     private Preferences getPreferences() {

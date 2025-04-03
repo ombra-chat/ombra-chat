@@ -226,6 +226,25 @@ public class MainWindowController implements ErrorHandlerController {
         }
     }
 
+    @FXML
+    private void showLogoutDialog() {
+        try {
+            logger.debug("Showing logout dialog");
+            FXMLLoader loader = new FXMLLoader(MainWindowController.class.getResource("/view/logout.fxml"));
+            Parent root = loader.load();
+            Scene logoutScene = new Scene(root);
+            UiUtils.setCommonCss(logoutScene);
+            Stage logoutStage = new Stage();
+            logoutStage.setTitle("About");
+            logoutStage.setScene(logoutScene);
+            logoutStage.initOwner(logoutStage.getOwner());
+            logoutStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            logoutStage.showAndWait();
+        } catch (IOException ex) {
+            throw new IOError(ex);
+        }
+    }
+
     @Override
     public void displayError(String error) {
         // TODO
