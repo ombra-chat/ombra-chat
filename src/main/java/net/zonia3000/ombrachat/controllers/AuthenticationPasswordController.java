@@ -4,6 +4,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 
 public class AuthenticationPasswordController implements ErrorHandlerController {
@@ -15,7 +16,7 @@ public class AuthenticationPasswordController implements ErrorHandlerController 
 
     @FXML
     private void initialize() {
-        errorLabel.setManaged(false);
+        UiUtils.setVisible(errorLabel, false);
     }
 
     @FXML
@@ -31,7 +32,7 @@ public class AuthenticationPasswordController implements ErrorHandlerController 
 
     @Override
     public void displayError(String error) {
-        errorLabel.setManaged(!error.isBlank());
+        UiUtils.setVisible(errorLabel, !error.isBlank());
         errorLabel.setText(error);
     }
 }

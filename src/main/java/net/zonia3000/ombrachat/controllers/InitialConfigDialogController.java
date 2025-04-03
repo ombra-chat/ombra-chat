@@ -10,6 +10,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
@@ -42,8 +43,8 @@ public class InitialConfigDialogController implements ErrorHandlerController {
         var guiService = ServiceLocator.getService(GuiService.class);
         myTelegramLink.setOnAction(event -> guiService.showDocument("https://my.telegram.org"));
         telegramFolderTextField.setText(getDefaultTelegramFolderPath());
-        passwordField.setManaged(false);
-        errorLabel.setManaged(false);
+        UiUtils.setVisible(passwordField, false);
+        UiUtils.setVisible(errorLabel, false);
     }
 
     private String getDefaultTelegramFolderPath() {
@@ -54,8 +55,7 @@ public class InitialConfigDialogController implements ErrorHandlerController {
 
     @FXML
     public void handleEncryptCheckboxSelection() {
-        passwordField.setManaged(encryptTdlib.isSelected());
-        passwordField.setVisible(encryptTdlib.isSelected());
+        UiUtils.setVisible(passwordField, encryptTdlib.isSelected());
     }
 
     @FXML
@@ -115,7 +115,7 @@ public class InitialConfigDialogController implements ErrorHandlerController {
 
     @Override
     public void displayError(String error) {
-        errorLabel.setManaged(!error.isBlank());
+        UiUtils.setVisible(errorLabel, !error.isBlank());
         errorLabel.setText(error);
     }
 }

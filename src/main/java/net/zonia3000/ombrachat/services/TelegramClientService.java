@@ -21,6 +21,7 @@ public class TelegramClientService {
 
     private TdApi.AuthorizationState lastAuthorizationState = null;
     private Client client;
+    private UpdateHandler updateHandler;
 
     public void startClient() {
         userService = ServiceLocator.getService(UserService.class);
@@ -39,11 +40,16 @@ public class TelegramClientService {
         }
 
         logger.debug("Starting Telegram client");
-        client = Client.create(new UpdateHandler(), null, null);
+        updateHandler = new UpdateHandler();
+        client = Client.create(updateHandler, null, null);
     }
 
     public void sendClientMessage(TdApi.Function function, Client.ResultHandler resultHandler) {
         client.send(function, resultHandler);
+    }
+
+    public void sendClientMessage(TdApi.Function function) {
+        sendClientMessage(function, updateHandler);
     }
 
     public void setPhoneNumber(String phoneNumber) {

@@ -7,6 +7,7 @@ import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -21,11 +22,13 @@ import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.chat.message.MessageDocumentBox;
 import net.zonia3000.ombrachat.chat.message.MessageNotSupportedBox;
 import net.zonia3000.ombrachat.chat.message.MessagePhotoBox;
 import net.zonia3000.ombrachat.chat.message.MessageTextBox;
 import net.zonia3000.ombrachat.events.ChatSelected;
 import net.zonia3000.ombrachat.events.ChatSettingsSaved;
+import net.zonia3000.ombrachat.events.FileUpdated;
 import net.zonia3000.ombrachat.events.MessageReceived;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
@@ -122,6 +125,11 @@ public class ChatPageController {
             });
         });
         guiService.subscribe(ChatSettingsSaved.class, (e) -> setGpgKeyLabel());
+        guiService.subscribe(FileUpdated.class, (e) -> {
+            Platform.runLater(() -> {
+                handleFileUpdated(e);
+            });
+        });
         logger.debug("{} initialized", ChatPageController.class.getSimpleName());
     }
 
@@ -162,8 +170,25 @@ public class ChatPageController {
             return new MessageTextBox(messageText);
         } else if (content instanceof TdApi.MessagePhoto messagePhoto) {
             return new MessagePhotoBox(messagePhoto);
+        } else if (content instanceof TdApi.MessageDocument messageDocument) {
+            return new MessageDocumentBox(messageDocument);
         } else {
             return new MessageNotSupportedBox(content);
+        }
+    }
+
+    private void handleFileUpdated(FileUpdated update) {
+        for (Node node : chatContent.getChildrenUnmodifiable()) {
+            if (node instanceof VBox bubble) {
+                if (bubble.getChildren().size() == 1) {
+                    var msgBox = bubble.getChildren().get(0);
+                    if (msgBox instanceof MessageDocumentBox docBox) {
+                        if (docBox.updateFile(update.getUpdateFile())) {
+                            return;
+                        }
+                    }
+                }
+            }
         }
     }
 

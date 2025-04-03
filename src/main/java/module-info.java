@@ -1,6 +1,7 @@
 module ombrachat {
     requires javafx.controls;
     requires javafx.fxml;
+    requires java.desktop;
     requires org.drinkless.tdlib;
     requires java.prefs;
     requires org.bouncycastle.provider;
