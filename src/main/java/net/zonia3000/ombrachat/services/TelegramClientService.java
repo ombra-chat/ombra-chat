@@ -2,6 +2,8 @@ package net.zonia3000.ombrachat.services;
 
 import java.io.IOError;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicLong;
 import net.zonia3000.ombrachat.CryptoUtils;
 import net.zonia3000.ombrachat.ServiceLocator;
@@ -102,7 +104,7 @@ public class TelegramClientService {
             case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
                 var settings = ServiceLocator.getService(SettingsService.class);
                 TdApi.SetTdlibParameters request = new TdApi.SetTdlibParameters();
-                request.databaseDirectory = settings.getTdlibFolderPath();
+                request.databaseDirectory = getTdLibFolderPath();
                 request.useMessageDatabase = true;
                 request.useSecretChats = false;
                 request.apiId = settings.getApiId();
@@ -147,6 +149,12 @@ public class TelegramClientService {
                 logger.warn("Unsupported authorization state {}", lastAuthorizationState.toString());
                 break;
         }
+    }
+
+    private String getTdLibFolderPath() {
+        var settings = ServiceLocator.getService(SettingsService.class);
+        Path dir = Paths.get(settings.getApplicationFolderPath(), "tdlib");
+        return dir.toAbsolutePath().toString();
     }
 
     private class AuthorizationRequestHandler implements Client.ResultHandler {

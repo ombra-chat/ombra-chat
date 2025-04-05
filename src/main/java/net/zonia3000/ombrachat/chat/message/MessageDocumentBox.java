@@ -15,7 +15,7 @@ import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MessageDocumentBox extends VBox {
+public class MessageDocumentBox extends VBox implements FileBox {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageDocumentBox.class);
 
@@ -89,6 +89,7 @@ public class MessageDocumentBox extends VBox {
         showDownloadingLabel();
     }
 
+    @Override
     public boolean updateFile(TdApi.UpdateFile update) {
         if (telegramFile.id != update.file.id) {
             return false;

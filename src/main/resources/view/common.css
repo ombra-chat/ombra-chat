@@ -14,6 +14,10 @@
     -fx-background-color: #effdde;
 }
 
+.gpg-message {
+    -fx-border-style: dashed;
+}
+
 .bold {
     -fx-font-weight: bold;
 }

@@ -21,8 +21,10 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.chat.message.MessageDocumentBox;
+import net.zonia3000.ombrachat.chat.message.MessageGpgTextBox;
 import net.zonia3000.ombrachat.chat.message.MessageNotSupportedBox;
 import net.zonia3000.ombrachat.chat.message.MessagePhotoBox;
 import net.zonia3000.ombrachat.chat.message.MessageTextBox;
@@ -36,6 +38,7 @@ import net.zonia3000.ombrachat.services.MessagesService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import net.zonia3000.ombrachat.services.UserService;
+import org.bouncycastle.openpgp.PGPPublicKey;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,8 +72,11 @@ public class ChatPageController {
     private final UserService userService;
     private final SettingsService settings;
     private final TelegramClientService clientService;
+    private final GpgService gpgService;
 
     private final VBox container;
+
+    private PGPPublicKey chatPublicKey;
 
     public ChatPageController(VBox container) {
         this.guiService = ServiceLocator.getService(GuiService.class);
@@ -79,6 +85,7 @@ public class ChatPageController {
         this.userService = ServiceLocator.getService(UserService.class);
         this.settings = ServiceLocator.getService(SettingsService.class);
         this.clientService = ServiceLocator.getService(TelegramClientService.class);
+        this.gpgService = ServiceLocator.getService(GpgService.class);
 
         this.container = container;
     }
@@ -146,14 +153,16 @@ public class ChatPageController {
     }
 
     private void setGpgKeyLabel() {
-        String chatKeyFingerprint = settings.getChatKey(chatsService.getSelectedChat().id);
+        String chatKeyFingerprint = settings.getChatKeyFingerprint(chatsService.getSelectedChat().id);
         gpgKeyLabel.managedProperty().bind(gpgKeyLabel.visibleProperty());
         if (chatKeyFingerprint == null) {
             gpgKeyLabel.setText("");
             gpgKeyLabel.setVisible(false);
+            chatPublicKey = null;
         } else {
             gpgKeyLabel.setText(chatKeyFingerprint);
             gpgKeyLabel.setVisible(true);
+            chatPublicKey = gpgService.getEncryptionKey(chatKeyFingerprint);
         }
     }
 
@@ -171,7 +180,11 @@ public class ChatPageController {
         } else if (content instanceof TdApi.MessagePhoto messagePhoto) {
             return new MessagePhotoBox(messagePhoto);
         } else if (content instanceof TdApi.MessageDocument messageDocument) {
-            return new MessageDocumentBox(messageDocument);
+            if (chatPublicKey != null && gpgService.isGpgTextMessage(messageDocument)) {
+                return new MessageGpgTextBox(messageDocument);
+            } else {
+                return new MessageDocumentBox(messageDocument);
+            }
         } else {
             return new MessageNotSupportedBox(content);
         }
@@ -220,7 +233,11 @@ public class ChatPageController {
 
     @FXML
     private void sendMessage() {
-        clientService.sendClientMessage(new TdApi.SendMessage(chatsService.getSelectedChat().id, 0, null, null, null, getInputMessageContent()), (TdApi.Object object) -> {
+        var content = getInputMessageContent();
+        if (content == null) {
+            return;
+        }
+        clientService.sendClientMessage(new TdApi.SendMessage(chatsService.getSelectedChat().id, 0, null, null, null, content), (TdApi.Object object) -> {
             if (object instanceof TdApi.Message message) {
                 Platform.runLater(() -> {
                     scrollToBottom = true;
@@ -233,12 +250,21 @@ public class ChatPageController {
     }
 
     private TdApi.InputMessageContent getInputMessageContent() {
-        var formattedText = new TdApi.FormattedText(messageText.getText(), new TdApi.TextEntity[]{});
-        if (selectedFile == null) {
-            return new TdApi.InputMessageText(formattedText, null, true);
+        if (chatPublicKey == null) {
+            var formattedText = new TdApi.FormattedText(messageText.getText(), new TdApi.TextEntity[]{});
+            if (selectedFile == null) {
+                return new TdApi.InputMessageText(formattedText, null, true);
+            } else {
+                var inputFileLocal = new TdApi.InputFileLocal(selectedFile.getAbsolutePath());
+                return new TdApi.InputMessageDocument(inputFileLocal, null, false, formattedText);
+            }
         } else {
-            var inputFileLocal = new TdApi.InputFileLocal(selectedFile.getAbsolutePath());
-            return new TdApi.InputMessageDocument(inputFileLocal, null, false, formattedText);
+            var file = gpgService.createGpgTextFile(chatPublicKey, messageText.getText());
+            if (file == null) {
+                return null;
+            }
+            var inputFileLocal = new TdApi.InputFileLocal(file.getAbsolutePath());
+            return new TdApi.InputMessageDocument(inputFileLocal, null, false, null);
         }
     }
 
@@ -250,7 +276,11 @@ public class ChatPageController {
         } else {
             addSenderLabel(bubble, message.senderId);
         }
-        bubble.getChildren().add(getMessageContentBox(message.content));
+        var content = getMessageContentBox(message.content);
+        if (content instanceof MessageGpgTextBox) {
+            bubble.getStyleClass().add("gpg-message");
+        }
+        bubble.getChildren().add(content);
         return bubble;
     }
 

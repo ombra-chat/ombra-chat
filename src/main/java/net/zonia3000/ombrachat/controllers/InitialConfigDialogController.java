@@ -30,7 +30,7 @@ public class InitialConfigDialogController implements ErrorHandlerController {
     @FXML
     private TextField apiHashTextField;
     @FXML
-    private TextField telegramFolderTextField;
+    private TextField appFolderTextField;
     @FXML
     private CheckBox encryptTdlib;
     @FXML
@@ -42,14 +42,14 @@ public class InitialConfigDialogController implements ErrorHandlerController {
     private void initialize() {
         var guiService = ServiceLocator.getService(GuiService.class);
         myTelegramLink.setOnAction(event -> guiService.showDocument("https://my.telegram.org"));
-        telegramFolderTextField.setText(getDefaultTelegramFolderPath());
+        appFolderTextField.setText(getDefaultAppFolderPath());
         UiUtils.setVisible(passwordField, false);
         UiUtils.setVisible(errorLabel, false);
     }
 
-    private String getDefaultTelegramFolderPath() {
+    private String getDefaultAppFolderPath() {
         String homeDir = System.getProperty("user.home");
-        Path dir = Paths.get(homeDir, ".ombra-chat", "telegram");
+        Path dir = Paths.get(homeDir, ".ombra-chat");
         return dir.toAbsolutePath().toString();
     }
 
@@ -93,12 +93,12 @@ public class InitialConfigDialogController implements ErrorHandlerController {
             ServiceLocator.getService(UserService.class).setEncryptionPassword(passwordField.getText());
         }
 
-        var telegramFolder = telegramFolderTextField.getText();
+        var telegramFolder = appFolderTextField.getText();
         if (!createTelegramParentFolder(telegramFolder)) {
             displayError("Unable to create telegram folder");
             return;
         }
-        settings.setTdllibFolderPath(telegramFolderTextField.getText());
+        settings.setApplicationFolderPath(appFolderTextField.getText());
 
         settings.setInitialConfigDone(true);
 

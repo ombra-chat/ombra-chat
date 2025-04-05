@@ -40,8 +40,8 @@ public class UserService {
      * Needs to be called before logging out, to tell the service if all the
      * data needs to be removed after the logout is performed.
      *
-     * @param deleteAllData if set to true, the service will erase the tdlib
-     * folder and the settings after the logout.
+     * @param deleteAllData if set to true, the service will erase the
+     * application folder and the settings after the logout.
      */
     public void setDeleteAllData(boolean deleteAllData) {
         this.deleteAllData = deleteAllData;
@@ -57,8 +57,8 @@ public class UserService {
 
         var settings = ServiceLocator.getService(SettingsService.class);
 
-        logger.debug("Deleting tdlib folder");
-        deleteDirectoryRecursively(settings.getTdlibFolderPath());
+        logger.debug("Deleting application folder");
+        deleteDirectoryRecursively(settings.getApplicationFolderPath());
 
         logger.debug("Deleting settings");
         settings.deletePreferences();

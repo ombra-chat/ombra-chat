@@ -7,6 +7,7 @@ import java.security.spec.KeySpec;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
 
 public class CryptoUtils {
@@ -47,7 +48,7 @@ public class CryptoUtils {
             // Convert salt to byte array
             byte[] saltBytes = salt.getBytes(StandardCharsets.UTF_8);
 
-            SecretKeyFactory factoryBC = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256", "BC");
+            SecretKeyFactory factoryBC = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256", BouncyCastleProvider.PROVIDER_NAME);
             KeySpec keyspecBC = new PBEKeySpec(password, saltBytes, iterations, keyLength);
             SecretKey keyBC = factoryBC.generateSecret(keyspecBC);
             return Hex.toHexString(keyBC.getEncoded()).getBytes(StandardCharsets.UTF_8);

@@ -11,7 +11,7 @@
             <children>
                 <Label text="Default selected folder" />
                 <ComboBox fx:id="chatFolderComboBox" />
-                <Button fx:id="saveBtn" text="Save" onAction="#saveSettings" />                       
+                <Button fx:id="saveBtn" text="Save" onAction="#saveSettings" />
             </children>
             <padding>
                 <Insets left="10.0" right="10.0" />

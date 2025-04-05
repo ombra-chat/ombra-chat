@@ -5,6 +5,7 @@ import java.security.Security;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.services.ChatsService;
+import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.services.UserService;
 import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.MessagesService;
@@ -21,8 +22,9 @@ public class App extends Application {
         registerServices(this, stage);
         var guiService = ServiceLocator.getService(GuiService.class);
         var settings = ServiceLocator.getService(SettingsService.class);
+        var gpgService = ServiceLocator.getService(GpgService.class);
         if (settings.isInitialConfigDone()) {
-            if (settings.isTdlibDatabaseEncrypted()) {
+            if (settings.isTdlibDatabaseEncrypted() || gpgService.hasPrivateKey()) {
                 guiService.showEncryptionPasswordDialog();
             } else {
                 ServiceLocator.getService(TelegramClientService.class).startClient();
@@ -52,5 +54,6 @@ public class App extends Application {
         ServiceLocator.registerService(TelegramClientService.class, new TelegramClientService());
         ServiceLocator.registerService(ChatsService.class, new ChatsService());
         ServiceLocator.registerService(MessagesService.class, new MessagesService());
+        ServiceLocator.registerService(GpgService.class, new GpgService());
     }
 }

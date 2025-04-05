@@ -15,8 +15,8 @@
                 <TextField fx:id="apiHashTextField" HBox.hgrow="ALWAYS" />
                 <Hyperlink fx:id="myTelegramLink" text="Obtain API credentials" />
                 
-                <Label text="Telegram folder" styleClass="pt" />
-                <TextField fx:id="telegramFolderTextField" HBox.hgrow="ALWAYS" />                
+                <Label text="Application folder" styleClass="pt" />
+                <TextField fx:id="appFolderTextField" HBox.hgrow="ALWAYS" />                
                 
                 <CheckBox styleClass="pt" fx:id="encryptTdlib" text="Encrypt Telegram database with password" onAction="#handleEncryptCheckboxSelection" />
                 <PasswordField fx:id="passwordField" HBox.hgrow="ALWAYS" visible="false" />

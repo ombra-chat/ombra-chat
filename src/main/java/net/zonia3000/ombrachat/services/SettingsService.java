@@ -1,5 +1,6 @@
 package net.zonia3000.ombrachat.services;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.prefs.BackingStoreException;
@@ -17,9 +18,10 @@ public class SettingsService {
     private static final String CHATS = "chats";
     private static final String DEFAULT_FOLDER = "default_folder";
     private static final String INITIAL_CONFIG_DONE = "initial_config_done";
-    private static final String TDLIB_FOLDER_PATH = "tdlib_folder_path";
+    private static final String APPLICATION_FOLDER_PATH = "app_folder_path";
     private static final String TDLIB_ENCRYPT = "tdlib_encrypt";
     private static final String TDLIB_ENCRYPTION_SALT = "tdlib_encryption_salt";
+    private static final String DEFAULT_PUBRING = "default_pubring";
 
     public int getApiId() {
         return getPreferences().getInt(API_ID, 0);
@@ -45,12 +47,12 @@ public class SettingsService {
         getPreferences().putBoolean(INITIAL_CONFIG_DONE, value);
     }
 
-    public String getTdlibFolderPath() {
-        return getPreferences().get(TDLIB_FOLDER_PATH, "tdlib");
+    public String getApplicationFolderPath() {
+        return getPreferences().get(APPLICATION_FOLDER_PATH, "ombra-chat");
     }
 
-    public void setTdllibFolderPath(String path) {
-        getPreferences().put(TDLIB_FOLDER_PATH, path);
+    public void setApplicationFolderPath(String path) {
+        getPreferences().put(APPLICATION_FOLDER_PATH, path);
     }
 
     public boolean isTdlibDatabaseEncrypted() {
@@ -75,7 +77,7 @@ public class SettingsService {
         getPreferences().put(TDLIB_ENCRYPTION_SALT, salt);
     }
 
-    public String getChatKey(long chatId) {
+    public String getChatKeyFingerprint(long chatId) {
         String chatsString = getPreferences().get(CHATS, "");
         for (String part : chatsString.split(";")) {
             String[] items = part.split(":");
@@ -88,7 +90,7 @@ public class SettingsService {
         return null;
     }
 
-    public String setChatKey(long chatId, String chatKey) {
+    public String setChatKeyFingerprint(long chatId, String chatKey) {
         String chatsString = getPreferences().get(CHATS, "");
         List<String> chatKeys = new ArrayList<>();
         boolean found = false;
@@ -126,6 +128,15 @@ public class SettingsService {
         } catch (BackingStoreException ex) {
             logger.error("Unable to delete preferences", ex);
         }
+    }
+
+    public String getPubringPath() {
+        var defaultPubring = Paths.get(System.getProperty("user.home"), ".gnupg", "pubring.kbx");
+        return getPreferences().get(DEFAULT_PUBRING, defaultPubring.toFile().getAbsolutePath());
+    }
+
+    public void setPubringPath(String path) {
+        getPreferences().put(DEFAULT_PUBRING, path);
     }
 
     private Preferences getPreferences() {
