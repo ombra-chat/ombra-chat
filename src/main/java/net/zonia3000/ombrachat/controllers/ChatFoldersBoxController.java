@@ -46,6 +46,8 @@ public class ChatFoldersBoxController extends HBox {
         chatFolderComboBox.setOnAction(event -> {
             ChatFolderItem selectedItem = (ChatFolderItem) chatFolderComboBox.getValue();
             guiService.publish(new SelectedChatFolderChanged(selectedItem.getId()));
+            // hide current chat
+            chatsService.setSelectedChat(null);
         });
     }
 

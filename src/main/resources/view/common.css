@@ -82,7 +82,7 @@
     -fx-background-image: url("icons/icons8-send.png");
 }
 
-#removeSelectedFileBtn, #closeSidebarBtn {
+#removeSelectedFileBtn, #closeSidebarBtn, #closeChatBtn {
     -fx-background-image: url("icons/icons8-remove.png");
 }
 

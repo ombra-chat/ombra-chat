@@ -147,6 +147,10 @@ public class ChatPageController {
         logger.debug("{} initialized", ChatPageController.class.getSimpleName());
     }
 
+    public void closeChat() {
+        chatsService.setSelectedChat(null);
+    }
+
     private void setSelectedChat(TdApi.Chat selectedChat) {
         if (selectedChat == null) {
             setVisible(false);
