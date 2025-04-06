@@ -19,12 +19,14 @@ import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.chat.message.MessageDocumentBox;
 import net.zonia3000.ombrachat.chat.message.MessageGpgDocumentBox;
 import net.zonia3000.ombrachat.chat.message.MessageGpgTextBox;
@@ -64,6 +66,8 @@ public class ChatPageController {
     private TextField messageText;
     @FXML
     private Button removeSelectedFileBtn;
+    @FXML
+    private HBox sendMessageBox;
 
     private boolean scrollToBottom = true;
     private boolean loading = false;
@@ -151,6 +155,8 @@ public class ChatPageController {
             chatContent.getChildren().removeAll(chatContent.getChildren());
             chatTitleLabel.setText(selectedChat.title);
             scrollToBottom = true;
+            var writableChat = selectedChat.permissions.canSendBasicMessages;
+            UiUtils.setVisible(sendMessageBox, writableChat);
             setVisible(true);
         }
     }
