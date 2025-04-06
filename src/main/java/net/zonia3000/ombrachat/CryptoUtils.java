@@ -12,6 +12,8 @@ import org.bouncycastle.util.encoders.Hex;
 
 public class CryptoUtils {
 
+    private static final int RANDOM_PASSWORD_LENGTH = 25;
+
     public static byte[] generateRandomBytes(int length) {
         byte[] randomData = new byte[length];
         SecureRandom secureRandom = new SecureRandom();
@@ -27,6 +29,18 @@ public class CryptoUtils {
     public static String generateRandomSalt() {
         byte[] randomData = generateRandomBytes(16);
         return Hex.toHexString(randomData);
+    }
+
+    public static String generateRandomPassword() {
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[RANDOM_PASSWORD_LENGTH];
+        random.nextBytes(bytes);
+        StringBuilder password = new StringBuilder();
+        for (byte b : bytes) {
+            // Maps to printable ASCII characters (33-126)
+            password.append((char) (Math.abs(b % 94) + 32));
+        }
+        return password.toString();
     }
 
     /**

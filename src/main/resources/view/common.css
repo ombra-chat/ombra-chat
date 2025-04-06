@@ -62,6 +62,14 @@
     -fx-text-fill: red;
 }
 
+.success {
+    -fx-text-fill: green;    
+}
+
+.description {
+    -fx-font-style: italic;
+}
+
 #chatSettingsBtn {
     -fx-background-image: url("icons/icons8-settings.png");
 }

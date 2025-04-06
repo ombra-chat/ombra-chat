@@ -4,15 +4,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javafx.fxml.FXML;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import net.zonia3000.ombrachat.CryptoUtils;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
+import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.SettingsService;
+import net.zonia3000.ombrachat.services.SettingsService.EncryptionType;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import net.zonia3000.ombrachat.services.UserService;
 import org.slf4j.Logger;
@@ -32,19 +36,44 @@ public class InitialConfigDialogController implements ErrorHandlerController {
     @FXML
     private TextField appFolderTextField;
     @FXML
-    private CheckBox encryptTdlib;
-    @FXML
     private PasswordField passwordField;
     @FXML
+    private Label gpgPassphraseLabel;
+    @FXML
+    private PasswordField gpgPassphraseField;
+    @FXML
     private Label errorLabel;
+    @FXML
+    private Label gpgStatusLabel;
+    @FXML
+    private Label gpgStatusLabelExplanation;
+    @FXML
+    private HBox gpgButtonsBox;
+    @FXML
+    private RadioButton encryptionNone;
+    @FXML
+    private RadioButton encryptionPassword;
+    @FXML
+    private RadioButton encryptionGpg;
+
+    private SettingsService settings;
+    private GpgService gpgService;
+    private UserService userService;
+    private boolean hasGpgKey;
+    private EncryptionType selectedEncryptionType = EncryptionType.NONE;
+    private boolean ignoreGpg;
 
     @FXML
     private void initialize() {
         var guiService = ServiceLocator.getService(GuiService.class);
+        gpgService = ServiceLocator.getService(GpgService.class);
+        userService = ServiceLocator.getService(UserService.class);
+        settings = ServiceLocator.getService(SettingsService.class);
         myTelegramLink.setOnAction(event -> guiService.showDocument("https://my.telegram.org"));
         appFolderTextField.setText(getDefaultAppFolderPath());
         UiUtils.setVisible(passwordField, false);
         UiUtils.setVisible(errorLabel, false);
+        checkGpg();
     }
 
     private String getDefaultAppFolderPath() {
@@ -54,8 +83,46 @@ public class InitialConfigDialogController implements ErrorHandlerController {
     }
 
     @FXML
-    public void handleEncryptCheckboxSelection() {
-        UiUtils.setVisible(passwordField, encryptTdlib.isSelected());
+    private void checkGpg() {
+        settings.setApplicationFolderPath(appFolderTextField.getText());
+        hasGpgKey = gpgService.hasPrivateKey();
+        if (hasGpgKey) {
+            gpgStatusLabel.setText("GPG private key found");
+            gpgStatusLabel.getStyleClass().add("success");
+            UiUtils.setVisible(gpgStatusLabelExplanation, false);
+            UiUtils.setVisible(gpgButtonsBox, false);
+            UiUtils.setVisible(encryptionGpg, true);
+            UiUtils.setVisible(gpgPassphraseField, true);
+            UiUtils.setVisible(gpgPassphraseLabel, true);
+        } else {
+            gpgStatusLabel.setText("GPG private key not found");
+            gpgStatusLabel.getStyleClass().add("error");
+            gpgStatusLabelExplanation.setText("OmbraChat is searching for a private.asc file in the application folder");
+            UiUtils.setVisible(encryptionGpg, false);
+            UiUtils.setVisible(gpgPassphraseField, false);
+            UiUtils.setVisible(gpgPassphraseLabel, false);
+        }
+    }
+
+    @FXML
+    private void ignoreGpg() {
+        ignoreGpg = true;
+        UiUtils.setVisible(gpgStatusLabelExplanation, false);
+        UiUtils.setVisible(gpgButtonsBox, false);
+    }
+
+    @FXML
+    private void encryptSelectionChanged() {
+        if (encryptionNone.isSelected()) {
+            selectedEncryptionType = EncryptionType.NONE;
+            UiUtils.setVisible(passwordField, false);
+        } else if (encryptionPassword.isSelected()) {
+            selectedEncryptionType = EncryptionType.PASSWORD;
+            UiUtils.setVisible(passwordField, true);
+        } else if (encryptionGpg.isSelected()) {
+            selectedEncryptionType = EncryptionType.GPG;
+            UiUtils.setVisible(passwordField, false);
+        }
     }
 
     @FXML
@@ -73,7 +140,6 @@ public class InitialConfigDialogController implements ErrorHandlerController {
             return;
         }
 
-        var settings = ServiceLocator.getService(SettingsService.class);
         try {
             int apiId = Integer.parseInt(apiIdString);
             settings.setApiId(apiId);
@@ -83,14 +149,33 @@ public class InitialConfigDialogController implements ErrorHandlerController {
             return;
         }
 
-        settings.setTdlibDatabaseEncrypted(encryptTdlib.isSelected());
+        if (hasGpgKey || !ignoreGpg) {
+            if (gpgPassphraseField.getText().isBlank()) {
+                displayError("GPG passphrase is required");
+                return;
+            }
+            if (!gpgService.checkSecretKey(gpgPassphraseField.getText().toCharArray())) {
+                displayError("Invalid GPG passphrase");
+                return;
+            }
+        }
 
-        if (encryptTdlib.isSelected()) {
+        settings.setTdlibDatabaseEncryption(selectedEncryptionType);
+        if (selectedEncryptionType == EncryptionType.PASSWORD) {
             if (passwordField.getText().isBlank()) {
                 displayError("Password is required");
                 return;
             }
-            ServiceLocator.getService(UserService.class).setEncryptionPassword(passwordField.getText());
+            userService.setEncryptionPassword(passwordField.getText());
+        } else if (selectedEncryptionType == EncryptionType.GPG) {
+            var randomPassword = CryptoUtils.generateRandomPassword();
+            var encryptedPassword = gpgService.encryptText(randomPassword);
+            if (encryptedPassword == null) {
+                displayError("Error encrypting the password");
+                return;
+            }
+            userService.setEncryptionPassword(randomPassword);
+            settings.setTdlibEncryptedPassword(encryptedPassword);
         }
 
         var telegramFolder = appFolderTextField.getText();

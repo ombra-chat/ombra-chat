@@ -78,11 +78,11 @@ hQk=
         Mockito.when(settings.getPubringPath()).thenReturn(pubring.toFile().getAbsolutePath());
 
         gpgService = new GpgService();
-        gpgService.setPassphrase(TEST_SECRET_KEY_PASSWORD.toCharArray());
+        Assertions.assertTrue(gpgService.checkSecretKey(TEST_SECRET_KEY_PASSWORD.toCharArray()));
     }
 
     @Test
-    void testEncryptText() throws Exception {
+    void testEncryptAndDecryptTextFile() throws Exception {
         var plaintext = "Encryption test";
         var key = gpgService.getEncryptionKey(TEST_KEY_FINGERPRINT);
         Assertions.assertNotNull(key);
@@ -90,5 +90,13 @@ hQk=
         Assertions.assertTrue(file.length() > 0);
         var result = gpgService.decryptToString(file);
         Assertions.assertEquals(plaintext, result);
+    }
+
+    @Test
+    void testEncryptAndDecryptText() {
+        var plaintext = "Encryption test";
+        var encrypted = gpgService.encryptText(plaintext);
+        var decrypted = gpgService.decryptText(encrypted);
+        Assertions.assertEquals(plaintext, decrypted);
     }
 }

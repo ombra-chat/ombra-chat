@@ -20,8 +20,15 @@ public class SettingsService {
     private static final String INITIAL_CONFIG_DONE = "initial_config_done";
     private static final String APPLICATION_FOLDER_PATH = "app_folder_path";
     private static final String TDLIB_ENCRYPT = "tdlib_encrypt";
+    private static final String TDLIB_ENCRYPTION_PASSWORD_GPG_ENCRYPTED = "tdlib_encryption_password_gpg_encrypted";
     private static final String TDLIB_ENCRYPTION_SALT = "tdlib_encryption_salt";
     private static final String DEFAULT_PUBRING = "default_pubring";
+
+    public static enum EncryptionType {
+        NONE,
+        PASSWORD,
+        GPG
+    };
 
     public int getApiId() {
         return getPreferences().getInt(API_ID, 0);
@@ -55,12 +62,23 @@ public class SettingsService {
         getPreferences().put(APPLICATION_FOLDER_PATH, path);
     }
 
-    public boolean isTdlibDatabaseEncrypted() {
-        return getPreferences().getBoolean(TDLIB_ENCRYPT, false);
+    public EncryptionType getTdlibDatabaseEncryption() {
+        return EncryptionType.valueOf(getPreferences().get(TDLIB_ENCRYPT, EncryptionType.NONE.toString()));
     }
 
-    public void setTdlibDatabaseEncrypted(boolean value) {
-        getPreferences().putBoolean(TDLIB_ENCRYPT, value);
+    public void setTdlibDatabaseEncryption(EncryptionType encryptionType) {
+        getPreferences().put(TDLIB_ENCRYPT, encryptionType.toString());
+    }
+
+    public String getTdlibEncryptedPassword() {
+        return getPreferences().get(TDLIB_ENCRYPTION_PASSWORD_GPG_ENCRYPTED, "");
+    }
+
+    /**
+     * @param encryptedPassword random generated password encrypted with GPG key
+     */
+    public void setTdlibEncryptedPassword(String encryptedPassword) {
+        getPreferences().put(TDLIB_ENCRYPTION_PASSWORD_GPG_ENCRYPTED, encryptedPassword);
     }
 
     public String getTdlibEncryptionSalt() {

@@ -2,6 +2,7 @@ package net.zonia3000.ombrachat.services;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,6 +38,7 @@ import org.bouncycastle.openpgp.PGPPrivateKey;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyEncryptedData;
 import org.bouncycastle.openpgp.PGPSecretKey;
+import org.bouncycastle.openpgp.PGPSecretKeyRing;
 import org.bouncycastle.openpgp.PGPSecretKeyRingCollection;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
@@ -120,15 +122,11 @@ public class GpgService {
     }
 
     private final SettingsService settings;
-    private PGPPrivateKey privateKey;
-    private char[] passphrase;
+    private PGPPrivateKey myPrivateKey;
+    private PGPPublicKey myPublicKey;
 
     public GpgService() {
         settings = ServiceLocator.getService(SettingsService.class);
-    }
-
-    public void setPassphrase(char[] passphrase) {
-        this.passphrase = passphrase;
     }
 
     public boolean hasPrivateKey() {
@@ -224,6 +222,43 @@ public class GpgService {
         }
     }
 
+    public String encryptText(String plaintext) {
+        try {
+            File plaintextFile = Files.createTempFile(getGpgDirectoryPath(), GPG_FILE_PREFIX, ".txt").toFile();
+            try (FileOutputStream fos = new FileOutputStream(plaintextFile)) {
+                fos.write(plaintext.getBytes());
+            }
+            var encryptedTextFile = Files.createTempFile(getGpgDirectoryPath(), GPG_FILE_PREFIX, GPG_TEXT_FILE_SUFFIX).toFile();
+            encrypt(myPublicKey, plaintextFile, encryptedTextFile);
+            byte[] encryptedData = Files.readAllBytes(encryptedTextFile.toPath());
+            String encryptedString = bytesToHex(encryptedData);
+            Files.delete(plaintextFile.toPath());
+            Files.delete(encryptedTextFile.toPath());
+            return encryptedString;
+        } catch (IOException ex) {
+            logger.error("Unable to create encrypted text", ex);
+            return null;
+        }
+    }
+
+    public String decryptText(String encryptedText) {
+        var bytes = hexToBytes(encryptedText);
+        try (InputStream encryptedIn = new ByteArrayInputStream(bytes)) {
+            return decrypt(encryptedIn, decDataStream -> {
+                try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                    Streams.pipeAll(decDataStream, outputStream);
+                    return outputStream.toString(StandardCharsets.UTF_8);
+                } catch (IOException ex) {
+                    logger.error("Unable to decrypt string", ex);
+                    return null;
+                }
+            });
+        } catch (IOException ex) {
+            logger.error("Unable to decrypt string", ex);
+            return null;
+        }
+    }
+
     private void encrypt(PGPPublicKey key, File plaintext, File destination) {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(destination))) {
             try (ByteArrayOutputStream bOut = new ByteArrayOutputStream()) {
@@ -257,41 +292,56 @@ public class GpgService {
         Path dir = Paths.get(settings.getApplicationFolderPath(), "gpg");
         if (!Files.exists(dir)) {
             if (!dir.toFile().mkdirs()) {
-                logger.error("Unable to create GPG directory {}", dir.toAbsolutePath());
+                logger.error("Unable to create GPG directory {}", dir.toFile().getAbsolutePath());
             }
         }
         return dir;
     }
 
     public String decryptToString(File encryptedData) {
-        return decrypt(encryptedData, decDataStream -> {
-            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                Streams.pipeAll(decDataStream, outputStream);
-                return outputStream.toString(StandardCharsets.UTF_8);
-            } catch (IOException ex) {
-                logger.error("Unable to decrypt file", ex);
-                return null;
-            }
-        });
+        try (InputStream encryptedIn = new FileInputStream(encryptedData)) {
+            return decrypt(encryptedIn, decDataStream -> {
+                try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                    Streams.pipeAll(decDataStream, outputStream);
+                    return outputStream.toString(StandardCharsets.UTF_8);
+                } catch (IOException ex) {
+                    logger.error("Unable to decrypt file", ex);
+                    return null;
+                }
+            });
+        } catch (IOException ex) {
+            logger.error("Unable to decrypt file", ex);
+            return null;
+        }
     }
 
     public File decryptToFile(File encryptedData) {
-        return decrypt(encryptedData, decDataStream -> {
-            var encryptedFilePath = encryptedData.getAbsolutePath();
-            var plaintextFilePath = encryptedFilePath.substring(0, encryptedFilePath.length() - GPG_GENERIC_FILE_SUFFIX.length());
-            var plaintextFile = new File(plaintextFilePath);
-            try (FileOutputStream outputStream = new FileOutputStream(plaintextFile)) {
-                Streams.pipeAll(decDataStream, outputStream);
-                return plaintextFile;
-            } catch (IOException ex) {
-                logger.error("Unable to decrypt file", ex);
-                return null;
-            }
-        });
+        try (InputStream encryptedIn = new FileInputStream(encryptedData)) {
+            return decrypt(encryptedIn, decDataStream -> {
+                var encryptedFilePath = encryptedData.getAbsolutePath();
+                var plaintextFilePath = encryptedFilePath.substring(0, encryptedFilePath.length() - GPG_GENERIC_FILE_SUFFIX.length());
+                var plaintextFile = new File(plaintextFilePath);
+                try (FileOutputStream outputStream = new FileOutputStream(plaintextFile)) {
+                    Streams.pipeAll(decDataStream, outputStream);
+                    return plaintextFile;
+                } catch (IOException ex) {
+                    logger.error("Unable to decrypt file", ex);
+                    return null;
+                }
+            });
+        } catch (IOException ex) {
+            logger.error("Unable to decrypt file", ex);
+            return null;
+        }
     }
 
-    private <T> T decrypt(File encryptedData, Function<InputStream, T> func) {
-        try (InputStream encryptedIn = new FileInputStream(encryptedData)) {
+    private <T> T decrypt(InputStream encryptedIn, Function<InputStream, T> func) {
+        if (myPrivateKey == null) {
+            logger.error("Missing private key");
+            return null;
+        }
+
+        try {
             JcaPGPObjectFactory pgpObjectFactory = new JcaPGPObjectFactory(encryptedIn);
 
             Object obj = pgpObjectFactory.nextObject();
@@ -299,26 +349,22 @@ public class GpgService {
             PGPEncryptedDataList pgpEncryptedDataList = (obj instanceof PGPEncryptedDataList)
                     ? (PGPEncryptedDataList) obj : (PGPEncryptedDataList) pgpObjectFactory.nextObject();
 
-            PGPPrivateKey pgpPrivateKey = null;
             PGPPublicKeyEncryptedData publicKeyEncryptedData = null;
 
             Iterator<PGPEncryptedData> encryptedDataItr = pgpEncryptedDataList.getEncryptedDataObjects();
-            while (pgpPrivateKey == null && encryptedDataItr.hasNext()) {
+            var keyMatches = false;
+            while (!keyMatches && encryptedDataItr.hasNext()) {
                 publicKeyEncryptedData = (PGPPublicKeyEncryptedData) encryptedDataItr.next();
-                pgpPrivateKey = getPrivateKey(publicKeyEncryptedData.getKeyIdentifier().getKeyId());
+                keyMatches = publicKeyEncryptedData.getKeyIdentifier().getKeyId() == myPublicKey.getKeyID();
             }
 
-            if (pgpPrivateKey == null) {
-                return null;
-            }
-
-            if (publicKeyEncryptedData == null) {
+            if (!keyMatches || publicKeyEncryptedData == null) {
                 logger.error("Unable to extract encrypted data");
                 return null;
             }
 
             PublicKeyDataDecryptorFactory decryptorFactory = new JcePublicKeyDataDecryptorFactoryBuilder()
-                    .setProvider(BouncyCastleProvider.PROVIDER_NAME).build(pgpPrivateKey);
+                    .setProvider(BouncyCastleProvider.PROVIDER_NAME).build(myPrivateKey);
             InputStream decryptedCompressedIn = publicKeyEncryptedData.getDataStream(decryptorFactory);
 
             JcaPGPObjectFactory decCompObjFac = new JcaPGPObjectFactory(decryptedCompressedIn);
@@ -352,30 +398,6 @@ public class GpgService {
         }
     }
 
-    private PGPPrivateKey getPrivateKey(long keyID) {
-        if (privateKey != null) {
-            return privateKey;
-        }
-
-        Path privateKeyPath = getPrivateKeyPath();
-        if (!Files.exists(privateKeyPath)) {
-            return null;
-        }
-
-        try (InputStream privateKeyIn = new BufferedInputStream(new FileInputStream(privateKeyPath.toFile()))) {
-            var pgpSecretKeyRingCollection = new PGPSecretKeyRingCollection(PGPUtil.getDecoderStream(privateKeyIn),
-                    new JcaKeyFingerprintCalculator());
-
-            PGPSecretKey pgpSecretKey = pgpSecretKeyRingCollection.getSecretKey(keyID);
-            privateKey = pgpSecretKey == null ? null : pgpSecretKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder()
-                    .setProvider(BouncyCastleProvider.PROVIDER_NAME).build(passphrase));
-            return privateKey;
-        } catch (IOException | PGPException ex) {
-            logger.error("Unable to extract private key", ex);
-            return null;
-        }
-    }
-
     public boolean checkSecretKey(char[] passphrase) {
         Path privateKeyPath = getPrivateKeyPath();
         if (!Files.exists(privateKeyPath)) {
@@ -385,13 +407,17 @@ public class GpgService {
             var pgpSecretKeyRingCollection = new PGPSecretKeyRingCollection(PGPUtil.getDecoderStream(privateKeyIn),
                     new JcaKeyFingerprintCalculator());
 
-            var ite = pgpSecretKeyRingCollection.iterator();
-            if (ite.hasNext()) {
-                var secretRing = ite.next();
-                PGPSecretKey pgpSecretKey = secretRing.getSecretKey();
-                pgpSecretKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder()
-                        .setProvider(BouncyCastleProvider.PROVIDER_NAME).build(passphrase));
-                return true;
+            for (PGPSecretKeyRing secretRing : pgpSecretKeyRingCollection) {
+                var secretKeyIte = secretRing.getSecretKeys();
+                while (secretKeyIte.hasNext()) {
+                    PGPSecretKey pgpSecretKey = secretKeyIte.next();
+                    if (pgpSecretKey.getPublicKey().isEncryptionKey()) {
+                        myPrivateKey = pgpSecretKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder()
+                                .setProvider(BouncyCastleProvider.PROVIDER_NAME).build(passphrase));
+                        myPublicKey = pgpSecretKey.getPublicKey();
+                        return true;
+                    }
+                }
             }
         } catch (IOException | PGPException ex) {
             logger.error("Unable to extract private key", ex);
@@ -403,6 +429,10 @@ public class GpgService {
         return Paths.get(settings.getApplicationFolderPath(), "private.asc");
     }
 
+    public void getMyPublicKey(PGPSecretKey pgpSecretKey) {
+        pgpSecretKey.getPublicKey().getFingerprint();
+    }
+
     private static String bytesToHex(byte[] bytes) {
         StringBuilder hexString = new StringBuilder();
         for (byte b : bytes) {
@@ -410,5 +440,15 @@ public class GpgService {
             hexString.append(hex);
         }
         return hexString.toString();
+    }
+
+    private static byte[] hexToBytes(String hex) {
+        int length = hex.length();
+        byte[] bytes = new byte[length / 2];
+        for (int i = 0; i < length; i += 2) {
+            bytes[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+                    + Character.digit(hex.charAt(i + 1), 16));
+        }
+        return bytes;
     }
 }

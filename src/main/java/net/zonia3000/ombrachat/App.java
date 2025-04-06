@@ -24,7 +24,7 @@ public class App extends Application {
         var settings = ServiceLocator.getService(SettingsService.class);
         var gpgService = ServiceLocator.getService(GpgService.class);
         if (settings.isInitialConfigDone()) {
-            if (settings.isTdlibDatabaseEncrypted() || gpgService.hasPrivateKey()) {
+            if (settings.getTdlibDatabaseEncryption() != SettingsService.EncryptionType.NONE || gpgService.hasPrivateKey()) {
                 guiService.showEncryptionPasswordDialog();
             } else {
                 ServiceLocator.getService(TelegramClientService.class).startClient();

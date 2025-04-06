@@ -18,7 +18,11 @@ public class EncryptionPasswordController implements ErrorHandlerController {
     private static final Logger logger = LoggerFactory.getLogger(EncryptionPasswordController.class);
 
     @FXML
+    private Label encryptionPasswordLabel;
+    @FXML
     private PasswordField encryptionPasswordField;
+    @FXML
+    private Label gpgPassphraseLabel;
     @FXML
     private PasswordField gpgPassphraseField;
     @FXML
@@ -28,15 +32,21 @@ public class EncryptionPasswordController implements ErrorHandlerController {
 
     private final SettingsService settings;
     private final GpgService gpgService;
+    private final UserService userService;
 
     public EncryptionPasswordController() {
         settings = ServiceLocator.getService(SettingsService.class);
         gpgService = ServiceLocator.getService(GpgService.class);
+        userService = ServiceLocator.getService(UserService.class);
     }
 
     @FXML
     private void initialize() {
-        UiUtils.setVisible(encryptionPasswordField, settings.isTdlibDatabaseEncrypted());
+        var showEncryptionPasswordField = settings.getTdlibDatabaseEncryption() == SettingsService.EncryptionType.PASSWORD;
+        UiUtils.setVisible(encryptionPasswordLabel, showEncryptionPasswordField);
+        UiUtils.setVisible(encryptionPasswordField, showEncryptionPasswordField);
+
+        UiUtils.setVisible(gpgPassphraseLabel, gpgService.hasPrivateKey());
         UiUtils.setVisible(gpgPassphraseField, gpgService.hasPrivateKey());
 
         UiUtils.setVisible(errorLabel, false);
@@ -45,22 +55,27 @@ public class EncryptionPasswordController implements ErrorHandlerController {
     @FXML
     private void handleNextButtonClick() {
         displayError("");
-        if (settings.isTdlibDatabaseEncrypted()) {
+        if (settings.getTdlibDatabaseEncryption() == SettingsService.EncryptionType.PASSWORD) {
             String password = encryptionPasswordField.getText();
             if (password.isBlank()) {
                 return;
             }
-            var userService = ServiceLocator.getService(UserService.class);
             userService.setEncryptionPassword(password);
         }
         if (gpgService.hasPrivateKey()) {
             char[] passphrase = gpgPassphraseField.getText().toCharArray();
-            if (gpgService.checkSecretKey(passphrase)) {
-                gpgService.setPassphrase(passphrase);
-            } else {
+            if (!gpgService.checkSecretKey(passphrase)) {
                 displayError("Wrong GPG passphrase");
                 return;
             }
+        }
+        if (settings.getTdlibDatabaseEncryption() == SettingsService.EncryptionType.GPG) {
+            var password = gpgService.decryptText(settings.getTdlibEncryptedPassword());
+            if (password == null) {
+                displayError("Error decrypting Telegram password");
+                return;
+            }
+            userService.setEncryptionPassword(password);
         }
         nextBtn.setDisable(true);
         var clientService = ServiceLocator.getService(TelegramClientService.class);

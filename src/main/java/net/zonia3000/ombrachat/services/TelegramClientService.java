@@ -112,7 +112,7 @@ public class TelegramClientService {
                 request.systemLanguageCode = "en";
                 request.deviceModel = "Desktop";
                 request.applicationVersion = "1.0";
-                if (settings.isTdlibDatabaseEncrypted()) {
+                if (settings.getTdlibDatabaseEncryption() != SettingsService.EncryptionType.NONE) {
                     var password = userService.getEncryptionPassword();
                     var salt = settings.getTdlibEncryptionSalt();
                     request.databaseEncryptionKey = CryptoUtils.generateDerivedKey(password, salt);
