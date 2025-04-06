@@ -14,7 +14,7 @@
                 <Button mnemonicParsing="false" fx:id="saveBtn" text="Save" onAction="#handleSaveButtonClick" />                       
             </children>
             <padding>
-                <Insets left="10.0" right="10.0" />
+                <Insets left="10.0" right="10.0" top="10.0" bottom="10.0" />
             </padding>
         </VBox> 
     </children>
