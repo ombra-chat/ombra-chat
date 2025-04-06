@@ -3,6 +3,8 @@ package net.zonia3000.ombrachat.controllers;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
@@ -24,6 +26,7 @@ import javafx.stage.Stage;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.chat.message.MessageDocumentBox;
+import net.zonia3000.ombrachat.chat.message.MessageGpgDocumentBox;
 import net.zonia3000.ombrachat.chat.message.MessageGpgTextBox;
 import net.zonia3000.ombrachat.chat.message.MessageNotSupportedBox;
 import net.zonia3000.ombrachat.chat.message.MessagePhotoBox;
@@ -180,8 +183,12 @@ public class ChatPageController {
         } else if (content instanceof TdApi.MessagePhoto messagePhoto) {
             return new MessagePhotoBox(messagePhoto);
         } else if (content instanceof TdApi.MessageDocument messageDocument) {
-            if (chatPublicKey != null && gpgService.isGpgTextMessage(messageDocument)) {
-                return new MessageGpgTextBox(messageDocument);
+            if (chatPublicKey != null && gpgService.isGpgMessage(messageDocument)) {
+                if (gpgService.isGpgTextMessage(messageDocument)) {
+                    return new MessageGpgTextBox(messageDocument);
+                } else {
+                    return new MessageGpgDocumentBox(messageDocument);
+                }
             } else {
                 return new MessageDocumentBox(messageDocument);
             }
@@ -233,39 +240,51 @@ public class ChatPageController {
 
     @FXML
     private void sendMessage() {
-        var content = getInputMessageContent();
-        if (content == null) {
+        var contents = getInputMessageContents();
+        if (contents == null || contents.isEmpty()) {
             return;
         }
-        clientService.sendClientMessage(new TdApi.SendMessage(chatsService.getSelectedChat().id, 0, null, null, null, content), (TdApi.Object object) -> {
-            if (object instanceof TdApi.Message message) {
-                Platform.runLater(() -> {
-                    scrollToBottom = true;
-                    appendMessage(message);
-                    removeSelectedFile();
-                });
-            }
-        });
+        for (var content : contents) {
+            clientService.sendClientMessage(new TdApi.SendMessage(chatsService.getSelectedChat().id, 0, null, null, null, content), (TdApi.Object object) -> {
+                if (object instanceof TdApi.Message message) {
+                    Platform.runLater(() -> {
+                        scrollToBottom = true;
+                        appendMessage(message);
+                    });
+                }
+            });
+        }
+        removeSelectedFile();
         messageText.setText("");
     }
 
-    private TdApi.InputMessageContent getInputMessageContent() {
+    private List<TdApi.InputMessageContent> getInputMessageContents() {
+        List<TdApi.InputMessageContent> contents = new ArrayList<>();
         if (chatPublicKey == null) {
             var formattedText = new TdApi.FormattedText(messageText.getText(), new TdApi.TextEntity[]{});
             if (selectedFile == null) {
-                return new TdApi.InputMessageText(formattedText, null, true);
+                contents.add(new TdApi.InputMessageText(formattedText, null, true));
             } else {
                 var inputFileLocal = new TdApi.InputFileLocal(selectedFile.getAbsolutePath());
-                return new TdApi.InputMessageDocument(inputFileLocal, null, false, formattedText);
+                contents.add(new TdApi.InputMessageDocument(inputFileLocal, null, false, formattedText));
             }
         } else {
-            var file = gpgService.createGpgTextFile(chatPublicKey, messageText.getText());
-            if (file == null) {
-                return null;
+            if (selectedFile != null) {
+                var file = gpgService.createGpgFile(chatPublicKey, selectedFile);
+                if (file != null) {
+                    var inputFileLocal = new TdApi.InputFileLocal(file.getAbsolutePath());
+                    contents.add(new TdApi.InputMessageDocument(inputFileLocal, null, false, null));
+                }
             }
-            var inputFileLocal = new TdApi.InputFileLocal(file.getAbsolutePath());
-            return new TdApi.InputMessageDocument(inputFileLocal, null, false, null);
+            if (!messageText.getText().isBlank()) {
+                var file = gpgService.createGpgTextFile(chatPublicKey, messageText.getText());
+                if (file != null) {
+                    var inputFileLocal = new TdApi.InputFileLocal(file.getAbsolutePath());
+                    contents.add(new TdApi.InputMessageDocument(inputFileLocal, null, false, null));
+                }
+            }
         }
+        return contents;
     }
 
     private VBox getMessageBubble(TdApi.Message message) {
@@ -277,7 +296,7 @@ public class ChatPageController {
             addSenderLabel(bubble, message.senderId);
         }
         var content = getMessageContentBox(message.content);
-        if (content instanceof MessageGpgTextBox) {
+        if (content instanceof MessageGpgTextBox || content instanceof MessageGpgDocumentBox) {
             bubble.getStyleClass().add("gpg-message");
         }
         bubble.getChildren().add(content);

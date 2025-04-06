@@ -18,6 +18,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import net.zonia3000.ombrachat.ServiceLocator;
 import org.bouncycastle.bcpg.CompressionAlgorithmTags;
 import org.bouncycastle.gpg.keybox.BlobType;
@@ -209,6 +210,20 @@ public class GpgService {
         }
     }
 
+    public File createGpgFile(PGPPublicKey publicKey, File plaintextFile) {
+        try {
+            var fileExtensionPosition = plaintextFile.getName().indexOf(".");
+            var suffix = fileExtensionPosition == -1 ? GPG_GENERIC_FILE_SUFFIX
+                    : plaintextFile.getName().substring(fileExtensionPosition) + GPG_GENERIC_FILE_SUFFIX;
+            var tempFile = Files.createTempFile(getGpgDirectoryPath(), GPG_FILE_PREFIX, suffix).toFile();
+            encrypt(publicKey, plaintextFile, tempFile);
+            return tempFile;
+        } catch (IOException ex) {
+            logger.error("Unable to create encrypted file", ex);
+            return null;
+        }
+    }
+
     private void encrypt(PGPPublicKey key, File plaintext, File destination) {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(destination))) {
             try (ByteArrayOutputStream bOut = new ByteArrayOutputStream()) {
@@ -249,6 +264,33 @@ public class GpgService {
     }
 
     public String decryptToString(File encryptedData) {
+        return decrypt(encryptedData, decDataStream -> {
+            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                Streams.pipeAll(decDataStream, outputStream);
+                return outputStream.toString(StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                logger.error("Unable to decrypt file", ex);
+                return null;
+            }
+        });
+    }
+
+    public File decryptToFile(File encryptedData) {
+        return decrypt(encryptedData, decDataStream -> {
+            var encryptedFilePath = encryptedData.getAbsolutePath();
+            var plaintextFilePath = encryptedFilePath.substring(0, encryptedFilePath.length() - GPG_GENERIC_FILE_SUFFIX.length());
+            var plaintextFile = new File(plaintextFilePath);
+            try (FileOutputStream outputStream = new FileOutputStream(plaintextFile)) {
+                Streams.pipeAll(decDataStream, outputStream);
+                return plaintextFile;
+            } catch (IOException ex) {
+                logger.error("Unable to decrypt file", ex);
+                return null;
+            }
+        });
+    }
+
+    private <T> T decrypt(File encryptedData, Function<InputStream, T> func) {
         try (InputStream encryptedIn = new FileInputStream(encryptedData)) {
             JcaPGPObjectFactory pgpObjectFactory = new JcaPGPObjectFactory(encryptedIn);
 
@@ -287,14 +329,11 @@ public class GpgService {
 
             Object message = pgpCompObjFac.nextObject();
 
-            String textMessage;
+            T result;
             if (message instanceof PGPLiteralData) {
                 PGPLiteralData pgpLiteralData = (PGPLiteralData) message;
                 InputStream decDataStream = pgpLiteralData.getInputStream();
-                try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                    Streams.pipeAll(decDataStream, outputStream);
-                    textMessage = outputStream.toString(StandardCharsets.UTF_8);
-                }
+                result = func.apply(decDataStream);
             } else {
                 logger.error("Invalid message");
                 return null;
@@ -306,7 +345,7 @@ public class GpgService {
                     return null;
                 }
             }
-            return textMessage;
+            return result;
         } catch (IOException | PGPException ex) {
             logger.error("Unable to decrypt file", ex);
             return null;
