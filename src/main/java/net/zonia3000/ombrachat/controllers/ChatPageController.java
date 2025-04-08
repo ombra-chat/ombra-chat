@@ -17,16 +17,15 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.TextField;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
+import net.zonia3000.ombrachat.chat.message.MessageBubble;
 import net.zonia3000.ombrachat.chat.message.MessageDocumentBox;
 import net.zonia3000.ombrachat.chat.message.MessageGpgDocumentBox;
 import net.zonia3000.ombrachat.chat.message.MessageGpgTextBox;
@@ -127,6 +126,10 @@ public class ChatPageController {
             }
         });
 
+        chatScrollPane.vvalueProperty().addListener((observable, oldValue, newValue) -> {
+            markVisibleMessagesAsRead();
+        });
+
         selectedFileLabel.managedProperty().bind(selectedFileLabel.visibleProperty());
         removeSelectedFileBtn.managedProperty().bind(removeSelectedFileBtn.visibleProperty());
         selectedFileLabel.setVisible(false);
@@ -135,7 +138,8 @@ public class ChatPageController {
         guiService.subscribe(ChatSelected.class, (e) -> setSelectedChat(e.getChat()));
         guiService.subscribe(MessageReceived.class, (e) -> {
             Platform.runLater(() -> {
-                prependMessage(e.getMessage());
+                addMessage(e.getMessage());
+                markVisibleMessagesAsRead();
             });
         });
         guiService.subscribe(ChatSettingsSaved.class, (e) -> setGpgKeyLabel());
@@ -145,6 +149,52 @@ public class ChatPageController {
             });
         });
         logger.debug("{} initialized", ChatPageController.class.getSimpleName());
+    }
+
+    private void markVisibleMessagesAsRead() {
+
+        var viewport = chatScrollPane.getViewportBounds();
+        double availableHeight = viewport.getMaxY() - viewport.getMinY();
+        double totalHeight = chatScrollPane.getContent().getBoundsInLocal().getHeight();
+        double maxY = chatScrollPane.vvalueProperty().doubleValue() * (totalHeight - availableHeight) + availableHeight;
+        double minY = maxY - availableHeight;
+
+        VBox content = (VBox) chatScrollPane.getContent();
+
+        List<Long> messagesToBeMarkedAsRead = new ArrayList<>();
+        for (Node node : content.getChildren()) {
+            if (node instanceof MessageBubble bubble) {
+                var bubbleBounds = bubble.getBoundsInParent();
+                var bubbleMinY = bubbleBounds.getMinY();
+                var bubbleMaxY = bubbleBounds.getMaxY();
+                if (bubbleMinY < 0) {
+                    // in local bounds, the minimum position is 0;
+                    // negative values appear in uninitialized items
+                    return;
+                }
+                // detect visible and unread messages
+                if (((bubbleMinY >= minY && bubbleMaxY <= maxY)
+                        // message higher than window
+                        || (bubbleMinY <= minY && bubbleMaxY >= maxY))
+                        && !bubble.isRead() && !bubble.isProcessingRead()) {
+                    bubble.setProcessingRead(true);
+                    messagesToBeMarkedAsRead.add(bubble.getMessage().id);
+                }
+            }
+        }
+        markMessagesAsRead(messagesToBeMarkedAsRead);
+    }
+
+    private void markMessagesAsRead(List<Long> messagesToBeMarkedAsRead) {
+        if (messagesToBeMarkedAsRead.isEmpty()) {
+            return;
+        }
+        var selectedChat = chatsService.getSelectedChat();
+        if (selectedChat == null) {
+            return;
+        }
+        long[] ids = messagesToBeMarkedAsRead.stream().mapToLong(Long::longValue).toArray();
+        clientService.sendClientMessage(new TdApi.ViewMessages(selectedChat.id, ids, null, false));
     }
 
     public void closeChat() {
@@ -179,12 +229,35 @@ public class ChatPageController {
         }
     }
 
-    private void prependMessage(TdApi.Message message) {
-        chatContent.getChildren().addFirst(getMessageBubble(message));
+    private void addMessage(TdApi.Message message) {
+        var children = chatContent.getChildren();
+        synchronized (children) {
+            if (children.stream().map(n -> (MessageBubble) n).anyMatch(m -> m.getMessage().id == message.id)) {
+                // prevent adding the same message twice
+                return;
+            }
+            MessageBubble nextMessage = children.stream()
+                    .map(n -> (MessageBubble) n)
+                    .filter(m -> m.getMessage().id > message.id)
+                    .findFirst().orElse(null);
+            MessageBubble bubble = getMessageBubble(message);
+            if (nextMessage != null) {
+                var index = children.indexOf(nextMessage);
+                if (index != -1) {
+                    children.add(index, bubble);
+                    return;
+                }
+            }
+            children.add(bubble);
+        }
     }
 
-    private void appendMessage(TdApi.Message message) {
-        chatContent.getChildren().add(getMessageBubble(message));
+    private boolean isRead(TdApi.Message message) {
+        var selectedChat = chatsService.getSelectedChat();
+        if (selectedChat == null) {
+            return false;
+        }
+        return message.id <= selectedChat.lastReadInboxMessageId;
     }
 
     private VBox getMessageContentBox(TdApi.MessageContent content) {
@@ -209,7 +282,7 @@ public class ChatPageController {
 
     private void handleFileUpdated(FileUpdated update) {
         for (Node node : chatContent.getChildrenUnmodifiable()) {
-            if (node instanceof VBox bubble) {
+            if (node instanceof MessageBubble bubble) {
                 if (bubble.getChildren().size() == 1) {
                     var msgBox = bubble.getChildren().get(0);
                     if (msgBox instanceof MessageDocumentBox docBox) {
@@ -259,7 +332,6 @@ public class ChatPageController {
                 if (object instanceof TdApi.Message message) {
                     Platform.runLater(() -> {
                         scrollToBottom = true;
-                        appendMessage(message);
                     });
                 }
             });
@@ -297,43 +369,18 @@ public class ChatPageController {
         return contents;
     }
 
-    private VBox getMessageBubble(TdApi.Message message) {
-        VBox bubble = new VBox();
-        bubble.getStyleClass().add("message-bubble");
+    private MessageBubble getMessageBubble(TdApi.Message message) {
+        MessageBubble bubble = new MessageBubble(message);
         if (message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == userService.getMyId()) {
-            bubble.getStyleClass().add("my-message");
+            bubble.setMy(true);
         } else {
-            addSenderLabel(bubble, message.senderId);
+            bubble.setSender(message.senderId);
         }
         var content = getMessageContentBox(message.content);
-        if (content instanceof MessageGpgTextBox || content instanceof MessageGpgDocumentBox) {
-            bubble.getStyleClass().add("gpg-message");
-        }
+        bubble.setGpg(content instanceof MessageGpgTextBox || content instanceof MessageGpgDocumentBox);
         bubble.getChildren().add(content);
+        bubble.setRead(isRead(message));
         return bubble;
-    }
-
-    private void addSenderLabel(VBox vbox, TdApi.MessageSender sender) {
-        TdApi.Chat chat = getSenderChat(sender);
-        if (chat == null) {
-            return;
-        }
-        var label = new Label(chat.title);
-        label.setTextFill(Color.BLUE);
-        label.getStyleClass().add("bold");
-        label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-            //messagesLoader.setSelectedChat(chat);
-        });
-        vbox.getChildren().add(label);
-    }
-
-    private TdApi.Chat getSenderChat(TdApi.MessageSender sender) {
-        if (sender instanceof TdApi.MessageSenderChat senderChat) {
-            return chatsService.getChat(senderChat.chatId);
-        } else if (sender instanceof TdApi.MessageSenderUser senderUser) {
-            return chatsService.getChat(senderUser.userId);
-        }
-        return null;
     }
 
     @FXML

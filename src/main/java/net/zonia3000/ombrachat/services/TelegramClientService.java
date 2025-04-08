@@ -33,10 +33,18 @@ public class TelegramClientService {
 
         Client.setLogMessageHandler(0, new LogMessageHandler());
 
-        // disable TDLib log and redirect fatal errors and plain log messages to a file
         try {
+            // log only tdlib fatal errors
             Client.execute(new TdApi.SetLogVerbosityLevel(0));
-            Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamFile("tdlib.log", 1 << 27, false)));
+            var logLevel = System.getenv("LOG_LEVEL");
+            if ("DEBUG".equals(logLevel)) {
+                // redirect tdlib debug log messages to a file
+                var logFile = System.getenv("TDLIB_LOG_FILE");
+                Client.execute(new TdApi.SetLogStream(
+                        new TdApi.LogStreamFile(logFile == null ? "tdlib.log" : logFile, 1 << 27, false))
+                );
+                Client.execute(new TdApi.SetLogVerbosityLevel(4));
+            }
         } catch (Client.ExecutionException error) {
             throw new IOError(new IOException("Write access to the current directory is required"));
         }

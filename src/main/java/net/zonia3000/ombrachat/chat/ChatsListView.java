@@ -13,6 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.events.ChatsListUpdated;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
@@ -56,9 +57,9 @@ public class ChatsListView extends ListView<TdApi.Chat> {
     public class CustomListCell extends ListCell<TdApi.Chat> {
 
         @Override
-        protected void updateItem(TdApi.Chat item, boolean empty) {
-            super.updateItem(item, empty);
-            if (empty || item == null) {
+        protected void updateItem(TdApi.Chat chat, boolean empty) {
+            super.updateItem(chat, empty);
+            if (empty || chat == null) {
                 setText(null);
                 setGraphic(null);
             } else {
@@ -68,15 +69,20 @@ public class ChatsListView extends ListView<TdApi.Chat> {
                 imageView.setFitWidth(20);
                 imageView.setFitHeight(20);*/
 
-                Label textLabel = new Label(item.title);
+                Label textLabel = new Label(chat.title);
                 textLabel.setAlignment(Pos.CENTER_LEFT);
                 textLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
                 textLabel.setMaxWidth(Integer.MAX_VALUE);
 
-                Label numberLabel = new Label(String.valueOf(item.unreadCount));
+                Label numberLabel = new Label(String.valueOf(chat.unreadCount));
                 numberLabel.setFont(new Font(15));
                 numberLabel.setAlignment(Pos.CENTER);
-                numberLabel.setStyle("-fx-text-fill: blue;");
+                if (chat.notificationSettings.muteFor > 0) {
+                    numberLabel.setStyle("-fx-text-fill: blue;");
+                } else {
+                    numberLabel.setStyle("-fx-text-fill: red;");
+                }
+                UiUtils.setVisible(numberLabel, chat.unreadCount > 0);
 
                 HBox hBox = new HBox(10);
                 hBox.getChildren().addAll(textLabel, numberLabel);

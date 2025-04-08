@@ -4,8 +4,12 @@ import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.events.FileUpdated;
 import net.zonia3000.ombrachat.events.MessageReceived;
 import org.drinkless.tdlib.TdApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MessagesService {
+
+    private static final Logger logger = LoggerFactory.getLogger(MessagesService.class);
 
     private final Object lock = new Object();
 
@@ -26,7 +30,10 @@ public class MessagesService {
             return false;
         }
         if (object instanceof TdApi.Messages messages) {
-            return handleMessages(messages);
+            return handleMessages(messages.messages);
+        }
+        if (object instanceof TdApi.UpdateNewMessage newMessage) {
+            return handleMessages(new TdApi.Message[]{newMessage.message});
         }
         if (object instanceof TdApi.UpdateFile updateFile) {
             return handleUpdateFile(updateFile);
@@ -34,13 +41,13 @@ public class MessagesService {
         return false;
     }
 
-    private boolean handleMessages(TdApi.Messages messages) {
+    private boolean handleMessages(TdApi.Message[] messages) {
         synchronized (lock) {
             var selectedChat = chatsService.getSelectedChat();
             if (selectedChat == null) {
                 return false;
             }
-            for (var message : messages.messages) {
+            for (var message : messages) {
                 if (message.chatId == selectedChat.id) {
                     if (lastMessageId == 0) { // first request for selected chat
                         telegramClientService.sendClientMessage(new TdApi.GetChatHistory(selectedChat.id, message.id, 0, 20, false),

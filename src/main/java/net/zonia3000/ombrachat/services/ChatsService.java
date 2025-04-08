@@ -47,6 +47,8 @@ public class ChatsService {
             return handleUpdateChatPosition(update);
         } else if (object instanceof TdApi.UpdateChatAddedToList update) {
             return handleUpdateChatAddedToList(update);
+        } else if (object instanceof TdApi.UpdateChatReadInbox update) {
+            return handleUpdateChatReadInbox(update);
         }
         return false;
     }
@@ -57,6 +59,9 @@ public class ChatsService {
 
     public void setSelectedChat(TdApi.Chat selectedChat) {
         synchronized (lock) {
+            if (this.selectedChat != null && selectedChat == null) {
+                telegramClientService.sendClientMessage(new TdApi.CloseChat(this.selectedChat.id));
+            }
             this.selectedChat = selectedChat;
             guiService.publish(new ChatSelected(selectedChat));
             var messagesService = ServiceLocator.getService(MessagesService.class);
@@ -101,6 +106,17 @@ public class ChatsService {
             chatFolders.put(chatFolderId, list);
         }
         list.add(chat.id);
+        return true;
+    }
+
+    private boolean handleUpdateChatReadInbox(TdApi.UpdateChatReadInbox update) {
+        var chat = chats.get(update.chatId);
+        if (chat == null) {
+            return false;
+        }
+        chat.unreadCount = update.unreadCount;
+        chat.lastReadInboxMessageId = update.lastReadInboxMessageId;
+        this.guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
         return true;
     }
 
