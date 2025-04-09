@@ -2,6 +2,7 @@ package net.zonia3000.ombrachat.services;
 
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.events.FileUpdated;
+import net.zonia3000.ombrachat.events.MessagesDeleted;
 import net.zonia3000.ombrachat.events.MessageReceived;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
@@ -38,6 +39,9 @@ public class MessagesService {
         if (object instanceof TdApi.UpdateFile updateFile) {
             return handleUpdateFile(updateFile);
         }
+        if (object instanceof TdApi.UpdateDeleteMessages updateDelete) {
+            return handleDeleteMessages(updateDelete);
+        }
         return false;
     }
 
@@ -65,6 +69,11 @@ public class MessagesService {
 
     private boolean handleUpdateFile(TdApi.UpdateFile updateFile) {
         guiService.publish(new FileUpdated(updateFile));
+        return true;
+    }
+    
+    private boolean handleDeleteMessages(TdApi.UpdateDeleteMessages update) {
+        guiService.publish(new MessagesDeleted(update.chatId, update.messageIds));
         return true;
     }
 

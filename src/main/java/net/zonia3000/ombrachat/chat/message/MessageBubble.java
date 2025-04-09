@@ -1,15 +1,24 @@
 package net.zonia3000.ombrachat.chat.message;
 
+import java.io.IOError;
+import java.io.IOException;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiUtils;
+import net.zonia3000.ombrachat.controllers.MessageDialogController;
 import net.zonia3000.ombrachat.services.ChatsService;
 import org.drinkless.tdlib.TdApi;
 
 public class MessageBubble extends VBox {
-    
+
     private final ChatsService chatsService;
     private final TdApi.Message message;
 
@@ -22,6 +31,7 @@ public class MessageBubble extends VBox {
         this.chatsService = ServiceLocator.getService(ChatsService.class);
         this.message = message;
         getStyleClass().add("message-bubble");
+        setOnMouseClicked((e) -> openMessageDialog());
     }
 
     public TdApi.Message getMessage() {
@@ -87,5 +97,23 @@ public class MessageBubble extends VBox {
             return chatsService.getChat(senderUser.userId);
         }
         return null;
+    }
+
+    @FXML
+    private void openMessageDialog() {
+        try {
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(MessageDialogController.class.getResource("/view/message-dialog.fxml"));
+            Parent root = loader.load();
+            ((MessageDialogController) loader.getController()).setMessage(message);
+            Scene scene = new Scene(root);
+            UiUtils.setCommonCss(scene);
+            Stage newStage = new Stage();
+            newStage.setTitle("Message");
+            newStage.setScene(scene);
+            newStage.showAndWait();
+        } catch (IOException ex) {
+            throw new IOError(ex);
+        }
     }
 }

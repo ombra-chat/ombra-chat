@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
@@ -36,6 +38,7 @@ import net.zonia3000.ombrachat.events.ChatSelected;
 import net.zonia3000.ombrachat.events.ChatSettingsSaved;
 import net.zonia3000.ombrachat.events.FileUpdated;
 import net.zonia3000.ombrachat.events.MessageReceived;
+import net.zonia3000.ombrachat.events.MessagesDeleted;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.MessagesService;
@@ -146,6 +149,11 @@ public class ChatPageController {
         guiService.subscribe(FileUpdated.class, (e) -> {
             Platform.runLater(() -> {
                 handleFileUpdated(e);
+            });
+        });
+        guiService.subscribe(MessagesDeleted.class, (e) -> {
+            Platform.runLater(() -> {
+                deleteMessages(e);
             });
         });
         logger.debug("{} initialized", ChatPageController.class.getSimpleName());
@@ -381,6 +389,25 @@ public class ChatPageController {
         bubble.getChildren().add(content);
         bubble.setRead(isRead(message));
         return bubble;
+    }
+
+    private void deleteMessages(MessagesDeleted messagesDeleted) {
+        var currentChat = chatsService.getSelectedChat();
+        if (currentChat == null) {
+            return;
+        }
+        if (currentChat.id != messagesDeleted.getChatId()) {
+            return;
+        }
+        var children = chatContent.getChildren();
+
+        List<Node> nodesToRemove = children.stream()
+                .map(n -> (MessageBubble) n)
+                .filter(n -> Arrays.stream(messagesDeleted.getMessageIds()).anyMatch(id -> n.getMessage().id == id))
+                .collect(Collectors.toList());
+
+        logger.debug("Removing {} messages from the list", nodesToRemove.size());
+        children.removeAll(nodesToRemove);
     }
 
     @FXML
