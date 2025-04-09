@@ -11,7 +11,9 @@
             <children>
                 <CheckBox fx:id="enableGPGCheckBox" text="Enable GPG" />
                 <ComboBox fx:id="keysComboBox" />
-                <Button mnemonicParsing="false" fx:id="saveBtn" text="Save" onAction="#handleSaveButtonClick" />                       
+                <Button mnemonicParsing="false" fx:id="saveBtn" text="Save" onAction="#handleSaveButtonClick" />
+                
+                <Button mnemonicParsing="false" styleClass="pt" fx:id="secretChatBtn" text="Start new secret chat" onAction="#createNewSecretChat" />
             </children>
             <padding>
                 <Insets left="10.0" right="10.0" top="10.0" bottom="10.0" />

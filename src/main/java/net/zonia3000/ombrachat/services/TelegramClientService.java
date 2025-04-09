@@ -114,7 +114,7 @@ public class TelegramClientService {
                 TdApi.SetTdlibParameters request = new TdApi.SetTdlibParameters();
                 request.databaseDirectory = getTdLibFolderPath();
                 request.useMessageDatabase = true;
-                request.useSecretChats = false;
+                request.useSecretChats = true;
                 request.apiId = settings.getApiId();
                 request.apiHash = settings.getApiHash();
                 request.systemLanguageCode = "en";

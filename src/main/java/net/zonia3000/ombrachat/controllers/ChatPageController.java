@@ -19,6 +19,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -54,6 +55,8 @@ public class ChatPageController {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatPageController.class);
 
+    @FXML
+    private ImageView lockImageView;
     @FXML
     private Label chatTitleLabel;
     @FXML
@@ -215,6 +218,8 @@ public class ChatPageController {
         } else {
             setGpgKeyLabel();
             chatContent.getChildren().removeAll(chatContent.getChildren());
+            lockImageView.setImage(guiService.getLockImage());
+            UiUtils.setVisible(lockImageView, selectedChat.type instanceof TdApi.ChatTypeSecret);
             chatTitleLabel.setText(selectedChat.title);
             scrollToBottom = true;
             var writableChat = selectedChat.permissions.canSendBasicMessages;

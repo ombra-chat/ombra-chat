@@ -1,14 +1,18 @@
 package net.zonia3000.ombrachat.chat;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
@@ -18,8 +22,12 @@ import net.zonia3000.ombrachat.events.ChatsListUpdated;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
 import org.drinkless.tdlib.TdApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChatsListView extends ListView<TdApi.Chat> {
+
+    private static final Logger logger = LoggerFactory.getLogger(ChatsListView.class);
 
     private TdApi.Chat lastSelectedChat;
 
@@ -63,16 +71,20 @@ public class ChatsListView extends ListView<TdApi.Chat> {
                 setText(null);
                 setGraphic(null);
             } else {
-                // Create an ImageView
-                /*Image image = new Image(item.getImageUrl());
-                ImageView imageView = new ImageView(image);
-                imageView.setFitWidth(20);
-                imageView.setFitHeight(20);*/
+                List<Node> rowNodes = new ArrayList<>();
+
+                if (chat.type instanceof TdApi.ChatTypeSecret && guiService.getLockImage() != null) {
+                    ImageView imageView = new ImageView(guiService.getLockImage());
+                    imageView.setFitWidth(24);
+                    imageView.setFitHeight(24);
+                    rowNodes.add(imageView);
+                }
 
                 Label textLabel = new Label(chat.title);
                 textLabel.setAlignment(Pos.CENTER_LEFT);
                 textLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
                 textLabel.setMaxWidth(Integer.MAX_VALUE);
+                rowNodes.add(textLabel);
 
                 Label numberLabel = new Label(String.valueOf(chat.unreadCount));
                 numberLabel.setFont(new Font(15));
@@ -83,9 +95,10 @@ public class ChatsListView extends ListView<TdApi.Chat> {
                     numberLabel.setStyle("-fx-text-fill: red;");
                 }
                 UiUtils.setVisible(numberLabel, chat.unreadCount > 0);
+                rowNodes.add(numberLabel);
 
                 HBox hBox = new HBox(10);
-                hBox.getChildren().addAll(textLabel, numberLabel);
+                hBox.getChildren().addAll(rowNodes);
                 hBox.setAlignment(Pos.CENTER);
                 hBox.setPrefHeight(40);
                 hBox.setPrefWidth(1);

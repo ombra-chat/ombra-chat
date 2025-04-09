@@ -11,6 +11,7 @@
             <HBox>
                 <children>
                     <Button fx:id="chatSettingsBtn" styleClass="btn, btn-30" prefWidth="24.0" prefHeight="24.0" onAction="#openChatSettingsDialog"></Button>
+                    <ImageView fx:id="lockImageView" fitWidth="24" fitHeight="24" />
                     <Label fx:id="chatTitleLabel" maxWidth="10000" HBox.hgrow="ALWAYS" />
                     <Button styleClass="btn, btn-20" fx:id="closeChatBtn" onAction="#closeChat" />
                 </children>

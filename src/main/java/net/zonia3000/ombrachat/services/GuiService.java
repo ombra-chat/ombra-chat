@@ -2,6 +2,7 @@ package net.zonia3000.ombrachat.services;
 
 import java.io.IOError;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +12,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
@@ -18,6 +20,7 @@ import net.zonia3000.ombrachat.App;
 import net.zonia3000.ombrachat.controllers.ErrorHandlerController;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
+import net.zonia3000.ombrachat.chat.ChatsListView;
 import net.zonia3000.ombrachat.controllers.AuthenticationCodeController;
 import net.zonia3000.ombrachat.controllers.AuthenticationPasswordController;
 import net.zonia3000.ombrachat.controllers.EncryptionPasswordController;
@@ -41,9 +44,12 @@ public class GuiService {
 
     private ErrorHandlerController currentController;
 
+    private final Image lockImage;
+
     public GuiService(App app, Stage primaryStage) {
         this.app = app;
         this.primaryStage = primaryStage;
+        lockImage = createLockImage();
     }
 
     public void handleError(String errorMessage) {
@@ -220,6 +226,19 @@ public class GuiService {
     public synchronized <T extends Event> void subscribe(Class<T> eventType, EventListener<T> listener) {
         logger.debug("Subscribing to event {}", eventType.getSimpleName());
         eventListeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(listener);
+    }
+
+    private Image createLockImage() {
+        try (InputStream in = ChatsListView.class.getResourceAsStream("/view/icons/icons8-lock.png")) {
+            return new Image(in);
+        } catch (IOException ex) {
+            logger.error("Unable to initialize lock image", ex);
+        }
+        return null;
+    }
+
+    public Image getLockImage() {
+        return lockImage;
     }
 
     public void showDocument(String url) {

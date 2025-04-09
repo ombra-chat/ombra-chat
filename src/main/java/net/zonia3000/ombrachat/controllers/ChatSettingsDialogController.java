@@ -12,6 +12,7 @@ import net.zonia3000.ombrachat.events.ChatSettingsSaved;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.SettingsService;
+import net.zonia3000.ombrachat.services.TelegramClientService;
 import org.drinkless.tdlib.TdApi;
 
 public class ChatSettingsDialogController {
@@ -21,6 +22,8 @@ public class ChatSettingsDialogController {
     @FXML
     private CheckBox enableGPGCheckBox;
     @FXML
+    private Button secretChatBtn;
+    @FXML
     private Button saveBtn;
 
     private boolean showGpgSettings;
@@ -29,21 +32,25 @@ public class ChatSettingsDialogController {
     private final ChatsService chatsService;
     private final GuiService guiService;
     private final GpgService gpgService;
+    private final TelegramClientService clientService;
 
     public ChatSettingsDialogController() {
         this.settings = ServiceLocator.getService(SettingsService.class);
         this.chatsService = ServiceLocator.getService(ChatsService.class);
         this.guiService = ServiceLocator.getService(GuiService.class);
         this.gpgService = ServiceLocator.getService(GpgService.class);
+        this.clientService = ServiceLocator.getService(TelegramClientService.class);
     }
 
     @FXML
     public void initialize() {
         var selectedChat = chatsService.getSelectedChat();
-        showGpgSettings = selectedChat.type instanceof TdApi.ChatTypePrivate;
+        showGpgSettings = selectedChat.type instanceof TdApi.ChatTypePrivate
+                || selectedChat.type instanceof TdApi.ChatTypeSecret;
 
         UiUtils.setVisible(keysComboBox, showGpgSettings);
         UiUtils.setVisible(enableGPGCheckBox, showGpgSettings);
+        UiUtils.setVisible(secretChatBtn, selectedChat.type instanceof TdApi.ChatTypePrivate);
 
         if (!showGpgSettings) {
             return;
@@ -82,5 +89,15 @@ public class ChatSettingsDialogController {
         Stage stage = (Stage) saveBtn.getScene().getWindow();
         stage.close();
         guiService.publish(new ChatSettingsSaved());
+    }
+
+    @FXML
+    private void createNewSecretChat() {
+        var selectedChat = chatsService.getSelectedChat();
+        if (selectedChat.type instanceof TdApi.ChatTypePrivate chat) {
+            clientService.sendClientMessage(new TdApi.CreateNewSecretChat(chat.userId));
+            Stage stage = (Stage) saveBtn.getScene().getWindow();
+            stage.close();
+        }
     }
 }
