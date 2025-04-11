@@ -45,6 +45,8 @@ public class ChatsService {
             return handleUpdateNewChat(update);
         } else if (object instanceof TdApi.UpdateChatPosition update) {
             return handleUpdateChatPosition(update);
+        } else if (object instanceof TdApi.UpdateChatLastMessage update) {
+            return handleUpdateChatLastMessage(update);
         } else if (object instanceof TdApi.UpdateChatAddedToList update) {
             return handleUpdateChatAddedToList(update);
         } else if (object instanceof TdApi.UpdateChatReadInbox update) {
@@ -132,19 +134,29 @@ public class ChatsService {
     }
 
     private boolean handleUpdateChatPosition(TdApi.UpdateChatPosition update) {
+        if (update.position.list instanceof TdApi.ChatListFolder chatListFolder) {
+            if (update.position.order == 0) {
+                removeChatFromFolder(chatListFolder, update.chatId);
+            }
+            return true;
+        }
+
         if (!(update.position.list instanceof TdApi.ChatListMain)) {
             return true;
         }
+
         TdApi.Chat chat = chats.get(update.chatId);
         if (chat == null) {
             return true;
         }
+
         synchronized (chat) {
             boolean found = false;
             for (var pos : chat.positions) {
-                if (update.position.list instanceof TdApi.ChatListMain && pos.list instanceof TdApi.ChatListMain) {
+                if (pos.list instanceof TdApi.ChatListMain) {
                     pos.order = update.position.order;
                     found = true;
+                    break;
                 }
             }
             if (!found) {
@@ -153,7 +165,27 @@ public class ChatsService {
                         .toArray(TdApi.ChatPosition[]::new);
             }
         }
+        this.guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
         return true;
+    }
+
+    private boolean handleUpdateChatLastMessage(TdApi.UpdateChatLastMessage update) {
+        TdApi.Chat chat = chats.get(update.chatId);
+        if (chat == null) {
+            return true;
+        }
+        synchronized (chat) {
+            chat.positions = update.positions;
+        }
+        this.guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
+        return true;
+    }
+
+    private void removeChatFromFolder(TdApi.ChatListFolder folder, long chatId) {
+        List<Long> chatIds = chatFolders.get(folder.chatFolderId);
+        if (chatIds.remove(chatId)) {
+            this.guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
+        }
     }
 
     public void loadChats() {
