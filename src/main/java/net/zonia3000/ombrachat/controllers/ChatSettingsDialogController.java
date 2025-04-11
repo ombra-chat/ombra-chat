@@ -4,29 +4,52 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiException;
 import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.events.ChatSettingsSaved;
 import net.zonia3000.ombrachat.services.ChatsService;
+import static net.zonia3000.ombrachat.services.GpgService.bytesToHex;
 import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import org.drinkless.tdlib.TdApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChatSettingsDialogController {
 
-    @FXML
-    private ComboBox<GpgService.GpgPublicKey> keysComboBox;
+    private static final Logger logger = LoggerFactory.getLogger(ChatSettingsDialogController.class);
+
     @FXML
     private CheckBox enableGPGCheckBox;
     @FXML
-    private Button secretChatBtn;
+    private RadioButton keySourcePubring;
+    @FXML
+    private RadioButton keySourceFile;
+    @FXML
+    private ComboBox<GpgService.GpgPublicKey> keysComboBox;
+    @FXML
+    private ComboBox<String> encryptionKeysComboBox;
+    @FXML
+    private Label errorLabel;
+    @FXML
+    private Label encryptionKeyLabel;
+    @FXML
+    private Button selectKeyBtn;
     @FXML
     private Button saveBtn;
+    @FXML
+    private Button secretChatBtn;
 
     private boolean showGpgSettings;
+    private GpgService.GpgPublicKey selectedKey;
+    private String pubringError;
 
     private final SettingsService settings;
     private final ChatsService chatsService;
@@ -48,26 +71,117 @@ public class ChatSettingsDialogController {
         showGpgSettings = selectedChat.type instanceof TdApi.ChatTypePrivate
                 || selectedChat.type instanceof TdApi.ChatTypeSecret;
 
-        UiUtils.setVisible(keysComboBox, showGpgSettings);
         UiUtils.setVisible(enableGPGCheckBox, showGpgSettings);
         UiUtils.setVisible(secretChatBtn, selectedChat.type instanceof TdApi.ChatTypePrivate);
 
-        if (!showGpgSettings) {
-            return;
-        }
-
-        var keys = gpgService.listKeys();
-        for (var k : keys) {
-            keysComboBox.getItems().add(k);
-        }
-        String chatKeyFingerprint = settings.getChatKeyFingerprint(selectedChat.id);
-        if (chatKeyFingerprint != null) {
-            var key = keys.stream().filter(k -> k.getFingerprint().equals(chatKeyFingerprint)).findFirst();
-            if (key.isPresent()) {
-                enableGPGCheckBox.setSelected(true);
-                keysComboBox.getSelectionModel().select(key.get());
+        if (showGpgSettings) {
+            try {
+                var keys = gpgService.listKeys();
+                for (var k : keys) {
+                    keysComboBox.getItems().add(k);
+                }
+                String chatKeyFingerprint = settings.getChatKeyFingerprint(selectedChat.id);
+                if (chatKeyFingerprint != null) {
+                    for (var k : keys) {
+                        var key = gpgService.getKeyFromFingerprint(k, chatKeyFingerprint);
+                        if (key != null) {
+                            keysComboBox.getSelectionModel().select(k);
+                            enableGPGCheckBox.setSelected(true);
+                            setSelectedKey(key);
+                            break;
+                        }
+                    }
+                }
+            } catch (UiException ex) {
+                pubringError = ex.getMessage();
+                setErrorLabel(pubringError);
             }
         }
+
+        setGpgComponentsVisibility();
+    }
+
+    @FXML
+    private void toggleGPG() {
+        setGpgComponentsVisibility();
+    }
+
+    @FXML
+    private void keySourceChanged() {
+        setSelectedKey(null);
+        setKeySourceVisibility();
+    }
+
+    private void setGpgComponentsVisibility() {
+        var enabled = enableGPGCheckBox.isSelected();
+        UiUtils.setVisible(keySourcePubring, enabled);
+        UiUtils.setVisible(keySourceFile, enabled);
+        setKeySourceVisibility();
+    }
+
+    private void setKeySourceVisibility() {
+        var enabled = enableGPGCheckBox.isSelected();
+        if (keySourcePubring.isSelected()) {
+            setErrorLabel(pubringError);
+        }
+        UiUtils.setVisible(keysComboBox, enabled && keySourcePubring.isSelected());
+        UiUtils.setVisible(encryptionKeyLabel, enabled);
+        UiUtils.setVisible(encryptionKeysComboBox, enabled && !encryptionKeysComboBox.getItems().isEmpty());
+        UiUtils.setVisible(selectKeyBtn, enabled && keySourceFile.isSelected());
+        UiUtils.setVisible(errorLabel, enabled && errorLabel.getText() != null && !errorLabel.getText().isBlank());
+    }
+
+    @FXML
+    private void selectedKeyChanged() {
+        setSelectedKey(keysComboBox.getSelectionModel().getSelectedItem());
+    }
+
+    @FXML
+    private void selectedEncryptionKeyChanged() {
+        var selected = encryptionKeysComboBox.getSelectionModel().getSelectedItem();
+        if (selectedKey != null && selected != null) {
+            selectedKey.setEncryptionKey(selected);
+        }
+    }
+
+    @FXML
+    private void openFileDialog() {
+        setErrorLabel("");
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select public key file");
+        var selectedFile = fileChooser.showOpenDialog(selectKeyBtn.getScene().getWindow());
+        if (selectedFile == null) {
+            setSelectedKey(null);
+        } else {
+            var loadedKey = gpgService.loadPublicKeyFromFile(selectedFile.getAbsolutePath());
+            if (loadedKey == null) {
+                setErrorLabel("Error loading public key from file");
+            }
+            setSelectedKey(loadedKey);
+        }
+    }
+
+    private void setSelectedKey(GpgService.GpgPublicKey publicKey) {
+        logger.debug("set selected key {}", publicKey);
+        selectedKey = publicKey;
+        encryptionKeysComboBox.getItems().clear();
+        UiUtils.setVisible(encryptionKeysComboBox, publicKey != null);
+        if (publicKey == null) {
+            keysComboBox.getSelectionModel().clearSelection();
+            return;
+        }
+        for (var keys : publicKey.getAvailableEncryptionKeys()) {
+            encryptionKeysComboBox.getItems().add(bytesToHex(keys.getFingerprint()));
+        }
+        var fingerprint = publicKey.getFingerprint();
+        if (fingerprint != null) {
+            encryptionKeysComboBox.getSelectionModel().select(fingerprint);
+        }
+    }
+
+    private void setErrorLabel(String text) {
+        errorLabel.setText(text);
+        UiUtils.setVisible(errorLabel, text != null && !text.isBlank());
     }
 
     @FXML
@@ -76,11 +190,36 @@ public class ChatSettingsDialogController {
 
         if (showGpgSettings) {
             if (enableGPGCheckBox.isSelected()) {
-                var selected = keysComboBox.getSelectionModel().getSelectedItem();
-                if (selected == null) {
-                    return;
+                if (keySourceFile.isSelected()) {
+                    if (selectedKey == null) {
+                        return;
+                    }
+                    if (selectedKey.getFingerprint() == null) {
+                        setErrorLabel("Select encryption key");
+                    }
+                    try {
+                        gpgService.saveKeyToFile(selectedKey);
+                    } catch (UiException ex) {
+                        setErrorLabel(ex.getMessage());
+                        return;
+                    }
+                    settings.setChatKeyFingerprint(selectedChat.id, selectedKey.getFingerprint());
+                } else if (keySourcePubring.isSelected()) {
+                    var selected = keysComboBox.getSelectionModel().getSelectedItem();
+                    if (selected == null) {
+                        return;
+                    }
+                    if (selected.getFingerprint() == null) {
+                        setErrorLabel("Select encryption key");
+                    }
+                    try {
+                        gpgService.saveKeyToFile(selected);
+                    } catch (UiException ex) {
+                        setErrorLabel(ex.getMessage());
+                        return;
+                    }
+                    settings.setChatKeyFingerprint(selectedChat.id, selected.getFingerprint());
                 }
-                settings.setChatKeyFingerprint(selectedChat.id, selected.getFingerprint());
             } else {
                 settings.setChatKeyFingerprint(selectedChat.id, null);
             }

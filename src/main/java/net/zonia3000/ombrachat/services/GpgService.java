@@ -7,7 +7,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -21,6 +20,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiException;
+import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.CompressionAlgorithmTags;
 import org.bouncycastle.gpg.keybox.BlobType;
 import org.bouncycastle.gpg.keybox.KeyBox;
@@ -34,9 +35,11 @@ import org.bouncycastle.openpgp.PGPEncryptedDataGenerator;
 import org.bouncycastle.openpgp.PGPEncryptedDataList;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPLiteralData;
+import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPPrivateKey;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyEncryptedData;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSecretKey;
 import org.bouncycastle.openpgp.PGPSecretKeyRing;
 import org.bouncycastle.openpgp.PGPSecretKeyRingCollection;
@@ -68,37 +71,64 @@ public class GpgService {
 
     public static class GpgPublicKey {
 
-        private String fingerprint;
-        private List<String> userIds;
-        private PGPPublicKey publicKey;
+        private final PGPPublicKey masterKey;
+        private final List<PGPPublicKey> availableEncryptionKeys;
+        private final List<String> userIds;
 
-        public String getFingerprint() {
-            return fingerprint;
+        private PGPPublicKey encryptionKey;
+
+        public GpgPublicKey(PGPPublicKey masterKey, List<PGPPublicKey> encryptionKeys) {
+            this.masterKey = masterKey;
+            this.availableEncryptionKeys = encryptionKeys;
+            if (encryptionKeys.size() == 1) {
+                encryptionKey = encryptionKeys.get(0);
+            }
+
+            userIds = new ArrayList<>();
+            Iterator<String> userIdsIte = masterKey.getUserIDs();
+            while (userIdsIte.hasNext()) {
+                String user = userIdsIte.next();
+                userIds.add(user);
+            }
         }
 
-        public void setFingerprint(String fingerprint) {
-            this.fingerprint = fingerprint;
+        public String getFingerprint() {
+            return encryptionKey == null ? null : bytesToHex(encryptionKey.getFingerprint());
         }
 
         public List<String> getUserIds() {
             return userIds;
         }
 
-        public void setUserIds(List<String> userIds) {
-            this.userIds = userIds;
+        public PGPPublicKey getMasterKey() {
+            return masterKey;
         }
 
         public PGPPublicKey getEncryptionKey() {
-            return publicKey;
+            return encryptionKey;
         }
 
         public void setEncryptionKey(PGPPublicKey key) {
-            this.publicKey = key;
+            this.encryptionKey = key;
+        }
+
+        public void setEncryptionKey(String fingerprint) {
+            this.encryptionKey = availableEncryptionKeys.stream()
+                    .filter(k -> fingerprint.equals(bytesToHex(k.getFingerprint())))
+                    .findFirst().orElse(null);
+        }
+
+        public List<PGPPublicKey> getAvailableEncryptionKeys() {
+            return availableEncryptionKeys;
         }
 
         @Override
         public String toString() {
-            return userIds.isEmpty() ? fingerprint : userIds.get(0) + " " + fingerprint;
+            var user = userIds.isEmpty() ? "" : userIds.get(0);
+            if (encryptionKey == null) {
+                return user + " (" + availableEncryptionKeys.size() + " encryption keys)";
+            }
+            return user + " " + getFingerprint();
         }
     }
 
@@ -133,69 +163,117 @@ public class GpgService {
         return Files.exists(getPrivateKeyPath());
     }
 
-    public List<GpgPublicKey> listKeys() {
-
-        List<GpgPublicKey> keys = new ArrayList<>();
+    public List<GpgPublicKey> listKeys() throws UiException {
 
         Path pubringPath = Paths.get(settings.getPubringPath());
         if (!Files.exists(pubringPath)) {
-            return keys;
+            throw new UiException("GPG pubring file not found");
         }
 
         try (InputStream keyIn = new FileInputStream(pubringPath.toFile())) {
 
             KeyBox kbox = new BcKeyBox(keyIn);
 
+            List<GpgPublicKey> keys = new ArrayList<>();
             for (var keyBlob : kbox.getKeyBlobs()) {
                 if (keyBlob.getType() == BlobType.OPEN_PGP_BLOB) {
                     var publicBlob = ((PublicKeyRingBlob) keyBlob).getPGPPublicKeyRing();
-                    var publicKey = publicBlob.getPublicKey();
-
-                    PGPPublicKey encryptionKey = null;
-                    Iterator<PGPPublicKey> ite = publicBlob.getPublicKeys();
-                    while (ite.hasNext()) {
-                        PGPPublicKey k = ite.next();
-                        if (k.isEncryptionKey()) {
-                            encryptionKey = k;
-                            break;
-                        }
+                    var key = loadGpgPublicKey(publicBlob.getPublicKeys());
+                    if (key != null) {
+                        keys.add(key);
                     }
-
-                    GpgPublicKey key = new GpgPublicKey();
-                    key.setEncryptionKey(encryptionKey);
-                    key.setFingerprint(bytesToHex(publicKey.getFingerprint()));
-                    List<String> userIds = new ArrayList<>();
-                    Iterator<String> userIdsIte = publicKey.getUserIDs();
-                    while (userIdsIte.hasNext()) {
-                        String user = userIdsIte.next();
-                        userIds.add(user);
-                    }
-                    key.setUserIds(userIds);
-                    keys.add(key);
                 }
             }
+            return keys;
         } catch (IOException ex) {
-            throw new IOError(ex);
+            logger.error("Error reading public key ring", ex);
+            throw new UiException("Error reading public key ring");
         }
-
-        return keys;
     }
 
-    public PGPPublicKey getEncryptionKey(String fingerprint) {
-        List<GpgPublicKey> keys = listKeys();
-        for (var key : keys) {
-            if (fingerprint.equals(key.getFingerprint())) {
-                return key.getEncryptionKey();
+    public GpgPublicKey loadPublicKeyFromFile(String filePath) {
+        Path path = Paths.get(filePath);
+        if (!Files.exists(path)) {
+            logger.warn("Public key file not found {}", filePath);
+            return null;
+        }
+        logger.debug("Loading public key from file {}", filePath);
+        try (InputStream publicKeyIn = new BufferedInputStream(new FileInputStream(filePath))) {
+
+            PGPObjectFactory factory = new PGPObjectFactory(
+                    PGPUtil.getDecoderStream(publicKeyIn), new JcaKeyFingerprintCalculator()
+            );
+
+            for (var data : factory) {
+                if (data instanceof PGPPublicKeyRing publicRing) {
+                    var key = loadGpgPublicKey(publicRing.getPublicKeys());
+                    if (key != null) {
+                        return key;
+                    }
+                }
             }
+
+            logger.warn("No encryption key found on file {}", filePath);
+        } catch (IOException ex) {
+            logger.error("Error reading public key file", ex);
         }
         return null;
     }
 
+    private GpgPublicKey loadGpgPublicKey(Iterator<PGPPublicKey> ite) {
+        PGPPublicKey masterKey = null;
+        List<PGPPublicKey> encryptionKeys = new ArrayList<>();
+        while (ite.hasNext()) {
+            PGPPublicKey k = ite.next();
+            if (k.isMasterKey()) {
+                masterKey = k;
+            } else if (k.isEncryptionKey()) {
+                encryptionKeys.add(k);
+            }
+        }
+
+        if (masterKey == null || encryptionKeys.isEmpty()) {
+            return null;
+        }
+
+        return new GpgPublicKey(masterKey, encryptionKeys);
+    }
+
+    public PGPPublicKey getEncryptionKey(String fingerprint) {
+        Path path = getGpgKeysDirectoryPath().resolve(fingerprint + ".asc");
+        if (!Files.exists(path)) {
+            logger.error("Key file {} not found", path.toFile().getAbsolutePath());
+            return null;
+        }
+        var key = loadPublicKeyFromFile(path.toFile().getAbsolutePath());
+        if (key == null) {
+            return null;
+        }
+        return key.getEncryptionKey();
+    }
+
+    public void saveKeyToFile(GpgPublicKey publicKey) throws UiException {
+        if (publicKey.getEncryptionKey() == null) {
+            throw new UiException("No encryption key selected");
+        }
+        Path path = getGpgKeysDirectoryPath().resolve(publicKey.getFingerprint() + ".asc");
+        PGPPublicKeyRing keyRing = new PGPPublicKeyRing(
+                List.of(publicKey.getMasterKey(), publicKey.getEncryptionKey())
+        );
+        try (ArmoredOutputStream os = new ArmoredOutputStream(new FileOutputStream(path.toFile()))) {
+            keyRing.encode(os);
+            logger.debug("Saved key to file {}", path.toFile().getAbsolutePath());
+        } catch (IOException ex) {
+            throw new UiException("Unable to save public key to file");
+        }
+    }
+
     public File createGpgTextFile(PGPPublicKey publicKey, String text) {
         try {
-            var tempFile = Files.createTempFile(getGpgDirectoryPath(), GPG_FILE_PREFIX, GPG_TEXT_FILE_SUFFIX).toFile();
+            var messagesDir = getGpgMessagesDirectoryPath();
+            var tempFile = Files.createTempFile(messagesDir, GPG_FILE_PREFIX, GPG_TEXT_FILE_SUFFIX).toFile();
 
-            File plaintextFile = Files.createTempFile(getGpgDirectoryPath(), GPG_FILE_PREFIX, ".txt").toFile();
+            File plaintextFile = Files.createTempFile(messagesDir, GPG_FILE_PREFIX, ".txt").toFile();
             try (FileOutputStream fos = new FileOutputStream(plaintextFile)) {
                 fos.write(text.getBytes());
             }
@@ -213,7 +291,7 @@ public class GpgService {
             var fileExtensionPosition = plaintextFile.getName().indexOf(".");
             var suffix = fileExtensionPosition == -1 ? GPG_GENERIC_FILE_SUFFIX
                     : plaintextFile.getName().substring(fileExtensionPosition) + GPG_GENERIC_FILE_SUFFIX;
-            var tempFile = Files.createTempFile(getGpgDirectoryPath(), GPG_FILE_PREFIX, suffix).toFile();
+            var tempFile = Files.createTempFile(getGpgMessagesDirectoryPath(), GPG_FILE_PREFIX, suffix).toFile();
             encrypt(publicKey, plaintextFile, tempFile);
             return tempFile;
         } catch (IOException ex) {
@@ -224,11 +302,11 @@ public class GpgService {
 
     public String encryptText(String plaintext) {
         try {
-            File plaintextFile = Files.createTempFile(getGpgDirectoryPath(), GPG_FILE_PREFIX, ".txt").toFile();
+            File plaintextFile = Files.createTempFile(getGpgMessagesDirectoryPath(), GPG_FILE_PREFIX, ".txt").toFile();
             try (FileOutputStream fos = new FileOutputStream(plaintextFile)) {
                 fos.write(plaintext.getBytes());
             }
-            var encryptedTextFile = Files.createTempFile(getGpgDirectoryPath(), GPG_FILE_PREFIX, GPG_TEXT_FILE_SUFFIX).toFile();
+            var encryptedTextFile = Files.createTempFile(getGpgMessagesDirectoryPath(), GPG_FILE_PREFIX, GPG_TEXT_FILE_SUFFIX).toFile();
             encrypt(myPublicKey, plaintextFile, encryptedTextFile);
             byte[] encryptedData = Files.readAllBytes(encryptedTextFile.toPath());
             String encryptedString = bytesToHex(encryptedData);
@@ -288,14 +366,30 @@ public class GpgService {
         return isGpgMessage(messageDocument) && messageDocument.document.fileName.endsWith(GPG_TEXT_FILE_SUFFIX);
     }
 
+    private Path getGpgMessagesDirectoryPath() {
+        Path dir = getGpgDirectoryPath().resolve("messages");
+        createDirectoryIfNeeded(dir);
+        return dir;
+    }
+
+    private Path getGpgKeysDirectoryPath() {
+        Path dir = getGpgDirectoryPath().resolve("keys");
+        createDirectoryIfNeeded(dir);
+        return dir;
+    }
+
     private Path getGpgDirectoryPath() {
         Path dir = Paths.get(settings.getApplicationFolderPath(), "gpg");
+        createDirectoryIfNeeded(dir);
+        return dir;
+    }
+
+    private void createDirectoryIfNeeded(Path dir) {
         if (!Files.exists(dir)) {
             if (!dir.toFile().mkdirs()) {
-                logger.error("Unable to create GPG directory {}", dir.toFile().getAbsolutePath());
+                logger.error("Unable to create directory {}", dir.toFile().getAbsolutePath());
             }
         }
-        return dir;
     }
 
     public String decryptToString(File encryptedData) {
@@ -433,7 +527,20 @@ public class GpgService {
         pgpSecretKey.getPublicKey().getFingerprint();
     }
 
-    private static String bytesToHex(byte[] bytes) {
+    public GpgPublicKey getKeyFromFingerprint(GpgPublicKey key, String fingerprint) {
+        if (fingerprint.equals(key.getFingerprint())) {
+            return key;
+        } else {
+            for (var ek : key.getAvailableEncryptionKeys()) {
+                if (fingerprint.equals(bytesToHex(ek.getFingerprint()))) {
+                    return new GpgPublicKey(key.getMasterKey(), List.of(ek));
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String bytesToHex(byte[] bytes) {
         StringBuilder hexString = new StringBuilder();
         for (byte b : bytes) {
             String hex = String.format("%02X", b);

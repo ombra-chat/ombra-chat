@@ -189,6 +189,9 @@ public class ChatsService {
 
     private Collection<TdApi.Chat> getSelectedChatsList() {
         List<Long> selectedChats = chatFolders.get(selectedChatFolder);
+        if (selectedChats == null) {
+            return List.of();
+        }
         return chats.values().stream()
                 .filter(c -> selectedChats.contains(c.id))
                 .sorted((c1, c2) -> Long.compare(

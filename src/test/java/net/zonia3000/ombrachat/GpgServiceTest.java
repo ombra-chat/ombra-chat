@@ -41,11 +41,28 @@ hQk=
 -----END PGP PRIVATE KEY BLOCK-----
 """;
 
+    private static final String TEST_PUBLIC_KEY = """
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+                                                  
+mDMEZ/GtahYJKwYBBAHaRw8BAQdAC8A66aczoI4L6XQ0yPksmPUh8NuDTuApbYwp
+vFxMlGm0HE9tYnJhIENoYXQgPG9tYnJhQGxvY2FsaG9zdD6IkwQTFgoAOxYhBK9G
+dfI9bDD+qkDcSiN6FxAZIGDXBQJn8a1qAhsDBQsJCAcCAiICBhUKCQgLAgQWAgMB
+Ah4HAheAAAoJECN6FxAZIGDXYjAA/iUxGoAmoHwu/gdE/Iyo1WrMIaGuUwYh+etm
+gm8fGyW4AP9aiPKK8dHzFJt9NMYOex7hknBNItg5V6AwJ7iJSQBaCrg4BGfxrWoS
+CisGAQQBl1UBBQEBB0DgcF3FD6AtO6YT4yApvjPgDwfdXcuwaJY4PyhWkJQ9bwMB
+CAeIeAQYFgoAIBYhBK9GdfI9bDD+qkDcSiN6FxAZIGDXBQJn8a1qAhsMAAoJECN6
+FxAZIGDXerIBAOoc9ARDFXu4AStl+JJUPH8EGT04tnlyxrwY5vQer8FsAP0bx7n2
+5wfFwC+WOBV9b1nZPmp4n6h00aCCOpep5RWFCQ==
+=ogV1
+-----END PGP PUBLIC KEY BLOCK-----
+""";
+
     private static final String TEST_SECRET_KEY_PASSWORD = "test";
-    private static final String TEST_KEY_FINGERPRINT = "AF4675F23D6C30FEAA40DC4A237A1710192060D7";
+    private static final String TEST_KEY_FINGERPRINT = "49A0C0308A6AC2B19B8459B59AB4084AD167DFCA";
 
     private static File tmpAppFolder;
     private static Path pubring;
+    private static Path publicKeyPath;
 
     @Mock
     private SettingsService settings;
@@ -60,6 +77,8 @@ hQk=
 
             var privateKeyPath = Paths.get(tmpAppFolder.getAbsolutePath(), "private.asc");
             Files.writeString(privateKeyPath, TEST_SECRET_KEY);
+            publicKeyPath = Paths.get(tmpAppFolder.getAbsolutePath(), "public.asc");
+            Files.writeString(publicKeyPath, TEST_PUBLIC_KEY);
 
             pubring = Paths.get(tmpAppFolder.getAbsolutePath(), "pubring.kbx");
             try (InputStream in = GpgServiceTest.class.getClassLoader().getResourceAsStream("pubring.kbx")) {
@@ -83,10 +102,10 @@ hQk=
 
     @Test
     void testEncryptAndDecryptTextFile() throws Exception {
+        var keys = gpgService.listKeys();
+        var key = keys.get(0);
         var plaintext = "Encryption test";
-        var key = gpgService.getEncryptionKey(TEST_KEY_FINGERPRINT);
-        Assertions.assertNotNull(key);
-        File file = gpgService.createGpgTextFile(key, plaintext);
+        File file = gpgService.createGpgTextFile(key.getEncryptionKey(), plaintext);
         Assertions.assertTrue(file.length() > 0);
         var result = gpgService.decryptToString(file);
         Assertions.assertEquals(plaintext, result);
@@ -98,5 +117,22 @@ hQk=
         var encrypted = gpgService.encryptText(plaintext);
         var decrypted = gpgService.decryptText(encrypted);
         Assertions.assertEquals(plaintext, decrypted);
+    }
+
+    @Test
+    void testReadPublicKeyFromFile() {
+        var key = gpgService.loadPublicKeyFromFile(publicKeyPath.toFile().getAbsolutePath());
+        Assertions.assertNotNull(key);
+        Assertions.assertEquals(TEST_KEY_FINGERPRINT, key.getFingerprint());
+    }
+
+    @Test
+    void testExtractKeyFromPubring() throws Exception {
+        var keys = gpgService.listKeys();
+        var key = keys.get(0);
+        Assertions.assertEquals(TEST_KEY_FINGERPRINT, key.getFingerprint());
+        gpgService.saveKeyToFile(key);
+        var readedKey = gpgService.getEncryptionKey(key.getFingerprint());
+        Assertions.assertNotNull(readedKey);
     }
 }

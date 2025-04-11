@@ -422,6 +422,7 @@ public class ChatPageController {
             loader.setLocation(ChatSettingsDialogController.class.getResource("/view/chat-settings-dialog.fxml"));
             Parent root = loader.load();
             Scene scene = new Scene(root);
+            UiUtils.setCommonCss(scene);
             Stage newStage = new Stage();
             newStage.setTitle("Chat settings");
             newStage.setScene(scene);
