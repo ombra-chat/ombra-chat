@@ -36,7 +36,7 @@
             </HBox>
             <HBox fx:id="sendMessageBox">
                 <children>
-                    <TextField fx:id="messageText" HBox.hgrow="ALWAYS" />
+                    <TextField fx:id="messageText" HBox.hgrow="ALWAYS" onAction="#sendMessage" />
                     <Button fx:id="attachFileBtn" styleClass="btn, btn-30" onAction="#openFileDialog" />
                     <Button fx:id="sendMsgBtn" styleClass="btn, btn-30" onAction="#sendMessage" />
                 </children>                    

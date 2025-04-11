@@ -24,7 +24,7 @@ public class AuthenticationCodeController implements ErrorHandlerController {
     }
 
     @FXML
-    private void handleNextButtonClick() {
+    private void next() {
         displayError("");
         String authenticationCode = authenticationCodeTextField.getText();
         if (authenticationCode.isBlank()) {

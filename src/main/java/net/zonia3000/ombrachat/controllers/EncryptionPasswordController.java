@@ -53,7 +53,7 @@ public class EncryptionPasswordController implements ErrorHandlerController {
     }
 
     @FXML
-    private void handleNextButtonClick() {
+    private void next() {
         displayError("");
         if (settings.getTdlibDatabaseEncryption() == SettingsService.EncryptionType.PASSWORD) {
             String password = encryptionPasswordField.getText();

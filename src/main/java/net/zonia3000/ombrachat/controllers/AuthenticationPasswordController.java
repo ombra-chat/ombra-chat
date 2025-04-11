@@ -24,7 +24,7 @@ public class AuthenticationPasswordController implements ErrorHandlerController 
     }
 
     @FXML
-    private void handleNextButtonClick() {
+    private void next() {
         displayError("");
         String password = authenticationPasswordField.getText();
         if (password.isBlank()) {

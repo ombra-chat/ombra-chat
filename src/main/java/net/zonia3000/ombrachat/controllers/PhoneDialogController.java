@@ -24,7 +24,7 @@ public class PhoneDialogController implements ErrorHandlerController {
     }
 
     @FXML
-    private void handleNextButtonClick() {
+    private void next() {
         displayError("");
         String phoneNumber = phoneTextField.getText();
         if (phoneNumber.isBlank()) {

@@ -10,9 +10,9 @@
         <VBox alignment="CENTER" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" spacing="10.0">
             <children>
                 <Label text="Authentication code" />
-                <TextField fx:id="authenticationCodeTextField" HBox.hgrow="ALWAYS" />
+                <TextField fx:id="authenticationCodeTextField" HBox.hgrow="ALWAYS" onAction="#next" />
                 <Label fx:id="errorLabel" styleClass="error" />
-                <Button mnemonicParsing="false" fx:id="nextBtn" text="Next" onAction="#handleNextButtonClick" />
+                <Button mnemonicParsing="false" fx:id="nextBtn" text="Next" onAction="#next" />
             </children>
             <padding>
                 <Insets left="10.0" right="10.0" top="10.0" bottom="10.0" />
