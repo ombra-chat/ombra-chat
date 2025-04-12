@@ -18,6 +18,13 @@
     -fx-border-style: dashed;
 }
 
+.msg-date {
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+    -fx-text-fill: #777;
+    -fx-alignment: center-right;
+}
+
 .bold {
     -fx-font-weight: bold;
 }
@@ -63,14 +70,14 @@
 }
 
 .success {
-    -fx-text-fill: green;    
+    -fx-text-fill: green;
 }
 
 .description {
     -fx-font-style: italic;
 }
 
-#chatSettingsBtn {
+#chatSettingsBtn, .message-action-btn {
     -fx-background-image: url("icons/icons8-settings.png");
 }
 

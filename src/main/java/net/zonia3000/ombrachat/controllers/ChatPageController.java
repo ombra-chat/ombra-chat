@@ -384,14 +384,7 @@ public class ChatPageController {
 
     private MessageBubble getMessageBubble(TdApi.Message message) {
         MessageBubble bubble = new MessageBubble(message);
-        if (message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == userService.getMyId()) {
-            bubble.setMy(true);
-        } else {
-            bubble.setSender(message.senderId);
-        }
-        var content = getMessageContentBox(message.content);
-        bubble.setGpg(content instanceof MessageGpgTextBox || content instanceof MessageGpgDocumentBox);
-        bubble.getChildren().add(content);
+        bubble.setMessageContent(getMessageContentBox(message.content));
         bubble.setRead(isRead(message));
         return bubble;
     }
