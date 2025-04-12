@@ -49,6 +49,10 @@
     -fx-border-color: transparent;
 }
 
+.btn:hover {
+    -fx-effect: dropshadow(gaussian, rgba(70, 70, 70, 0.8), 5, 0, 1, 1);
+}
+
 .btn-20 {
     -fx-background-size: 20 20;
     -fx-min-height: 20px;
