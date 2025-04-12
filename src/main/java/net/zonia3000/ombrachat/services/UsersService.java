@@ -15,9 +15,11 @@ public class UsersService {
 
     private final ConcurrentMap<Long, TdApi.User> users = new ConcurrentHashMap<>();
     private final GuiService guiService;
+    private final CurrentUserService currentUserService;
 
     public UsersService() {
         guiService = ServiceLocator.getService(GuiService.class);
+        currentUserService = ServiceLocator.getService(CurrentUserService.class);
     }
 
     public boolean onResult(TdApi.Object object) {
@@ -32,6 +34,9 @@ public class UsersService {
     }
 
     private boolean handleUpdateUser(TdApi.UpdateUser update) {
+        if (update.user.id == currentUserService.getMyId()) {
+            currentUserService.setMyUser(update.user);
+        }
         users.put(update.user.id, update.user);
         Platform.runLater(() -> {
             var chatPageController = guiService.getController(ChatPageController.class);
@@ -41,5 +46,21 @@ public class UsersService {
             chatPageController.updateUserOnMessages(update.user);
         });
         return true;
+    }
+
+    public String getUserDisplayText(long userId) {
+        var user = getUser(userId);
+        if (user == null) {
+            return null;
+        }
+        if (user.usernames != null) {
+            return user.usernames.editableUsername;
+        } else if (user.firstName != null && user.lastName != null) {
+            return user.firstName + " " + user.lastName;
+        } else if (user.phoneNumber != null) {
+            return user.phoneNumber;
+        } else {
+            return String.valueOf(user.id);
+        }
     }
 }

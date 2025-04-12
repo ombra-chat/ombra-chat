@@ -67,10 +67,7 @@ public class MessageBubble extends VBox {
         });
         senderLabel.setMaxWidth(10000);
         HBox.setHgrow(senderLabel, Priority.ALWAYS);
-
-        if (!my) {
-            setSender();
-        }
+        setSender();
     }
 
     public TdApi.Message getMessage() {
@@ -161,18 +158,10 @@ public class MessageBubble extends VBox {
             var chat = chatsService.getChat(senderUser.userId);
             if (chat != null) {
                 setSender(chat.title);
-                return;
-            }
-            var user = usersService.getUser(senderUser.userId);
-            if (user != null) {
-                if (user.usernames != null) {
-                    setSender(user.usernames.editableUsername);
-                } else if (user.firstName != null && user.lastName != null) {
-                    setSender(user.firstName + " " + user.lastName);
-                } else if (user.phoneNumber != null) {
-                    setSender(user.phoneNumber);
-                } else {
-                    setSender(String.valueOf(user.id));
+            } else {
+                var userLabel = usersService.getUserDisplayText(senderUser.userId);
+                if (userLabel != null) {
+                    setSender(userLabel);
                 }
             }
         }

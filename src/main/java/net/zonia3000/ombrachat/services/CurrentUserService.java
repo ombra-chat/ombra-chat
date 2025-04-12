@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import net.zonia3000.ombrachat.ServiceLocator;
+import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +15,7 @@ public class CurrentUserService {
     private static final Logger logger = LoggerFactory.getLogger(CurrentUserService.class);
 
     private long myId;
+    private TdApi.User myUser;
     private char[] encryptionPassword;
     private boolean deleteAllData;
 
@@ -23,6 +25,14 @@ public class CurrentUserService {
 
     public void setMyId(long myId) {
         this.myId = myId;
+    }
+
+    public TdApi.User getMyUser() {
+        return myUser;
+    }
+
+    public void setMyUser(TdApi.User myUser) {
+        this.myUser = myUser;
     }
 
     public void setEncryptionPassword(String encryptionPassword) {
