@@ -9,7 +9,7 @@ import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
-import net.zonia3000.ombrachat.services.UserService;
+import net.zonia3000.ombrachat.services.CurrentUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,12 +32,12 @@ public class EncryptionPasswordController implements ErrorHandlerController {
 
     private final SettingsService settings;
     private final GpgService gpgService;
-    private final UserService userService;
+    private final CurrentUserService currentUserService;
 
     public EncryptionPasswordController() {
         settings = ServiceLocator.getService(SettingsService.class);
         gpgService = ServiceLocator.getService(GpgService.class);
-        userService = ServiceLocator.getService(UserService.class);
+        currentUserService = ServiceLocator.getService(CurrentUserService.class);
     }
 
     @FXML
@@ -55,12 +55,14 @@ public class EncryptionPasswordController implements ErrorHandlerController {
     @FXML
     private void next() {
         displayError("");
+        nextBtn.setDisable(true);
         if (settings.getTdlibDatabaseEncryption() == SettingsService.EncryptionType.PASSWORD) {
             String password = encryptionPasswordField.getText();
             if (password.isBlank()) {
+                displayError("Password is required");
                 return;
             }
-            userService.setEncryptionPassword(password);
+            currentUserService.setEncryptionPassword(password);
         }
         if (gpgService.hasPrivateKey()) {
             char[] passphrase = gpgPassphraseField.getText().toCharArray();
@@ -75,9 +77,8 @@ public class EncryptionPasswordController implements ErrorHandlerController {
                 displayError("Error decrypting Telegram password");
                 return;
             }
-            userService.setEncryptionPassword(password);
+            currentUserService.setEncryptionPassword(password);
         }
-        nextBtn.setDisable(true);
         var clientService = ServiceLocator.getService(TelegramClientService.class);
         clientService.startClient();
     }

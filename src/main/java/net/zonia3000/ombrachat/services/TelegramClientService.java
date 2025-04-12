@@ -16,8 +16,9 @@ public class TelegramClientService {
 
     private static final Logger logger = LoggerFactory.getLogger(TelegramClientService.class);
 
-    private UserService userService;
+    private CurrentUserService currentUserService;
     private ChatsService chatsService;
+    private UsersService usersService;
     private MessagesService messagesService;
     private GuiService guiService;
 
@@ -26,9 +27,11 @@ public class TelegramClientService {
     private UpdateHandler updateHandler;
 
     public void startClient() {
-        userService = ServiceLocator.getService(UserService.class);
+        currentUserService = ServiceLocator.getService(CurrentUserService.class);
         chatsService = ServiceLocator.getService(ChatsService.class);
+        usersService = ServiceLocator.getService(UsersService.class);
         messagesService = ServiceLocator.getService(MessagesService.class);
+
         guiService = ServiceLocator.getService(GuiService.class);
 
         Client.setLogMessageHandler(0, new LogMessageHandler());
@@ -85,6 +88,9 @@ public class TelegramClientService {
                 if (chatsService.onResult(object)) {
                     return;
                 }
+                if (usersService.onResult(object)) {
+                    return;
+                }
                 if (messagesService.onResult(object)) {
                     return;
                 }
@@ -93,7 +99,7 @@ public class TelegramClientService {
                 } else if (object instanceof TdApi.UpdateOption option) {
                     switch (option.name) {
                         case "my_id":
-                            userService.setMyId(((TdApi.OptionValueInteger) option.value).value);
+                            currentUserService.setMyId(((TdApi.OptionValueInteger) option.value).value);
                             break;
                     }
                 }
@@ -121,7 +127,7 @@ public class TelegramClientService {
                 request.deviceModel = "Desktop";
                 request.applicationVersion = "1.0";
                 if (settings.getTdlibDatabaseEncryption() != SettingsService.EncryptionType.NONE) {
-                    var password = userService.getEncryptionPassword();
+                    var password = currentUserService.getEncryptionPassword();
                     var salt = settings.getTdlibEncryptionSalt();
                     request.databaseEncryptionKey = CryptoUtils.generateDerivedKey(password, salt);
                 }
@@ -145,7 +151,7 @@ public class TelegramClientService {
             }
             case TdApi.AuthorizationStateClosed.CONSTRUCTOR: {
                 client.send(new TdApi.Close(), (res) -> {
-                    userService.performCleanupAfterLogout();
+                    currentUserService.performCleanupAfterLogout();
                     // Exiting the application. For the moment, restarting the app is the
                     // simplest way to handle the logout.
                     logger.info("Quitting after logout...");

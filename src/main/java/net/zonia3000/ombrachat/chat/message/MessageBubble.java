@@ -19,17 +19,20 @@ import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.controllers.MessageDialogController;
 import net.zonia3000.ombrachat.services.ChatsService;
-import net.zonia3000.ombrachat.services.UserService;
+import net.zonia3000.ombrachat.services.CurrentUserService;
+import net.zonia3000.ombrachat.services.UsersService;
 import org.drinkless.tdlib.TdApi;
 
 public class MessageBubble extends VBox {
 
     private final ChatsService chatsService;
-    private final UserService userService;
+    private final UsersService usersService;
+    private final CurrentUserService currentUserService;
     private final TdApi.Message message;
 
     private final Label senderLabel = new Label();
     private final Button actionsButton = new Button();
+    private VBox contentBox;
 
     private boolean read;
     private boolean processingRead;
@@ -38,10 +41,11 @@ public class MessageBubble extends VBox {
 
     public MessageBubble(TdApi.Message message) {
         this.chatsService = ServiceLocator.getService(ChatsService.class);
-        this.userService = ServiceLocator.getService(UserService.class);
+        this.usersService = ServiceLocator.getService(UsersService.class);
+        this.currentUserService = ServiceLocator.getService(CurrentUserService.class);
         this.message = message;
         getStyleClass().add("message-bubble");
-        setMy(message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == userService.getMyId());
+        setMy(message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == currentUserService.getMyId());
         initHeader();
     }
 
@@ -112,9 +116,21 @@ public class MessageBubble extends VBox {
     }
 
     public void setMessageContent(VBox content) {
+        this.contentBox = content;
         setGpg(content instanceof MessageGpgTextBox || content instanceof MessageGpgDocumentBox);
         getChildren().add(content);
         setFooter();
+    }
+
+    public VBox getContentBox() {
+        return contentBox;
+    }
+
+    public boolean isFrom(TdApi.User user) {
+        if (message.senderId instanceof TdApi.MessageSenderUser senderUser) {
+            return senderUser.userId == user.id;
+        }
+        return false;
     }
 
     private void setFooter() {
@@ -135,26 +151,35 @@ public class MessageBubble extends VBox {
     }
 
     private void setSender() {
-        var id = getSenderChatId();
-        if (id == null) {
-            return;
-        }
-        TdApi.Chat chat = chatsService.getChat(id);
-        if (chat == null) {
-            // TODO
-        } else {
-            senderLabel.setText(chat.title);
+        var sender = message.senderId;
+        if (sender instanceof TdApi.MessageSenderChat senderChat) {
+            var chat = chatsService.getChat(senderChat.chatId);
+            if (chat != null) {
+                setSender(chat.title);
+            }
+        } else if (sender instanceof TdApi.MessageSenderUser senderUser) {
+            var chat = chatsService.getChat(senderUser.userId);
+            if (chat != null) {
+                setSender(chat.title);
+                return;
+            }
+            var user = usersService.getUser(senderUser.userId);
+            if (user != null) {
+                if (user.usernames != null) {
+                    setSender(user.usernames.editableUsername);
+                } else if (user.firstName != null && user.lastName != null) {
+                    setSender(user.firstName + " " + user.lastName);
+                } else if (user.phoneNumber != null) {
+                    setSender(user.phoneNumber);
+                } else {
+                    setSender(String.valueOf(user.id));
+                }
+            }
         }
     }
 
-    private Long getSenderChatId() {
-        var sender = message.senderId;
-        if (sender instanceof TdApi.MessageSenderChat senderChat) {
-            return senderChat.chatId;
-        } else if (sender instanceof TdApi.MessageSenderUser senderUser) {
-            return senderUser.userId;
-        }
-        return null;
+    public void setSender(String title) {
+        senderLabel.setText(title);
     }
 
     private void openMessageDialog() {

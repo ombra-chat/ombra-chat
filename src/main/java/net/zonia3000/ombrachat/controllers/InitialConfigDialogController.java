@@ -18,7 +18,7 @@ import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import net.zonia3000.ombrachat.services.SettingsService.EncryptionType;
 import net.zonia3000.ombrachat.services.TelegramClientService;
-import net.zonia3000.ombrachat.services.UserService;
+import net.zonia3000.ombrachat.services.CurrentUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +58,7 @@ public class InitialConfigDialogController implements ErrorHandlerController {
 
     private SettingsService settings;
     private GpgService gpgService;
-    private UserService userService;
+    private CurrentUserService currentUserService;
     private boolean hasGpgKey;
     private EncryptionType selectedEncryptionType = EncryptionType.NONE;
     private boolean ignoreGpg;
@@ -67,7 +67,7 @@ public class InitialConfigDialogController implements ErrorHandlerController {
     private void initialize() {
         var guiService = ServiceLocator.getService(GuiService.class);
         gpgService = ServiceLocator.getService(GpgService.class);
-        userService = ServiceLocator.getService(UserService.class);
+        currentUserService = ServiceLocator.getService(CurrentUserService.class);
         settings = ServiceLocator.getService(SettingsService.class);
         myTelegramLink.setOnAction(event -> guiService.showDocument("https://my.telegram.org"));
         appFolderTextField.setText(getDefaultAppFolderPath());
@@ -166,7 +166,7 @@ public class InitialConfigDialogController implements ErrorHandlerController {
                 displayError("Password is required");
                 return;
             }
-            userService.setEncryptionPassword(passwordField.getText());
+            currentUserService.setEncryptionPassword(passwordField.getText());
         } else if (selectedEncryptionType == EncryptionType.GPG) {
             var randomPassword = CryptoUtils.generateRandomPassword();
             var encryptedPassword = gpgService.encryptText(randomPassword);
@@ -174,7 +174,7 @@ public class InitialConfigDialogController implements ErrorHandlerController {
                 displayError("Error encrypting the password");
                 return;
             }
-            userService.setEncryptionPassword(randomPassword);
+            currentUserService.setEncryptionPassword(randomPassword);
             settings.setTdlibEncryptedPassword(encryptedPassword);
         }
 

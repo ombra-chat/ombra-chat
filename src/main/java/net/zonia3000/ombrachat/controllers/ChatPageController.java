@@ -40,7 +40,6 @@ import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.MessagesService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
-import net.zonia3000.ombrachat.services.UserService;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
@@ -76,7 +75,6 @@ public class ChatPageController {
     private final GuiService guiService;
     private final ChatsService chatsService;
     private final MessagesService messagesService;
-    private final UserService userService;
     private final SettingsService settings;
     private final TelegramClientService clientService;
     private final GpgService gpgService;
@@ -89,7 +87,6 @@ public class ChatPageController {
         this.guiService = ServiceLocator.getService(GuiService.class);
         this.chatsService = ServiceLocator.getService(ChatsService.class);
         this.messagesService = ServiceLocator.getService(MessagesService.class);
-        this.userService = ServiceLocator.getService(UserService.class);
         this.settings = ServiceLocator.getService(SettingsService.class);
         this.clientService = ServiceLocator.getService(TelegramClientService.class);
         this.gpgService = ServiceLocator.getService(GpgService.class);
@@ -276,13 +273,21 @@ public class ChatPageController {
     public void handleFileUpdated(TdApi.UpdateFile update) {
         for (Node node : chatContent.getChildrenUnmodifiable()) {
             if (node instanceof MessageBubble bubble) {
-                if (bubble.getChildren().size() == 1) {
-                    var msgBox = bubble.getChildren().get(0);
-                    if (msgBox instanceof MessageDocumentBox docBox) {
-                        if (docBox.updateFile(update)) {
-                            return;
-                        }
+                var msgBox = bubble.getContentBox();
+                if (msgBox instanceof MessageDocumentBox docBox) {
+                    if (docBox.updateFile(update)) {
+                        return;
                     }
+                }
+            }
+        }
+    }
+
+    public void updateUserOnMessages(TdApi.User user) {
+        for (Node node : chatContent.getChildrenUnmodifiable()) {
+            if (node instanceof MessageBubble bubble) {
+                if (bubble.isFrom(user)) {
+                    bubble.setSender(user.usernames.editableUsername);
                 }
             }
         }

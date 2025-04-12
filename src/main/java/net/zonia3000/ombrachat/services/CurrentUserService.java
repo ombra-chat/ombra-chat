@@ -9,9 +9,9 @@ import net.zonia3000.ombrachat.ServiceLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UserService {
+public class CurrentUserService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private static final Logger logger = LoggerFactory.getLogger(CurrentUserService.class);
 
     private long myId;
     private char[] encryptionPassword;

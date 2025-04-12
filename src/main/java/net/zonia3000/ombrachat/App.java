@@ -6,7 +6,7 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GpgService;
-import net.zonia3000.ombrachat.services.UserService;
+import net.zonia3000.ombrachat.services.CurrentUserService;
 import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.MessagesService;
 import net.zonia3000.ombrachat.services.SettingsService;
@@ -50,7 +50,7 @@ public class App extends Application {
 
     private static void registerServices(App app, Stage stage) {
         ServiceLocator.registerService(SettingsService.class, new SettingsService());
-        ServiceLocator.registerService(UserService.class, new UserService());
+        ServiceLocator.registerService(CurrentUserService.class, new CurrentUserService());
         ServiceLocator.registerService(GuiService.class, new GuiService(app, stage));
         ServiceLocator.registerService(TelegramClientService.class, new TelegramClientService());
         ServiceLocator.registerService(ChatsService.class, new ChatsService());
