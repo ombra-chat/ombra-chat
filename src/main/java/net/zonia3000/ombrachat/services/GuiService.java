@@ -13,6 +13,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
@@ -21,6 +23,7 @@ import net.zonia3000.ombrachat.controllers.ErrorHandlerController;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.chat.ChatsListView;
+import net.zonia3000.ombrachat.components.SelectableText;
 import net.zonia3000.ombrachat.controllers.AuthenticationCodeController;
 import net.zonia3000.ombrachat.controllers.AuthenticationPasswordController;
 import net.zonia3000.ombrachat.controllers.EncryptionPasswordController;
@@ -45,6 +48,8 @@ public class GuiService {
     private ErrorHandlerController currentController;
 
     private final Image lockImage;
+
+    private SelectableText currentSelectable;
 
     public GuiService(App app, Stage primaryStage) {
         this.app = app;
@@ -190,12 +195,18 @@ public class GuiService {
                     publish(new WindowWidthChanged(newSceneWidth.intValue()));
                 });
 
-                // Detect escape key pressed
                 scene.addEventFilter(KeyEvent.KEY_PRESSED, (KeyEvent event) -> {
-                    if (event.getCode() == KeyCode.ESCAPE) {
+                    if (event.getCode() == KeyCode.ESCAPE) { // Detect escape key pressed
                         // hide chat
                         var chatService = ServiceLocator.getService(ChatsService.class);
                         chatService.setSelectedChat(null);
+                    } else if (event.isControlDown() && event.getCode() == KeyCode.C) { // Detect Ctrl+C
+                        if (currentSelectable != null) {
+                            Clipboard clipboard = Clipboard.getSystemClipboard();
+                            ClipboardContent content = new ClipboardContent();
+                            content.putString(currentSelectable.getSelectedText());
+                            clipboard.setContent(content);
+                        }
                     }
                 });
 
@@ -243,5 +254,12 @@ public class GuiService {
 
     public void showDocument(String url) {
         app.getHostServices().showDocument(url);
+    }
+
+    public void setCurrentSelectable(SelectableText selectableText) {
+        if (currentSelectable != null) {
+            currentSelectable.resetSelection();
+        }
+        currentSelectable = selectableText;
     }
 }

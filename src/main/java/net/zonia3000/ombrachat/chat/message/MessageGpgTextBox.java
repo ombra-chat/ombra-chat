@@ -1,9 +1,9 @@
 package net.zonia3000.ombrachat.chat.message;
 
 import java.io.File;
-import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.components.SelectableText;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import org.drinkless.tdlib.TdApi;
@@ -17,7 +17,7 @@ public class MessageGpgTextBox extends VBox implements FileBox {
     private final TelegramClientService clientService;
     private final GpgService gpgService;
 
-    private Label label;
+    private final SelectableText selectableText = new SelectableText();
     private TdApi.File telegramFile;
 
     public MessageGpgTextBox(TdApi.MessageDocument messageDocument) {
@@ -28,16 +28,15 @@ public class MessageGpgTextBox extends VBox implements FileBox {
     }
 
     private void initChildren(TdApi.MessageDocument messageDocument) {
-        label = new Label();
-        label.setText("...");
-        getChildren().add(label);
+        selectableText.setText("...");
+        getChildren().add(selectableText);
 
         var document = messageDocument.document.document;
         if (document.local.isDownloadingCompleted) {
             var file = new File(document.local.path);
             var msg = gpgService.decryptToString(file);
             if (msg != null) {
-                label.setText(msg);
+                selectableText.setText(msg);
             }
         } else if (document.local.canBeDownloaded) {
             downloadFile(messageDocument);

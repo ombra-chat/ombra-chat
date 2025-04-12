@@ -1,14 +1,16 @@
 package net.zonia3000.ombrachat.chat.message;
 
-import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+import net.zonia3000.ombrachat.components.SelectableText;
 import org.drinkless.tdlib.TdApi;
 
 public class MessageTextBox extends VBox {
 
+    private final SelectableText selectableText;
+
     public MessageTextBox(TdApi.MessageText messageText) {
-        Label textLabel = new Label(messageText.text.text);
-        textLabel.setWrapText(true);
-        getChildren().add(textLabel);
+        selectableText = new SelectableText();
+        selectableText.setText(messageText.text.text);
+        getChildren().add(selectableText);
     }
 }

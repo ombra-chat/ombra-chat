@@ -13,4 +13,5 @@ module ombrachat {
     opens net.zonia3000.ombrachat to javafx.fxml;
     opens net.zonia3000.ombrachat.chat to javafx.fxml;
     opens net.zonia3000.ombrachat.controllers to javafx.fxml;
+    opens net.zonia3000.ombrachat.components to javafx.fxml;
 }

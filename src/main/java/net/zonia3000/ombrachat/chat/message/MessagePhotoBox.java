@@ -2,13 +2,13 @@ package net.zonia3000.ombrachat.chat.message;
 
 import javafx.application.Platform;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.components.SelectableText;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import org.drinkless.tdlib.TdApi;
 
@@ -22,8 +22,8 @@ public class MessagePhotoBox extends VBox {
         setPhoto(messagePhoto);
 
         if (messagePhoto.caption != null) {
-            Label textLabel = new Label(messagePhoto.caption.text);
-            textLabel.setWrapText(true);
+            SelectableText textLabel = new SelectableText();
+            textLabel.setText(messagePhoto.caption.text);
             getChildren().add(textLabel);
         }
     }

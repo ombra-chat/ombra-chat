@@ -10,6 +10,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
+import net.zonia3000.ombrachat.components.SelectableText;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
@@ -24,7 +25,7 @@ public class MessageDocumentBox extends VBox implements FileBox {
     private Label label;
     private Button downloadFileButton;
     private Button openFileButton;
-    private Label captionLabel;
+    private SelectableText captionLabel;
     private TdApi.File telegramFile;
 
     public MessageDocumentBox(TdApi.MessageDocument messageDocument) {
@@ -56,8 +57,8 @@ public class MessageDocumentBox extends VBox implements FileBox {
         getChildren().add(hbox);
 
         if (messageDocument.caption != null) {
-            captionLabel = new Label(messageDocument.caption.text);
-            captionLabel.setWrapText(true);
+            captionLabel = new SelectableText();
+            captionLabel.setText(messageDocument.caption.text);
             getChildren().add(captionLabel);
         }
 
