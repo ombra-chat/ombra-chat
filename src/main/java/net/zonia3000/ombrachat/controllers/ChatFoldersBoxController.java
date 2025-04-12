@@ -5,7 +5,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.layout.HBox;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.chat.ChatFolderItem;
-import net.zonia3000.ombrachat.events.SelectedChatFolderChanged;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.SettingsService;
@@ -45,9 +44,9 @@ public class ChatFoldersBoxController extends HBox {
 
         chatFolderComboBox.setOnAction(event -> {
             ChatFolderItem selectedItem = (ChatFolderItem) chatFolderComboBox.getValue();
-            guiService.publish(new SelectedChatFolderChanged(selectedItem.getId()));
+            chatsService.setSelectedFolder(selectedItem.getId());
             // hide current chat
-            chatsService.setSelectedChat(null);
+            guiService.setSelectedChat(null);
         });
     }
 
@@ -58,7 +57,7 @@ public class ChatFoldersBoxController extends HBox {
             ChatFolderItem cfi = (ChatFolderItem) item;
             if (cfi.getId() == selectedFolderId) {
                 if (cfi.getId() != 0) {
-                    guiService.publish(new SelectedChatFolderChanged(cfi.getId()));
+                    chatsService.setSelectedFolder(cfi.getId());
                 }
                 chatFolderComboBox.setValue(cfi.getLabel());
                 return;

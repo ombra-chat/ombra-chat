@@ -18,7 +18,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
-import net.zonia3000.ombrachat.events.ChatsListUpdated;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
 import org.drinkless.tdlib.TdApi;
@@ -38,8 +37,6 @@ public class ChatsListView extends ListView<TdApi.Chat> {
         guiService = ServiceLocator.getService(GuiService.class);
         chatsService = ServiceLocator.getService(ChatsService.class);
 
-        guiService.subscribe(ChatsListUpdated.class, (e) -> setChatsList(e.getChats()));
-
         setCellFactory(lv -> new CustomListCell());
 
         getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
@@ -47,14 +44,15 @@ public class ChatsListView extends ListView<TdApi.Chat> {
         getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 lastSelectedChat = newValue;
-                chatsService.setSelectedChat(newValue);
+                guiService.setSelectedChat(newValue);
             }
         });
 
         chatsService.loadChats();
     }
 
-    private void setChatsList(Collection<TdApi.Chat> collection) {
+    public void setChatsList(Collection<TdApi.Chat> collection) {
+        logger.debug("Updating chats list");
         ObservableList<TdApi.Chat> items = FXCollections.observableArrayList();
         for (var chat : collection) {
             items.add(chat);
@@ -109,7 +107,7 @@ public class ChatsListView extends ListView<TdApi.Chat> {
 
                 hBox.setOnMouseClicked(event -> {
                     if (chatsService.getSelectedChat() == null && lastSelectedChat != null) {
-                        chatsService.setSelectedChat(lastSelectedChat);
+                        guiService.setSelectedChat(lastSelectedChat);
                     }
                 });
             }

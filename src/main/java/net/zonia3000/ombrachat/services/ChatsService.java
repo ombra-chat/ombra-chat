@@ -7,10 +7,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
+import javafx.application.Platform;
 import net.zonia3000.ombrachat.ServiceLocator;
-import net.zonia3000.ombrachat.events.ChatSelected;
-import net.zonia3000.ombrachat.events.SelectedChatFolderChanged;
-import net.zonia3000.ombrachat.events.ChatsListUpdated;
+import net.zonia3000.ombrachat.controllers.MainWindowController;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,12 +34,11 @@ public class ChatsService {
     public ChatsService() {
         this.telegramClientService = ServiceLocator.getService(TelegramClientService.class);
         this.guiService = ServiceLocator.getService(GuiService.class);
-        guiService.subscribe(SelectedChatFolderChanged.class, (e) -> setSelectedFolder(e.getId()));
     }
 
     public boolean onResult(TdApi.Object object) {
         if (object instanceof TdApi.UpdateChatFolders update) {
-            handleUpdateChatFolders(update);
+            return handleUpdateChatFolders(update);
         } else if (object instanceof TdApi.UpdateNewChat update) {
             return handleUpdateNewChat(update);
         } else if (object instanceof TdApi.UpdateChatPosition update) {
@@ -65,7 +63,6 @@ public class ChatsService {
                 telegramClientService.sendClientMessage(new TdApi.CloseChat(this.selectedChat.id));
             }
             this.selectedChat = selectedChat;
-            guiService.publish(new ChatSelected(selectedChat));
             var messagesService = ServiceLocator.getService(MessagesService.class);
             messagesService.resetLastMessage();
             if (selectedChat != null) {
@@ -118,13 +115,13 @@ public class ChatsService {
         }
         chat.unreadCount = update.unreadCount;
         chat.lastReadInboxMessageId = update.lastReadInboxMessageId;
-        this.guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
+        updateChatsListOnGui();
         return true;
     }
 
     public void setSelectedFolder(int selectedFolder) {
         this.selectedChatFolder = selectedFolder;
-        this.guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
+        updateChatsListOnGui();
     }
 
     private boolean handleUpdateNewChat(TdApi.UpdateNewChat update) {
@@ -165,7 +162,7 @@ public class ChatsService {
                         .toArray(TdApi.ChatPosition[]::new);
             }
         }
-        this.guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
+        updateChatsListOnGui();
         return true;
     }
 
@@ -177,15 +174,24 @@ public class ChatsService {
         synchronized (chat) {
             chat.positions = update.positions;
         }
-        this.guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
+        updateChatsListOnGui();
         return true;
     }
 
     private void removeChatFromFolder(TdApi.ChatListFolder folder, long chatId) {
         List<Long> chatIds = chatFolders.get(folder.chatFolderId);
         if (chatIds.remove(chatId)) {
-            this.guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
+            updateChatsListOnGui();
         }
+    }
+
+    private void updateChatsListOnGui() {
+        Platform.runLater(() -> {
+            var mainWindowController = guiService.getController(MainWindowController.class);
+            if (mainWindowController != null) {
+                mainWindowController.updateChatsList(getSelectedChatsList());
+            }
+        });
     }
 
     public void loadChats() {
@@ -197,7 +203,7 @@ public class ChatsService {
                         case TdApi.Error.CONSTRUCTOR:
                             if (((TdApi.Error) object).code == 404) {
                                 haveFullMainChatList = true;
-                                guiService.publish(new ChatsListUpdated(getSelectedChatsList()));
+                                updateChatsListOnGui();
                             } else {
                                 logger.error("Receive an error for LoadChats: {}", object);
                             }

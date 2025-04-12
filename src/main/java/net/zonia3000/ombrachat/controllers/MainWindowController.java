@@ -2,7 +2,9 @@ package net.zonia3000.ombrachat.controllers;
 
 import java.io.IOError;
 import java.io.IOException;
+import java.util.Collection;
 import javafx.animation.TranslateTransition;
+import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -22,10 +24,9 @@ import javafx.util.Duration;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.chat.ChatsListView;
-import net.zonia3000.ombrachat.events.ChatSelected;
-import net.zonia3000.ombrachat.events.WindowWidthChanged;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
+import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,8 +72,7 @@ public class MainWindowController implements ErrorHandlerController {
         initChatPage();
         VBox.setVgrow(chatsList, Priority.ALWAYS);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
-        guiService.subscribe(ChatSelected.class, (e) -> computeSplitPaneChildrenVisibility());
-        guiService.subscribe(WindowWidthChanged.class, (e) -> onWindowWidthChanged(e.getWidth()));
+        guiService.registerController(MainWindowController.class, this);
         logger.debug("{} initialized", MainWindowController.class.getSimpleName());
     }
 
@@ -112,8 +112,19 @@ public class MainWindowController implements ErrorHandlerController {
         }
     }
 
-    private void onWindowWidthChanged(int windowWidth) {
+    public void updateChatsList(Collection<TdApi.Chat> collection) {
+        if (chatsList == null) {
+            return;
+        }
+        chatsList.setChatsList(collection);
+    }
+
+    public void onWindowWidthChanged(int windowWidth) {
         mobileMode = windowWidth < MOBILE_WIDTH;
+        computeSplitPaneChildrenVisibility();
+    }
+
+    public void onChatSelected() {
         computeSplitPaneChildrenVisibility();
     }
 

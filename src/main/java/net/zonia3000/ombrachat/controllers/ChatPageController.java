@@ -35,11 +35,6 @@ import net.zonia3000.ombrachat.chat.message.MessageGpgTextBox;
 import net.zonia3000.ombrachat.chat.message.MessageNotSupportedBox;
 import net.zonia3000.ombrachat.chat.message.MessagePhotoBox;
 import net.zonia3000.ombrachat.chat.message.MessageTextBox;
-import net.zonia3000.ombrachat.events.ChatSelected;
-import net.zonia3000.ombrachat.events.ChatSettingsSaved;
-import net.zonia3000.ombrachat.events.FileUpdated;
-import net.zonia3000.ombrachat.events.MessageReceived;
-import net.zonia3000.ombrachat.events.MessagesDeleted;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.MessagesService;
@@ -141,24 +136,7 @@ public class ChatPageController {
         selectedFileLabel.setVisible(false);
         removeSelectedFileBtn.setVisible(false);
 
-        guiService.subscribe(ChatSelected.class, (e) -> setSelectedChat(e.getChat()));
-        guiService.subscribe(MessageReceived.class, (e) -> {
-            Platform.runLater(() -> {
-                addMessage(e.getMessage());
-                markVisibleMessagesAsRead();
-            });
-        });
-        guiService.subscribe(ChatSettingsSaved.class, (e) -> setGpgKeyLabel());
-        guiService.subscribe(FileUpdated.class, (e) -> {
-            Platform.runLater(() -> {
-                handleFileUpdated(e);
-            });
-        });
-        guiService.subscribe(MessagesDeleted.class, (e) -> {
-            Platform.runLater(() -> {
-                deleteMessages(e);
-            });
-        });
+        guiService.registerController(ChatPageController.class, this);
         logger.debug("{} initialized", ChatPageController.class.getSimpleName());
     }
 
@@ -209,10 +187,10 @@ public class ChatPageController {
     }
 
     public void closeChat() {
-        chatsService.setSelectedChat(null);
+        guiService.setSelectedChat(null);
     }
 
-    private void setSelectedChat(TdApi.Chat selectedChat) {
+    public void setSelectedChat(TdApi.Chat selectedChat) {
         if (selectedChat == null) {
             setVisible(false);
         } else {
@@ -228,7 +206,7 @@ public class ChatPageController {
         }
     }
 
-    private void setGpgKeyLabel() {
+    public void setGpgKeyLabel() {
         String chatKeyFingerprint = settings.getChatKeyFingerprint(chatsService.getSelectedChat().id);
         gpgKeyLabel.managedProperty().bind(gpgKeyLabel.visibleProperty());
         if (chatKeyFingerprint == null) {
@@ -242,7 +220,8 @@ public class ChatPageController {
         }
     }
 
-    private void addMessage(TdApi.Message message) {
+    public void addMessage(TdApi.Message message) {
+        logger.debug("Adding message to chat page");
         var children = chatContent.getChildren();
         synchronized (children) {
             if (children.stream().map(n -> (MessageBubble) n).anyMatch(m -> m.getMessage().id == message.id)) {
@@ -263,6 +242,7 @@ public class ChatPageController {
             }
             children.add(bubble);
         }
+        markVisibleMessagesAsRead();
     }
 
     private boolean isRead(TdApi.Message message) {
@@ -293,13 +273,13 @@ public class ChatPageController {
         }
     }
 
-    private void handleFileUpdated(FileUpdated update) {
+    public void handleFileUpdated(TdApi.UpdateFile update) {
         for (Node node : chatContent.getChildrenUnmodifiable()) {
             if (node instanceof MessageBubble bubble) {
                 if (bubble.getChildren().size() == 1) {
                     var msgBox = bubble.getChildren().get(0);
                     if (msgBox instanceof MessageDocumentBox docBox) {
-                        if (docBox.updateFile(update.getUpdateFile())) {
+                        if (docBox.updateFile(update)) {
                             return;
                         }
                     }
@@ -389,19 +369,19 @@ public class ChatPageController {
         return bubble;
     }
 
-    private void deleteMessages(MessagesDeleted messagesDeleted) {
+    public void deleteMessages(long chatId, long[] messageIds) {
         var currentChat = chatsService.getSelectedChat();
         if (currentChat == null) {
             return;
         }
-        if (currentChat.id != messagesDeleted.getChatId()) {
+        if (currentChat.id != chatId) {
             return;
         }
         var children = chatContent.getChildren();
 
         List<Node> nodesToRemove = children.stream()
                 .map(n -> (MessageBubble) n)
-                .filter(n -> Arrays.stream(messagesDeleted.getMessageIds()).anyMatch(id -> n.getMessage().id == id))
+                .filter(n -> Arrays.stream(messageIds).anyMatch(id -> n.getMessage().id == id))
                 .collect(Collectors.toList());
 
         logger.debug("Removing {} messages from the list", nodesToRemove.size());

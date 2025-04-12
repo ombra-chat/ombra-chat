@@ -12,7 +12,6 @@ import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiException;
 import net.zonia3000.ombrachat.UiUtils;
-import net.zonia3000.ombrachat.events.ChatSettingsSaved;
 import net.zonia3000.ombrachat.services.ChatsService;
 import static net.zonia3000.ombrachat.services.GpgService.bytesToHex;
 import net.zonia3000.ombrachat.services.GuiService;
@@ -227,7 +226,11 @@ public class ChatSettingsDialogController {
 
         Stage stage = (Stage) saveBtn.getScene().getWindow();
         stage.close();
-        guiService.publish(new ChatSettingsSaved());
+
+        var chatPageController = guiService.getController(ChatPageController.class);
+        if (chatPageController != null) {
+            chatPageController.setGpgKeyLabel();
+        }
     }
 
     @FXML

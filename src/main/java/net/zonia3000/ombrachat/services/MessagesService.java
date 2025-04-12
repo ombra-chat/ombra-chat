@@ -1,9 +1,8 @@
 package net.zonia3000.ombrachat.services;
 
+import javafx.application.Platform;
 import net.zonia3000.ombrachat.ServiceLocator;
-import net.zonia3000.ombrachat.events.FileUpdated;
-import net.zonia3000.ombrachat.events.MessagesDeleted;
-import net.zonia3000.ombrachat.events.MessageReceived;
+import net.zonia3000.ombrachat.controllers.ChatPageController;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,20 +59,42 @@ public class MessagesService {
                                 });
                     }
                     lastMessageId = message.id;
-                    guiService.publish(new MessageReceived(message));
+                    updateMessageOnGui(message);
                 }
             }
             return true;
         }
     }
 
+    private void updateMessageOnGui(TdApi.Message message) {
+        Platform.runLater(() -> {
+            var chatPageController = guiService.getController(ChatPageController.class);
+            if (chatPageController == null) {
+                return;
+            }
+            chatPageController.addMessage(message);
+        });
+    }
+
     private boolean handleUpdateFile(TdApi.UpdateFile updateFile) {
-        guiService.publish(new FileUpdated(updateFile));
+        Platform.runLater(() -> {
+            var chatPageController = guiService.getController(ChatPageController.class);
+            if (chatPageController == null) {
+                return;
+            }
+            chatPageController.handleFileUpdated(updateFile);
+        });
         return true;
     }
-    
+
     private boolean handleDeleteMessages(TdApi.UpdateDeleteMessages update) {
-        guiService.publish(new MessagesDeleted(update.chatId, update.messageIds));
+        Platform.runLater(() -> {
+            var chatPageController = guiService.getController(ChatPageController.class);
+            if (chatPageController == null) {
+                return;
+            }
+            chatPageController.deleteMessages(update.chatId, update.messageIds);
+        });
         return true;
     }
 

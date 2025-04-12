@@ -11,6 +11,7 @@ import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.MessagesService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
+import net.zonia3000.ombrachat.services.UsersService;
 
 /**
  * JavaFX App
@@ -53,6 +54,7 @@ public class App extends Application {
         ServiceLocator.registerService(GuiService.class, new GuiService(app, stage));
         ServiceLocator.registerService(TelegramClientService.class, new TelegramClientService());
         ServiceLocator.registerService(ChatsService.class, new ChatsService());
+        ServiceLocator.registerService(UsersService.class, new UsersService());
         ServiceLocator.registerService(MessagesService.class, new MessagesService());
         ServiceLocator.registerService(GpgService.class, new GpgService());
     }

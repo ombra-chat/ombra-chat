@@ -3,9 +3,7 @@ package net.zonia3000.ombrachat.services;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
@@ -26,21 +24,18 @@ import net.zonia3000.ombrachat.chat.ChatsListView;
 import net.zonia3000.ombrachat.components.SelectableText;
 import net.zonia3000.ombrachat.controllers.AuthenticationCodeController;
 import net.zonia3000.ombrachat.controllers.AuthenticationPasswordController;
+import net.zonia3000.ombrachat.controllers.ChatPageController;
 import net.zonia3000.ombrachat.controllers.EncryptionPasswordController;
 import net.zonia3000.ombrachat.controllers.InitialConfigDialogController;
 import net.zonia3000.ombrachat.controllers.MainWindowController;
 import net.zonia3000.ombrachat.controllers.PhoneDialogController;
-import net.zonia3000.ombrachat.events.Event;
-import net.zonia3000.ombrachat.events.EventListener;
-import net.zonia3000.ombrachat.events.WindowWidthChanged;
+import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GuiService {
 
     private static final Logger logger = LoggerFactory.getLogger(GuiService.class);
-
-    private final Map<Class<?>, List<EventListener>> eventListeners = new HashMap<>();
 
     private final App app;
     private final Stage primaryStage;
@@ -51,10 +46,21 @@ public class GuiService {
 
     private SelectableText currentSelectable;
 
+    private static final Map<Class<?>, Object> controllers = new HashMap<>();
+
     public GuiService(App app, Stage primaryStage) {
         this.app = app;
         this.primaryStage = primaryStage;
         lockImage = createLockImage();
+    }
+
+    public <T> void registerController(Class<T> controllerClass, T controller) {
+        logger.debug("Registering controller {}", controllerClass.getSimpleName());
+        controllers.put(controllerClass, controller);
+    }
+
+    public <T> T getController(Class<T> controllerClass) {
+        return controllerClass.cast(controllers.get(controllerClass));
     }
 
     public void handleError(String errorMessage) {
@@ -186,20 +192,20 @@ public class GuiService {
                 logger.debug("Showing main window");
                 FXMLLoader loader = new FXMLLoader(GuiService.class.getResource("/view/main-window.fxml"));
                 Parent root = loader.load();
-                currentController = loader.getController();
+                var mainWindowController = (MainWindowController) loader.getController();
+                currentController = mainWindowController;
 
                 Scene scene = new Scene(root);
                 UiUtils.setCommonCss(scene);
 
                 scene.widthProperty().addListener((ObservableValue<? extends Number> observableValue, Number oldSceneWidth, Number newSceneWidth) -> {
-                    publish(new WindowWidthChanged(newSceneWidth.intValue()));
+                    mainWindowController.onWindowWidthChanged(newSceneWidth.intValue());
                 });
 
                 scene.addEventFilter(KeyEvent.KEY_PRESSED, (KeyEvent event) -> {
                     if (event.getCode() == KeyCode.ESCAPE) { // Detect escape key pressed
                         // hide chat
-                        var chatService = ServiceLocator.getService(ChatsService.class);
-                        chatService.setSelectedChat(null);
+                        setSelectedChat(null);
                     } else if (event.isControlDown() && event.getCode() == KeyCode.C) { // Detect Ctrl+C
                         if (currentSelectable != null) {
                             Clipboard clipboard = Clipboard.getSystemClipboard();
@@ -220,23 +226,17 @@ public class GuiService {
         });
     }
 
-    public void publish(Event event) {
-        List<EventListener> listeners = eventListeners.get(event.getClass());
-        if (listeners != null) {
-            for (EventListener listener : listeners) {
-                Platform.runLater(() -> {
-                    logger.debug("Handling event {}", event.getClass().getSimpleName());
-                    listener.handleEvent(event);
-                });
-            }
-        } else {
-            logger.warn("No listener defined for event {}", event.getClass().getSimpleName());
+    public void setSelectedChat(TdApi.Chat selectedChat) {
+        logger.debug("Updating selected chat");
+        ServiceLocator.getService(ChatsService.class).setSelectedChat(selectedChat);
+        var mainWindowController = getController(MainWindowController.class);
+        if (mainWindowController != null) {
+            mainWindowController.onChatSelected();
         }
-    }
-
-    public synchronized <T extends Event> void subscribe(Class<T> eventType, EventListener<T> listener) {
-        logger.debug("Subscribing to event {}", eventType.getSimpleName());
-        eventListeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(listener);
+        var chatPageController = getController(ChatPageController.class);
+        if (chatPageController != null) {
+            chatPageController.setSelectedChat(selectedChat);
+        }
     }
 
     private Image createLockImage() {
