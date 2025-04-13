@@ -18,6 +18,8 @@ public class SelectableText extends TextFlow {
 
     private final Text textNode;
 
+    private int startIndex = 0;
+
     public SelectableText() {
         textNode = new Text();
         getChildren().add(textNode);
@@ -28,19 +30,26 @@ public class SelectableText extends TextFlow {
 
         setOnMousePressed(e -> {
             isSelecting = true;
-            var index = getCharHitIndex(e);
-            textNode.setSelectionStart(index);
-            textNode.setSelectionEnd(index);
+            startIndex = getCharHitIndex(e);
             guiService.setCurrentSelectable(this);
             e.consume();
         });
         setOnMouseReleased(e -> {
             isSelecting = false;
-            textNode.setSelectionEnd(getCharHitIndex(e));
+            if (startIndex == getCharHitIndex(e)) {
+                resetSelection();
+            }
         });
         setOnMouseDragged(e -> {
             if (isSelecting) {
-                textNode.setSelectionEnd(getCharHitIndex(e));
+                var index = getCharHitIndex(e);
+                if (index > startIndex) {
+                    textNode.setSelectionStart(startIndex);
+                    textNode.setSelectionEnd(index);
+                } else {
+                    textNode.setSelectionStart(index);
+                    textNode.setSelectionEnd(startIndex);
+                }
             }
         });
     }

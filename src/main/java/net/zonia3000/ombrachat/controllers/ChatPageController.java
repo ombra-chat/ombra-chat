@@ -123,16 +123,15 @@ public class ChatPageController {
         });
 
         chatScrollPane.addEventFilter(ScrollEvent.SCROLL, event -> {
+            scrollToBottom = false;
             if (chatScrollPane.getVvalue() <= 0.0 && !loadingPreviousMessages && !loadingNewMessages) {
                 // Top edge reached
-                scrollToBottom = false;
                 messagesService.loadPreviousMessages();
                 loadingPreviousMessages = true;
             } else if (chatScrollPane.getVvalue() == 1 && !loadingPreviousMessages && !loadingNewMessages) {
                 var lastLoadedMessage = getLastLoadedMessage();
                 var selectedChat = chatsService.getSelectedChat();
                 if (lastLoadedMessage != null && selectedChat != null && selectedChat.unreadCount > 0) {
-                    scrollToBottom = false;
                     messagesService.loadNewMessages(lastLoadedMessage.id);
                     loadingNewMessages = true;
                 }

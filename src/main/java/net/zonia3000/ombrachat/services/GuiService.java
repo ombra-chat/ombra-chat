@@ -258,7 +258,7 @@ public class GuiService {
     }
 
     public void setCurrentSelectable(SelectableText selectableText) {
-        if (currentSelectable != null) {
+        if (currentSelectable != null && currentSelectable != selectableText) {
             currentSelectable.resetSelection();
         }
         currentSelectable = selectableText;
