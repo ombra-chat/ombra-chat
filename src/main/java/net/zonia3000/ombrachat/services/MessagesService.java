@@ -1,5 +1,7 @@
 package net.zonia3000.ombrachat.services;
 
+import java.util.ArrayList;
+import java.util.List;
 import javafx.application.Platform;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.controllers.ChatPageController;
@@ -45,34 +47,37 @@ public class MessagesService {
     }
 
     private boolean handleMessages(TdApi.Message[] messages) {
+        if (messages == null) {
+            return true;
+        }
         synchronized (lock) {
             var selectedChat = chatsService.getSelectedChat();
             if (selectedChat == null) {
                 return false;
             }
+            logger.debug("Loaded {} messages", messages.length);
+            List<TdApi.Message> messagesToAdd = new ArrayList<>();
             for (var message : messages) {
                 if (message.chatId == selectedChat.id) {
-                    if (lastMessageId == 0) { // first request for selected chat
-                        telegramClientService.sendClientMessage(new TdApi.GetChatHistory(selectedChat.id, message.id, 0, 20, false),
-                                (TdApi.Object object) -> {
-                                    MessagesService.this.onResult(object);
-                                });
+                    if (lastMessageId == 0 && messages.length == 1) { // first request for selected chat
+                        telegramClientService.sendClientMessage(new TdApi.GetChatHistory(selectedChat.id, message.id, 0, 20, false));
                     }
                     lastMessageId = message.id;
-                    updateMessageOnGui(message);
+                    messagesToAdd.add(message);
                 }
             }
+            updateMessagesOnGui(messagesToAdd);
             return true;
         }
     }
 
-    private void updateMessageOnGui(TdApi.Message message) {
+    private void updateMessagesOnGui(List<TdApi.Message> messages) {
         Platform.runLater(() -> {
             var chatPageController = guiService.getController(ChatPageController.class);
             if (chatPageController == null) {
                 return;
             }
-            chatPageController.addMessage(message);
+            chatPageController.addMessages(messages);
         });
     }
 
@@ -102,10 +107,18 @@ public class MessagesService {
         if (lastMessageId == 0) {
             return;
         }
-        telegramClientService.sendClientMessage(new TdApi.GetChatHistory(chatsService.getSelectedChat().id, lastMessageId, 0, 20, false),
-                (TdApi.Object object) -> {
-                    MessagesService.this.onResult(object);
-                });
+        logger.debug("Loading previous messages");
+        telegramClientService.sendClientMessage(
+                new TdApi.GetChatHistory(chatsService.getSelectedChat().id, lastMessageId, 0, 20, false)
+        );
+    }
+
+    public void loadNewMessages(long messageId) {
+        logger.debug("Loading new messages");
+        var selectedChat = chatsService.getSelectedChat();
+        telegramClientService.sendClientMessage(
+                new TdApi.GetChatHistory(selectedChat.id, messageId, -10, 10, false)
+        );
     }
 
     public void resetLastMessage() {

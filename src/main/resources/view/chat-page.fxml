@@ -28,6 +28,11 @@
     </ScrollPane>
     <VBox>
         <children>
+            <HBox fx:id="newMessagesBox">
+                <children>
+                    <Label text="new messages" styleClass="centered-label" maxWidth="10000" HBox.hgrow="ALWAYS" />
+                </children>
+            </HBox>
             <HBox>
                 <children>
                     <Button styleClass="btn, btn-20" fx:id="removeSelectedFileBtn" onAction="#removeSelectedFile" />

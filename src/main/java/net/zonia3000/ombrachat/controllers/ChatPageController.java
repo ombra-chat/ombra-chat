@@ -60,6 +60,8 @@ public class ChatPageController {
     @FXML
     private Label gpgKeyLabel;
     @FXML
+    private HBox newMessagesBox;
+    @FXML
     private Label selectedFileLabel;
     @FXML
     private TextField messageText;
@@ -69,7 +71,8 @@ public class ChatPageController {
     private HBox sendMessageBox;
 
     private boolean scrollToBottom = true;
-    private boolean loading = false;
+    private boolean loadingPreviousMessages = false;
+    private boolean loadingNewMessages = false;
     private File selectedFile = null;
 
     private final GuiService guiService;
@@ -82,6 +85,7 @@ public class ChatPageController {
     private final VBox container;
 
     private PGPPublicKey chatPublicKey;
+    private TdApi.Message oldestUnreadMessage = null;
 
     public ChatPageController(VBox container) {
         this.guiService = ServiceLocator.getService(GuiService.class);
@@ -106,21 +110,32 @@ public class ChatPageController {
         chatScrollPane.setFitToWidth(true);
         chatContent.setSpacing(10);
 
+        // when new messages are added the content height changes
         chatContent.heightProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
             if (scrollToBottom) {
-                chatScrollPane.setVvalue(1.0);
-            } else {
-                chatScrollPane.setVvalue((newValue.doubleValue() - oldValue.doubleValue()) / newValue.doubleValue());
-                loading = false;
+                setScrollPosition(1.0);
+            } else if (loadingPreviousMessages) {
+                // keep the chat scroll to the last position, while older/newer messages are loaded
+                setScrollPosition((newValue.doubleValue() - oldValue.doubleValue()) / newValue.doubleValue());
             }
+            loadingNewMessages = false;
+            loadingPreviousMessages = false;
         });
 
         chatScrollPane.addEventFilter(ScrollEvent.SCROLL, event -> {
-            if (chatScrollPane.getVvalue() <= 0.0 && !loading) {
+            if (chatScrollPane.getVvalue() <= 0.0 && !loadingPreviousMessages && !loadingNewMessages) {
                 // Top edge reached
                 scrollToBottom = false;
                 messagesService.loadPreviousMessages();
-                loading = true;
+                loadingPreviousMessages = true;
+            } else if (chatScrollPane.getVvalue() == 1 && !loadingPreviousMessages && !loadingNewMessages) {
+                var lastLoadedMessage = getLastLoadedMessage();
+                var selectedChat = chatsService.getSelectedChat();
+                if (lastLoadedMessage != null && selectedChat != null && selectedChat.unreadCount > 0) {
+                    scrollToBottom = false;
+                    messagesService.loadNewMessages(lastLoadedMessage.id);
+                    loadingNewMessages = true;
+                }
             }
         });
 
@@ -137,13 +152,22 @@ public class ChatPageController {
         logger.debug("{} initialized", ChatPageController.class.getSimpleName());
     }
 
+    private void setScrollPosition(double vvalue) {
+        if (vvalue < 0 || vvalue > 1) {
+            logger.debug("Ignoring invalid vvalue {}", vvalue);
+            return;
+        }
+        logger.debug("Setting vvalue to {}", vvalue);
+        chatScrollPane.setVvalue(vvalue);
+    }
+
     private void markVisibleMessagesAsRead() {
 
         var viewport = chatScrollPane.getViewportBounds();
-        double availableHeight = viewport.getMaxY() - viewport.getMinY();
+        double viewportHeight = viewport.getMaxY() - viewport.getMinY();
         double totalHeight = chatScrollPane.getContent().getBoundsInLocal().getHeight();
-        double maxY = chatScrollPane.vvalueProperty().doubleValue() * (totalHeight - availableHeight) + availableHeight;
-        double minY = maxY - availableHeight;
+        double maxY = chatScrollPane.vvalueProperty().doubleValue() * (totalHeight - viewportHeight) + viewportHeight;
+        double minY = maxY - viewportHeight;
 
         VBox content = (VBox) chatScrollPane.getContent();
 
@@ -180,7 +204,37 @@ public class ChatPageController {
             return;
         }
         long[] ids = messagesToBeMarkedAsRead.stream().mapToLong(Long::longValue).toArray();
-        clientService.sendClientMessage(new TdApi.ViewMessages(selectedChat.id, ids, null, false));
+        clientService.sendClientMessage(new TdApi.ViewMessages(selectedChat.id, ids, null, false), (e) -> {
+            if (e instanceof TdApi.Ok) {
+                Platform.runLater(() -> {
+                    for (Node node : chatContent.getChildrenUnmodifiable()) {
+                        if (node instanceof MessageBubble bubble) {
+                            if (Arrays.stream(ids).anyMatch(i -> bubble.getMessage().id == i)) {
+                                bubble.setRead(true);
+                            }
+                        }
+                    }
+                    logger.debug("Marked {} messages as read", ids.length);
+                });
+            } else {
+                logger.warn("Unexpected response while marking messages as read");
+            }
+        });
+    }
+
+    private TdApi.Message getLastLoadedMessage() {
+        var nodes = chatContent.getChildrenUnmodifiable();
+        for (int i = nodes.size() - 1; i >= 0; i--) {
+            var node = nodes.get(i);
+            if (node instanceof MessageBubble bubble) {
+                return bubble.getMessage();
+            }
+        }
+        return null;
+    }
+
+    public void updateChat(TdApi.Chat chat) {
+        UiUtils.setVisible(newMessagesBox, chat.unreadCount > 0);
     }
 
     public void closeChat() {
@@ -217,27 +271,47 @@ public class ChatPageController {
         }
     }
 
-    public void addMessage(TdApi.Message message) {
-        logger.debug("Adding message to chat page");
+    public void addMessages(List<TdApi.Message> messages) {
         var children = chatContent.getChildren();
         synchronized (children) {
-            if (children.stream().map(n -> (MessageBubble) n).anyMatch(m -> m.getMessage().id == message.id)) {
-                // prevent adding the same message twice
+            var alreadyLoadedIds = children.stream()
+                    .map(n -> (MessageBubble) n)
+                    .map(n -> n.getMessage().id)
+                    .collect(Collectors.toList());
+
+            List<MessageBubble> bubblesToAdd = messages.stream()
+                    // prevent adding the same message twice
+                    .filter(m -> !alreadyLoadedIds.contains(m.id))
+                    .sorted((m1, m2) -> m1.id < m2.id ? -1 : 1)
+                    .map(m -> getMessageBubble(m))
+                    .collect(Collectors.toList());
+
+            if (bubblesToAdd.isEmpty()) {
+                logger.debug("No bubbles to add");
+                loadingNewMessages = false;
+                loadingPreviousMessages = false;
                 return;
             }
-            MessageBubble nextMessage = children.stream()
-                    .map(n -> (MessageBubble) n)
-                    .filter(m -> m.getMessage().id > message.id)
-                    .findFirst().orElse(null);
-            MessageBubble bubble = getMessageBubble(message);
-            if (nextMessage != null) {
-                var index = children.indexOf(nextMessage);
-                if (index != -1) {
-                    children.add(index, bubble);
-                    return;
+
+            for (var bubble : bubblesToAdd) {
+                var message = bubble.getMessage();
+                var read = isRead(message);
+                bubble.setRead(read);
+                if (!read && (oldestUnreadMessage == null || oldestUnreadMessage.id > message.id)) {
+                    oldestUnreadMessage = message;
                 }
             }
-            children.add(bubble);
+
+            if (alreadyLoadedIds.isEmpty() || bubblesToAdd.getFirst().getMessage().id > alreadyLoadedIds.getLast()) {
+                logger.debug("Adding {} messages to end of chat page", bubblesToAdd.size());
+                children.addAll(bubblesToAdd);
+                var selectedChat = chatsService.getSelectedChat();
+                var hasNewMessagesToLoad = selectedChat != null && selectedChat.unreadCount > 0;
+                UiUtils.setVisible(newMessagesBox, hasNewMessagesToLoad);
+            } else {
+                logger.debug("Adding {} messages to beginning of chat page", bubblesToAdd.size());
+                children.addAll(0, bubblesToAdd);
+            }
         }
         markVisibleMessagesAsRead();
     }

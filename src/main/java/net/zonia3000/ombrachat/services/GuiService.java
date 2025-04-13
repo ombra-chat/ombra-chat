@@ -227,8 +227,9 @@ public class GuiService {
     }
 
     public void setSelectedChat(TdApi.Chat selectedChat) {
-        logger.debug("Updating selected chat");
-        ServiceLocator.getService(ChatsService.class).setSelectedChat(selectedChat);
+        if (!ServiceLocator.getService(ChatsService.class).setSelectedChat(selectedChat)) {
+            return;
+        }
         var mainWindowController = getController(MainWindowController.class);
         if (mainWindowController != null) {
             mainWindowController.onChatSelected();

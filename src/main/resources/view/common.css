@@ -18,6 +18,10 @@
     -fx-border-style: dashed;
 }
 
+.unread-message {
+    -fx-border-color: blue;
+}
+
 .msg-date {
     -fx-font-size: 11px;
     -fx-font-style: italic;

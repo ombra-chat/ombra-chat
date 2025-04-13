@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 import javafx.application.Platform;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.controllers.ChatPageController;
 import net.zonia3000.ombrachat.controllers.MainWindowController;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
@@ -57,8 +58,12 @@ public class ChatsService {
         return selectedChat;
     }
 
-    public void setSelectedChat(TdApi.Chat selectedChat) {
+    public boolean setSelectedChat(TdApi.Chat selectedChat) {
         synchronized (lock) {
+            if (selectedChat != null && this.selectedChat != null && selectedChat.id == this.selectedChat.id) {
+                return false;
+            }
+            logger.debug("Updating selected chat");
             if (this.selectedChat != null && selectedChat == null) {
                 telegramClientService.sendClientMessage(new TdApi.CloseChat(this.selectedChat.id));
             }
@@ -67,11 +72,15 @@ public class ChatsService {
             messagesService.resetLastMessage();
             if (selectedChat != null) {
                 telegramClientService.sendClientMessage(new TdApi.OpenChat(selectedChat.id), null);
-                telegramClientService.sendClientMessage(new TdApi.GetChatHistory(selectedChat.id, 0, 0, 20, false),
-                        (TdApi.Object object) -> {
-                            messagesService.onResult(object);
-                        });
+                telegramClientService.sendClientMessage(
+                        // retrieve only the last message; this is done because in some cases tdlib sends only
+                        // one message in any case at the first load, so it is better to always expect to receive
+                        // only one message when the chat is opened, in order to handle message loading in a more
+                        // deterministic way; next messages are requested in chunks of 20 or 10 messages
+                        new TdApi.GetChatHistory(selectedChat.id, selectedChat.lastReadInboxMessageId, 0, 1, false)
+                );
             }
+            return true;
         }
     }
 
@@ -115,6 +124,10 @@ public class ChatsService {
         }
         chat.unreadCount = update.unreadCount;
         chat.lastReadInboxMessageId = update.lastReadInboxMessageId;
+        var chatPageController = guiService.getController(ChatPageController.class);
+        if (chatPageController != null) {
+            chatPageController.updateChat(chat);
+        }
         updateChatsListOnGui();
         return true;
     }

@@ -79,7 +79,15 @@ public class MessageBubble extends VBox {
     }
 
     public void setRead(boolean read) {
+        if (read && !this.read) {
+            getStyleClass().removeAll("unread-message");
+        } else if (!read) {
+            getStyleClass().add("unread-message");
+        }
         this.read = read;
+        if (read) {
+            this.processingRead = false;
+        }
     }
 
     public boolean isProcessingRead() {
