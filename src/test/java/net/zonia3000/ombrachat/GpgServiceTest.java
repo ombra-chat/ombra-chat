@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Security;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.services.SettingsService;
@@ -60,7 +59,7 @@ FxAZIGDXerIBAOoc9ARDFXu4AStl+JJUPH8EGT04tnlyxrwY5vQer8FsAP0bx7n2
     private static final String TEST_SECRET_KEY_PASSWORD = "test";
     private static final String TEST_KEY_FINGERPRINT = "49A0C0308A6AC2B19B8459B59AB4084AD167DFCA";
 
-    private static File tmpAppFolder;
+    private static Path tmpAppFolder;
     private static Path pubring;
     private static Path publicKeyPath;
 
@@ -73,14 +72,16 @@ FxAZIGDXerIBAOoc9ARDFXu4AStl+JJUPH8EGT04tnlyxrwY5vQer8FsAP0bx7n2
     public static void init() {
         Security.addProvider(new BouncyCastleProvider());
         try {
-            tmpAppFolder = Files.createTempDirectory("gpg").toFile();
+            tmpAppFolder = Files.createTempDirectory("gpg-test");
+            var gpgFolder = tmpAppFolder.resolve("gpg");
+            gpgFolder.toFile().mkdirs();
 
-            var privateKeyPath = Paths.get(tmpAppFolder.getAbsolutePath(), "private.asc");
+            var privateKeyPath = gpgFolder.resolve("private.asc");
             Files.writeString(privateKeyPath, TEST_SECRET_KEY);
-            publicKeyPath = Paths.get(tmpAppFolder.getAbsolutePath(), "public.asc");
+            publicKeyPath = tmpAppFolder.resolve("public.asc");
             Files.writeString(publicKeyPath, TEST_PUBLIC_KEY);
 
-            pubring = Paths.get(tmpAppFolder.getAbsolutePath(), "pubring.kbx");
+            pubring = tmpAppFolder.resolve("pubring.kbx");
             try (InputStream in = GpgServiceTest.class.getClassLoader().getResourceAsStream("pubring.kbx")) {
                 Files.copy(in, pubring);
             }
@@ -93,7 +94,7 @@ FxAZIGDXerIBAOoc9ARDFXu4AStl+JJUPH8EGT04tnlyxrwY5vQer8FsAP0bx7n2
     public void initServices() {
         MockitoAnnotations.openMocks(this);
         ServiceLocator.registerService(SettingsService.class, settings);
-        Mockito.when(settings.getApplicationFolderPath()).thenReturn(tmpAppFolder.getAbsolutePath());
+        Mockito.when(settings.getApplicationFolderPath()).thenReturn(tmpAppFolder.toFile().getAbsolutePath());
         Mockito.when(settings.getPubringPath()).thenReturn(pubring.toFile().getAbsolutePath());
 
         gpgService = new GpgService();

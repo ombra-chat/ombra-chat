@@ -42,7 +42,6 @@ import org.bouncycastle.openpgp.PGPPublicKeyEncryptedData;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSecretKey;
 import org.bouncycastle.openpgp.PGPSecretKeyRing;
-import org.bouncycastle.openpgp.PGPSecretKeyRingCollection;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
 import org.bouncycastle.openpgp.operator.PGPDataEncryptorBuilder;
@@ -378,7 +377,7 @@ public class GpgService {
         return dir;
     }
 
-    private Path getGpgDirectoryPath() {
+    public Path getGpgDirectoryPath() {
         Path dir = Paths.get(settings.getApplicationFolderPath(), "gpg");
         createDirectoryIfNeeded(dir);
         return dir;
@@ -498,17 +497,32 @@ public class GpgService {
             return false;
         }
         try (InputStream privateKeyIn = new BufferedInputStream(new FileInputStream(privateKeyPath.toFile()))) {
-            var pgpSecretKeyRingCollection = new PGPSecretKeyRingCollection(PGPUtil.getDecoderStream(privateKeyIn),
-                    new JcaKeyFingerprintCalculator());
+            PGPObjectFactory factory = new PGPObjectFactory(
+                    PGPUtil.getDecoderStream(privateKeyIn), new JcaKeyFingerprintCalculator()
+            );
 
-            for (PGPSecretKeyRing secretRing : pgpSecretKeyRingCollection) {
-                var secretKeyIte = secretRing.getSecretKeys();
-                while (secretKeyIte.hasNext()) {
-                    PGPSecretKey pgpSecretKey = secretKeyIte.next();
-                    if (pgpSecretKey.getPublicKey().isEncryptionKey()) {
-                        myPrivateKey = pgpSecretKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder()
+            for (var data : factory) {
+                if (data instanceof PGPSecretKeyRing secretRing) {
+                    var secretKeyIte = secretRing.getSecretKeys();
+                    PGPSecretKey masterKey = null;
+                    PGPSecretKey encryptionKey = null;
+                    while (secretKeyIte.hasNext()) {
+                        PGPSecretKey pgpSecretKey = secretKeyIte.next();
+                        if (pgpSecretKey.getPublicKey().isMasterKey()) {
+                            masterKey = pgpSecretKey;
+                        } else if (pgpSecretKey.getPublicKey().isEncryptionKey()) {
+                            encryptionKey = pgpSecretKey;
+                            break;
+                        }
+                    }
+
+                    // always prefer non master key for encryption
+                    var privateKey = encryptionKey != null ? encryptionKey
+                            : masterKey != null && masterKey.getPublicKey().isEncryptionKey() ? masterKey : null;
+                    if (privateKey != null) {
+                        myPrivateKey = privateKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder()
                                 .setProvider(BouncyCastleProvider.PROVIDER_NAME).build(passphrase));
-                        myPublicKey = pgpSecretKey.getPublicKey();
+                        myPublicKey = privateKey.getPublicKey();
                         return true;
                     }
                 }
@@ -519,8 +533,8 @@ public class GpgService {
         return false;
     }
 
-    private Path getPrivateKeyPath() {
-        return Paths.get(settings.getApplicationFolderPath(), "private.asc");
+    public Path getPrivateKeyPath() {
+        return getGpgDirectoryPath().resolve("private.asc");
     }
 
     public void getMyPublicKey(PGPSecretKey pgpSecretKey) {
