@@ -91,6 +91,12 @@
                     <mainClass>net.zonia3000.ombrachat.App</mainClass>
                     <!-- Needed to avoid unsupported signed modular JAR error (bouncycastle) -->
                     <ignoreSigningInformation>true</ignoreSigningInformation>
+                    <!-- See https://bugs.openjdk.org/browse/JDK-8345121 -->
+                    <options>
+                        --enable-native-access=org.drinkless.tdlib,
+                        --enable-native-access=javafx.graphics,
+                        --sun-misc-unsafe-memory-access=allow
+                    </options>
                 </configuration>
                 <executions>
                     <execution>
