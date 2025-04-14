@@ -34,11 +34,18 @@ public class UiUtils {
     }
 
     public static void setAppIcon(Stage primaryStage) {
+        var icon = getAppIcon();
+        if (icon != null) {
+            primaryStage.getIcons().add(icon);
+        }
+    }
+
+    public static Image getAppIcon() {
         try (InputStream in = UiUtils.class.getResourceAsStream("/view/icons/ombra-chat-logo.png")) {
-            var image = new Image(in);
-            primaryStage.getIcons().add(image);
+            return new Image(in);
         } catch (IOException ex) {
             logger.error("Unable to initialize app icon", ex);
+            return null;
         }
     }
 }

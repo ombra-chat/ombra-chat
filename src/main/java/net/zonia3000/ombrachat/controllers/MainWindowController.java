@@ -14,6 +14,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -224,6 +225,8 @@ public class MainWindowController implements ErrorHandlerController {
             versionLabel.setText("Version: " + UiUtils.getVersion());
             Hyperlink link = (Hyperlink) root.lookup("#icons8link");
             link.setOnAction(event -> guiService.showDocument("https://icons8.com"));
+            ImageView logoView = (ImageView) root.lookup("#logoImageView");
+            logoView.setImage(UiUtils.getAppIcon());
             Scene aboutScene = new Scene(root);
             UiUtils.setCommonCss(aboutScene);
             Stage aboutStage = new Stage();
