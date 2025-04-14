@@ -20,6 +20,7 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) {
+        UiUtils.setAppIcon(stage);
         registerServices(this, stage);
         var guiService = ServiceLocator.getService(GuiService.class);
         var settings = ServiceLocator.getService(SettingsService.class);
