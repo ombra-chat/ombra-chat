@@ -77,7 +77,7 @@ public class ChatsService {
                         // one message in any case at the first load, so it is better to always expect to receive
                         // only one message when the chat is opened, in order to handle message loading in a more
                         // deterministic way; next messages are requested in chunks of 20 or 10 messages
-                        new TdApi.GetChatHistory(selectedChat.id, selectedChat.lastReadInboxMessageId, 0, 1, false)
+                        new TdApi.GetChatHistory(selectedChat.id, selectedChat.lastReadInboxMessageId, -1, 1, false)
                 );
             }
             return true;

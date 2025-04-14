@@ -30,7 +30,7 @@
         <children>
             <HBox fx:id="newMessagesBox">
                 <children>
-                    <Label text="new messages" styleClass="centered-label" maxWidth="10000" HBox.hgrow="ALWAYS" />
+                    <Button text="new messages" fx:id="newMessagesBtn" styleClass="text-interactive" maxWidth="10000" HBox.hgrow="ALWAYS" onAction="#loadNewMessages" />
                 </children>
             </HBox>
             <HBox>

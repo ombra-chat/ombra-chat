@@ -56,6 +56,12 @@ public class MessagesService {
                 return false;
             }
             logger.debug("Loaded {} messages", messages.length);
+            if (lastMessageId == 0 && messages.length == 0) {
+                // this happens when the last message has been deleted
+                // let's load the chat from the last message (id == 0)
+                telegramClientService.sendClientMessage(new TdApi.GetChatHistory(selectedChat.id, 0, 0, 1, false));
+                return true;
+            }
             List<TdApi.Message> messagesToAdd = new ArrayList<>();
             for (var message : messages) {
                 if (message.chatId == selectedChat.id) {

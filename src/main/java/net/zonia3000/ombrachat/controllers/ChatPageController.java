@@ -129,12 +129,7 @@ public class ChatPageController {
                 messagesService.loadPreviousMessages();
                 loadingPreviousMessages = true;
             } else if (chatScrollPane.getVvalue() == 1 && !loadingPreviousMessages && !loadingNewMessages) {
-                var lastLoadedMessage = getLastLoadedMessage();
-                var selectedChat = chatsService.getSelectedChat();
-                if (lastLoadedMessage != null && selectedChat != null && selectedChat.unreadCount > 0) {
-                    messagesService.loadNewMessages(lastLoadedMessage.id);
-                    loadingNewMessages = true;
-                }
+                loadNewMessages();
             }
         });
 
@@ -149,6 +144,17 @@ public class ChatPageController {
 
         guiService.registerController(ChatPageController.class, this);
         logger.debug("{} initialized", ChatPageController.class.getSimpleName());
+    }
+
+    @FXML
+    private void loadNewMessages() {
+        scrollToBottom = false;
+        var lastLoadedMessage = getLastLoadedMessage();
+        var selectedChat = chatsService.getSelectedChat();
+        if (lastLoadedMessage != null && selectedChat != null && selectedChat.unreadCount > 0) {
+            messagesService.loadNewMessages(lastLoadedMessage.id);
+            loadingNewMessages = true;
+        }
     }
 
     private void setScrollPosition(double vvalue) {
@@ -294,9 +300,7 @@ public class ChatPageController {
 
             for (var bubble : bubblesToAdd) {
                 var message = bubble.getMessage();
-                var read = isRead(message);
-                bubble.setRead(read);
-                if (!read && (oldestUnreadMessage == null || oldestUnreadMessage.id > message.id)) {
+                if (!bubble.isRead() && (oldestUnreadMessage == null || oldestUnreadMessage.id > message.id)) {
                     oldestUnreadMessage = message;
                 }
             }
@@ -443,7 +447,7 @@ public class ChatPageController {
     private MessageBubble getMessageBubble(TdApi.Message message) {
         MessageBubble bubble = new MessageBubble(message);
         bubble.setMessageContent(getMessageContentBox(message.content));
-        bubble.setRead(isRead(message));
+        bubble.setRead(bubble.isMy() || isRead(message));
         return bubble;
     }
 
