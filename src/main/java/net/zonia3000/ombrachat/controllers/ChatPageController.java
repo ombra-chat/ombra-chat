@@ -28,6 +28,7 @@ import javafx.stage.Stage;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
+import net.zonia3000.ombrachat.chat.message.FileBox;
 import net.zonia3000.ombrachat.chat.message.MessageBubble;
 import net.zonia3000.ombrachat.chat.message.MessageDocumentBox;
 import net.zonia3000.ombrachat.chat.message.MessageGpgDocumentBox;
@@ -239,7 +240,10 @@ public class ChatPageController {
     }
 
     public void updateChat(TdApi.Chat chat) {
-        UiUtils.setVisible(newMessagesBox, chat.unreadCount > 0);
+        var selectedChat = chatsService.getSelectedChat();
+        if (selectedChat != null && chat.id == selectedChat.id) {
+            UiUtils.setVisible(newMessagesBox, chat.unreadCount > 0);
+        }
     }
 
     public void closeChat() {
@@ -351,7 +355,7 @@ public class ChatPageController {
         for (Node node : chatContent.getChildrenUnmodifiable()) {
             if (node instanceof MessageBubble bubble) {
                 var msgBox = bubble.getContentBox();
-                if (msgBox instanceof MessageDocumentBox docBox) {
+                if (msgBox instanceof FileBox docBox) {
                     if (docBox.updateFile(update)) {
                         return;
                     }
@@ -479,6 +483,7 @@ public class ChatPageController {
             Scene scene = new Scene(root);
             UiUtils.setCommonCss(scene);
             Stage newStage = new Stage();
+            UiUtils.setAppIcon(newStage);
             newStage.setTitle("Chat settings");
             newStage.setScene(scene);
             newStage.show();

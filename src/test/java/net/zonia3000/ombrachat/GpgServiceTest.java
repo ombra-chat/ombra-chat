@@ -10,6 +10,7 @@ import java.security.Security;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,8 +57,25 @@ FxAZIGDXerIBAOoc9ARDFXu4AStl+JJUPH8EGT04tnlyxrwY5vQer8FsAP0bx7n2
 -----END PGP PUBLIC KEY BLOCK-----
 """;
 
+    private static final String ANOTHER_PUBLIC_KEY = """
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEZ/1eQRYJKwYBBAHaRw8BAQdApGd+DmwBZwc1LVhiVGEvRj0Bps88RBIBjodq
+HHQ7ZYu0GkZvbyBCYXIgPGZvb2JhckBsb2NhbGhvc3Q+iJkEExYKAEEWIQRrMWpO
+qzsQACdP7jumD21sSNSc0gUCZ/1eQQIbAwUJBaOagAULCQgHAgIiAgYVCgkICwIE
+FgIDAQIeBwIXgAAKCRCmD21sSNSc0j99AQCtGZH2D/E5CPNnihM0j66vMK68F3UN
+/U7Cw9H3Cz4zhgD/cBQvn8IrljGrRwGqCZ1gzDoas/NRkzFCrEEJATAgkgu4OARn
+/V5BEgorBgEEAZdVAQUBAQdAdtCFooppyIUGVjYas/Fz7H3IaitBkYFbw0sXCSNo
+KjUDAQgHiH4EGBYKACYWIQRrMWpOqzsQACdP7jumD21sSNSc0gUCZ/1eQQIbDAUJ
+BaOagAAKCRCmD21sSNSc0hbPAQDQrf4ebNAJ+4TdWW9boJxK+iE3L8SZgPE7B3iC
+FB8w4gEAyaCYd+hXe2aqm3uGOKdMiCkjuBRUfvxnldokfIBb3wU=
+=vBBR
+-----END PGP PUBLIC KEY BLOCK-----
+""";
+
     private static final String TEST_SECRET_KEY_PASSWORD = "test";
     private static final String TEST_KEY_FINGERPRINT = "49A0C0308A6AC2B19B8459B59AB4084AD167DFCA";
+    private static final String ANOTHER_KEY_FINGERPRINT = "6E988E65FD4E6D7501D739BB10FFB3FA0F39539B";
 
     private static Path tmpAppFolder;
     private static Path pubring;
@@ -74,12 +92,16 @@ FxAZIGDXerIBAOoc9ARDFXu4AStl+JJUPH8EGT04tnlyxrwY5vQer8FsAP0bx7n2
         try {
             tmpAppFolder = Files.createTempDirectory("gpg-test");
             var gpgFolder = tmpAppFolder.resolve("gpg");
-            gpgFolder.toFile().mkdirs();
+            var keysFolder = gpgFolder.resolve("keys");
+            keysFolder.toFile().mkdirs();
 
             var privateKeyPath = gpgFolder.resolve("private.asc");
             Files.writeString(privateKeyPath, TEST_SECRET_KEY);
             publicKeyPath = tmpAppFolder.resolve("public.asc");
             Files.writeString(publicKeyPath, TEST_PUBLIC_KEY);
+
+            var anotherPublicKeyPath = keysFolder.resolve(ANOTHER_KEY_FINGERPRINT + ".asc");
+            Files.writeString(anotherPublicKeyPath, ANOTHER_PUBLIC_KEY);
 
             pubring = tmpAppFolder.resolve("pubring.kbx");
             try (InputStream in = GpgServiceTest.class.getClassLoader().getResourceAsStream("pubring.kbx")) {
@@ -88,6 +110,11 @@ FxAZIGDXerIBAOoc9ARDFXu4AStl+JJUPH8EGT04tnlyxrwY5vQer8FsAP0bx7n2
         } catch (IOException ex) {
             throw new IOError(ex);
         }
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        FileUtils.deleteDirectoryRecursively(tmpAppFolder.toFile());
     }
 
     @BeforeEach
@@ -135,5 +162,16 @@ FxAZIGDXerIBAOoc9ARDFXu4AStl+JJUPH8EGT04tnlyxrwY5vQer8FsAP0bx7n2
         gpgService.saveKeyToFile(key);
         var readedKey = gpgService.getEncryptionKey(key.getFingerprint());
         Assertions.assertNotNull(readedKey);
+    }
+
+    @Test
+    void testEncryptWithTwoKeys() throws Exception {
+        var key = gpgService.getEncryptionKey(ANOTHER_KEY_FINGERPRINT);
+        Assertions.assertNotNull(key);
+        var plaintext = "Encryption test";
+        File file = gpgService.createGpgTextFile(key, plaintext);
+        Assertions.assertTrue(file.length() > 0);
+        var result = gpgService.decryptToString(file);
+        Assertions.assertEquals(plaintext, result);
     }
 }

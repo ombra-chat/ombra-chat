@@ -81,14 +81,20 @@ public class ChatSettingsDialogController {
                 }
                 String chatKeyFingerprint = settings.getChatKeyFingerprint(selectedChat.id);
                 if (chatKeyFingerprint != null) {
+                    enableGPGCheckBox.setSelected(true);
+                    boolean keyInPubring = false;
                     for (var k : keys) {
                         var key = gpgService.getKeyFromFingerprint(k, chatKeyFingerprint);
                         if (key != null) {
                             keysComboBox.getSelectionModel().select(k);
-                            enableGPGCheckBox.setSelected(true);
                             setSelectedKey(key);
+                            keyInPubring = true;
                             break;
                         }
+                    }
+                    if (!keyInPubring) {
+                        keySourcePubring.setSelected(false);
+                        keySourceFile.setSelected(true);
                     }
                 }
             } catch (UiException ex) {
@@ -124,7 +130,7 @@ public class ChatSettingsDialogController {
             setErrorLabel(pubringError);
         }
         UiUtils.setVisible(keysComboBox, enabled && keySourcePubring.isSelected());
-        UiUtils.setVisible(encryptionKeyLabel, enabled);
+        UiUtils.setVisible(encryptionKeyLabel, enabled && !encryptionKeysComboBox.getItems().isEmpty());
         UiUtils.setVisible(encryptionKeysComboBox, enabled && !encryptionKeysComboBox.getItems().isEmpty());
         UiUtils.setVisible(selectKeyBtn, enabled && keySourceFile.isSelected());
         UiUtils.setVisible(errorLabel, enabled && errorLabel.getText() != null && !errorLabel.getText().isBlank());

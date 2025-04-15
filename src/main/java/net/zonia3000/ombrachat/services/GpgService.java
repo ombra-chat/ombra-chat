@@ -343,11 +343,14 @@ public class GpgService {
                 PGPUtil.writeFileToLiteralData(comData.open(bOut), PGPLiteralData.BINARY, plaintext);
                 comData.close();
                 byte[] bytes = bOut.toByteArray();
-                PGPDataEncryptorBuilder encryptorBuilder = new JcePGPDataEncryptorBuilder(PGPEncryptedData.AES_256).setProvider("BC")
+                PGPDataEncryptorBuilder encryptorBuilder = new JcePGPDataEncryptorBuilder(PGPEncryptedData.AES_256).setProvider(BouncyCastleProvider.PROVIDER_NAME)
                         .setSecureRandom(new SecureRandom())
                         .setWithIntegrityPacket(true);
                 PGPEncryptedDataGenerator encGen = new PGPEncryptedDataGenerator(encryptorBuilder);
-                encGen.addMethod(new JcePublicKeyKeyEncryptionMethodGenerator(key).setProvider("BC"));
+                encGen.addMethod(new JcePublicKeyKeyEncryptionMethodGenerator(key).setProvider(BouncyCastleProvider.PROVIDER_NAME));
+                if (key.getKeyID() != myPublicKey.getKeyID()) {
+                    encGen.addMethod(new JcePublicKeyKeyEncryptionMethodGenerator(myPublicKey).setProvider(BouncyCastleProvider.PROVIDER_NAME));
+                }
                 try (OutputStream cOut = encGen.open(out, bytes.length)) {
                     cOut.write(bytes);
                 }

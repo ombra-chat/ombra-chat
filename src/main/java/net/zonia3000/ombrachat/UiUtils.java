@@ -33,10 +33,10 @@ public class UiUtils {
         node.setVisible(visible);
     }
 
-    public static void setAppIcon(Stage primaryStage) {
+    public static void setAppIcon(Stage stage) {
         var icon = getAppIcon();
         if (icon != null) {
-            primaryStage.getIcons().add(icon);
+            stage.getIcons().add(icon);
         }
     }
 

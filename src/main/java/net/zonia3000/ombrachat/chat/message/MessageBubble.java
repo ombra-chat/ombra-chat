@@ -188,6 +188,7 @@ public class MessageBubble extends VBox {
             Scene scene = new Scene(root);
             UiUtils.setCommonCss(scene);
             Stage newStage = new Stage();
+            UiUtils.setAppIcon(newStage);
             newStage.setTitle("Message");
             newStage.setScene(scene);
             newStage.showAndWait();

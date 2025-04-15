@@ -33,11 +33,7 @@ public class MessageGpgTextBox extends VBox implements FileBox {
 
         var document = messageDocument.document.document;
         if (document.local.isDownloadingCompleted) {
-            var file = new File(document.local.path);
-            var msg = gpgService.decryptToString(file);
-            if (msg != null) {
-                selectableText.setText(msg);
-            }
+            decrypt(document);
         } else if (document.local.canBeDownloaded) {
             downloadFile(messageDocument);
         }
@@ -48,16 +44,27 @@ public class MessageGpgTextBox extends VBox implements FileBox {
         if (telegramFile.id != update.file.id) {
             return false;
         }
-        logger.debug("Received file update");
+        logger.debug("Received file update; id={}", telegramFile.id);
         telegramFile = update.file;
+        if (update.file.local.isDownloadingCompleted) {
+            decrypt(update.file);
+        }
         return true;
+    }
+
+    private void decrypt(TdApi.File document) {
+        var file = new File(document.local.path);
+        var msg = gpgService.decryptToString(file);
+        if (msg != null) {
+            selectableText.setText(msg);
+        }
     }
 
     private void downloadFile(TdApi.MessageDocument messageDocument) {
         var downloadRequest = new TdApi.DownloadFile();
         downloadRequest.fileId = messageDocument.document.document.id;
         downloadRequest.priority = 1;
-        logger.debug("Starting file download");
+        logger.debug("Starting file download; id={}", downloadRequest.fileId);
         clientService.sendClientMessage(downloadRequest);
     }
 }

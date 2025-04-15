@@ -93,7 +93,7 @@ public class MessageGpgDocumentBox extends VBox implements FileBox {
         var downloadRequest = new TdApi.DownloadFile();
         downloadRequest.fileId = messageDocument.document.document.id;
         downloadRequest.priority = 1;
-        logger.debug("Starting file download");
+        logger.debug("Starting file download; id={}", downloadRequest.fileId);
         clientService.sendClientMessage(downloadRequest);
         showDownloadingLabel();
     }
@@ -103,7 +103,7 @@ public class MessageGpgDocumentBox extends VBox implements FileBox {
         if (telegramFile.id != update.file.id) {
             return false;
         }
-        logger.debug("Received file update");
+        logger.debug("Received file update; id={}", telegramFile.id);
         telegramFile = update.file;
         setButtonsVisibility(update.file);
         return true;

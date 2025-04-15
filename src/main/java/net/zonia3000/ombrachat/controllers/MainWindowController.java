@@ -207,6 +207,7 @@ public class MainWindowController implements ErrorHandlerController {
             Parent root = loader.load();
             Scene scene = new Scene(root);
             Stage newStage = new Stage();
+            UiUtils.setAppIcon(newStage);
             newStage.setTitle("Settings");
             newStage.setScene(scene);
             newStage.show();
@@ -230,6 +231,7 @@ public class MainWindowController implements ErrorHandlerController {
             Scene aboutScene = new Scene(root);
             UiUtils.setCommonCss(aboutScene);
             Stage aboutStage = new Stage();
+            UiUtils.setAppIcon(aboutStage);
             aboutStage.setTitle("About");
             aboutStage.setScene(aboutScene);
             aboutStage.initOwner(aboutStage.getOwner());
@@ -249,6 +251,7 @@ public class MainWindowController implements ErrorHandlerController {
             Scene logoutScene = new Scene(root);
             UiUtils.setCommonCss(logoutScene);
             Stage logoutStage = new Stage();
+            UiUtils.setAppIcon(logoutStage);
             logoutStage.setTitle("About");
             logoutStage.setScene(logoutScene);
             logoutStage.initOwner(logoutStage.getOwner());

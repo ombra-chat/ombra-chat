@@ -1,10 +1,7 @@
 package net.zonia3000.ombrachat.services;
 
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.File;
+import net.zonia3000.ombrachat.FileUtils;
 import net.zonia3000.ombrachat.ServiceLocator;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
@@ -68,35 +65,9 @@ public class CurrentUserService {
         var settings = ServiceLocator.getService(SettingsService.class);
 
         logger.debug("Deleting application folder");
-        deleteDirectoryRecursively(settings.getApplicationFolderPath());
+        FileUtils.deleteDirectoryRecursively(new File(settings.getApplicationFolderPath()));
 
         logger.debug("Deleting settings");
         settings.deletePreferences();
-    }
-
-    public static void deleteDirectoryRecursively(String folderPath) {
-        Path directory = Paths.get(folderPath);
-        if (Files.exists(directory)) {
-            try {
-                try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
-                    for (Path entry : stream) {
-                        if (Files.isDirectory(entry)) {
-                            deleteDirectoryRecursively(entry.toString());
-                        }
-                        try {
-                            Files.delete(entry);
-                        } catch (IOException ex) {
-                            logger.error("Error deleting file {}", entry, ex);
-                        }
-                    }
-                }
-                // Finally, delete the directory itself
-                Files.delete(directory);
-            } catch (IOException ex) {
-                logger.error("Error deleting directory {}", directory, ex);
-            }
-        } else {
-            logger.warn("Directory does not exist {}", directory);
-        }
     }
 }

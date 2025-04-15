@@ -8,6 +8,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.components.SelectableText;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import org.drinkless.tdlib.TdApi;
@@ -63,6 +64,7 @@ public class MessagePhotoBox extends VBox {
         if (photo.local.isDownloadingCompleted) {
             Platform.runLater(() -> {
                 Stage newStage = new Stage();
+                UiUtils.setAppIcon(newStage);
 
                 Image image = new Image("file:" + photo.local.path);
                 ImageView imageView = new ImageView(image);
