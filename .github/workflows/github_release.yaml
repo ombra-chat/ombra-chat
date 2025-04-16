@@ -5,7 +5,7 @@ on:
       - '*'
 
 env:
-  TDLIB_VERSION: v1.8.47
+  TDLIB_VERSION: 1.8.47
 
 jobs:
   build:
@@ -15,23 +15,28 @@ jobs:
         include:
           - os: ubuntu-22.04
             platform: amd64
+          - os: ubuntu-22.04-arm
+            platform: arm64
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Download tdlib.jar
-        run: wget https://github.com/ombra-chat/tdlib-java/releases/download/${TDLIB_VERSION}/tdlib-${TDLIB_VERSION}.jar
+        run: wget https://github.com/ombra-chat/tdlib-java/releases/download/v${TDLIB_VERSION}/tdlib-v${TDLIB_VERSION}.jar
 
       - name: Download libtdjni.so
-        run: wget https://github.com/ombra-chat/tdlib-java/releases/download/${TDLIB_VERSION}/libtdjni-${TDLIB_VERSION}-${{ matrix.platform }}.zip
+        run: wget https://github.com/ombra-chat/tdlib-java/releases/download/v${TDLIB_VERSION}/libtdjni-v${TDLIB_VERSION}-${{ matrix.platform }}.zip
 
       - name: Unzip libtdjni.so
-        run: unzip libtdjni-${TDLIB_VERSION}-${{ matrix.platform }}.zip
+        run: unzip libtdjni-v${TDLIB_VERSION}-${{ matrix.platform }}.zip
 
       - uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '21'
           distribution: 'temurin'
+
+      - name: Install tdlib to local maven repo
+        run: mvn install:install-file -Dfile=tdlib-v${TDLIB_VERSION}.jar -DgroupId=org.drinkless -DartifactId=tdlib -Dversion=${TDLIB_VERSION} -Dpackaging=jar
 
       - name: Create package
         run: mvn clean javafx:jlink
