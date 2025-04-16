@@ -8,8 +8,24 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <mockito.version>5.14.2</mockito.version>
+        <mockito.version>5.17.0</mockito.version>
+        <bouncycastle.version>1.80</bouncycastle.version>
+        <slf4j.version>2.0.17</slf4j.version>
     </properties>
+    <licenses>
+        <license>
+            <name>GNU General Public License, Version 3.0</name>
+            <url>http://www.gnu.org/licenses/gpl-3.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>zonia3000</id>
+            <name>Sonia Zorba</name>
+            <email>sonia.zorba@mailbox.org</email>
+        </developer>
+    </developers>
     <dependencies>
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -24,32 +40,32 @@
         <dependency>
             <groupId>org.drinkless</groupId>
             <artifactId>tdlib</artifactId>
-            <version>1.8.44</version>
+            <version>1.8.47</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.80</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
-            <version>1.80</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpg-jdk18on</artifactId>
-            <version>1.80</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency> 
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.17</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency> 
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>2.0.17</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -87,15 +103,13 @@
                 <configuration>
                     <source>21</source>
                     <jlinkImageName>ombrachat</jlinkImageName>
-                    <launcher>launcher</launcher>
+                    <launcher>ombrachat</launcher>
                     <mainClass>net.zonia3000.ombrachat.App</mainClass>
                     <!-- Needed to avoid unsupported signed modular JAR error (bouncycastle) -->
                     <ignoreSigningInformation>true</ignoreSigningInformation>
-                    <!-- See https://bugs.openjdk.org/browse/JDK-8345121 -->
                     <options>
-                        --enable-native-access=org.drinkless.tdlib,
-                        --enable-native-access=javafx.graphics,
-                        --sun-misc-unsafe-memory-access=allow
+                        <option>--enable-native-access=org.drinkless.tdlib</option>
+                        <option>--enable-native-access=javafx.graphics</option>
                     </options>
                 </configuration>
                 <executions>
@@ -104,6 +118,9 @@
                     </execution>
                     <execution>
                         <id>debug</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
                         <configuration>
                             <options>
                                 <option>-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000</option>
