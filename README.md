@@ -32,7 +32,20 @@ Moreover, switching to alternative clients with their own encryption will create
 
 ## Install
 
-Download the zip file attached to the [last release](https://github.com/ombra-chat/ombra-chat/releases). It should contain everything you need to start the app, just by executing `./bin/ombrachat`.
+Download the zip file attached to the [last release](https://github.com/ombra-chat/ombra-chat/releases). It **should** contain everything you need to start the app, just by executing `./bin/ombrachat`.
+
+You need glib >= 2.35 and you might need to install the following dependency:
+
+```sh
+sudo apt install libc++-dev
+```
+
+Tested on:
+
+* Debian 12
+* Ubuntu 24.04
+
+If it doesn't work, try to build the application manually using the instructions below.
 
 ## Configure GPG keys
 
@@ -67,6 +80,8 @@ gpg --armor --export-secret-key yourname@ombrachat > ~/.ombra-chat/gpg/private.a
 ```
 
 The file `~/.ombra-chat/gpg/private.asc` is checked during the initial configuration of the application. If a valid private key is found you can also enable GPG encryption of the tdlib database. This works by generating a random password and then encrypting it with your key.
+
+![initial-config](screenshots/initial-config.png)
 
 Optionally, but suggested, you should sign this key with your primary certification key before sending it to your friends, so that they can validate its autenticity:
 
@@ -136,6 +151,30 @@ To debug the application attaching the debugger to the JPDA socket start it usin
 
 ```bash
 mvn clean javafx:run@debug
+```
+
+## Troubleshooting
+
+### no tdjni in java.library.path
+
+If you encounter an error like:
+
+```
+java.lang.UnsatisfiedLinkError: no tdjni in java.library.path: /usr/java/packages/lib:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib
+```
+
+You need to copy the `libtdjni.so` to one of the locations specified in the error.
+
+### libc++.so.1: cannot open shared object file
+
+```
+java.lang.UnsatisfiedLinkError: /home/xonya/code/ombra-chat/target/ombrachat/lib/libtdjni.so: libc++.so.1: cannot open shared object file: No such file or directory
+```
+
+Can be solved by:
+
+```bash
+sudo apt install libc++-dev
 ```
 
 ## License
