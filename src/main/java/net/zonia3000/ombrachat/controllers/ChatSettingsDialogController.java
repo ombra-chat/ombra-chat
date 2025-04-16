@@ -171,6 +171,7 @@ public class ChatSettingsDialogController {
         selectedKey = publicKey;
         encryptionKeysComboBox.getItems().clear();
         UiUtils.setVisible(encryptionKeysComboBox, publicKey != null);
+        UiUtils.setVisible(encryptionKeyLabel, publicKey != null);
         if (publicKey == null) {
             keysComboBox.getSelectionModel().clearSelection();
             return;
