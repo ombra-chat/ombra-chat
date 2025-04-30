@@ -72,16 +72,48 @@ public class ChatsService {
             messagesService.resetLastMessage();
             if (selectedChat != null) {
                 telegramClientService.sendClientMessage(new TdApi.OpenChat(selectedChat.id), null);
-                telegramClientService.sendClientMessage(
-                        // retrieve only the last message; this is done because in some cases tdlib sends only
-                        // one message in any case at the first load, so it is better to always expect to receive
-                        // only one message when the chat is opened, in order to handle message loading in a more
-                        // deterministic way; next messages are requested in chunks of 20 or 10 messages
-                        new TdApi.GetChatHistory(selectedChat.id, selectedChat.lastReadInboxMessageId, -1, 1, false)
-                );
+                checkLastMessage();
             }
             return true;
         }
+    }
+
+    private void checkLastMessage() {
+        telegramClientService.sendClientMessage(
+                // retrieve the last message of the selected chat
+                new TdApi.GetChatHistory(selectedChat.id, 0, 0, 1, false),
+                (r) -> {
+                    if (r instanceof TdApi.Messages messages) {
+                        if (messages.messages.length != 1) {
+                            logger.warn("Loaded an unexpected number of messages: {}", messages.messages.length);
+                            return;
+                        }
+                        var lastMessage = messages.messages[0];
+                        // check if the last message has been written by myself (handle edge case)
+                        if (lastMessage.senderId instanceof TdApi.MessageSenderUser sender) {
+                            var currentUserService = ServiceLocator.getService(CurrentUserService.class);
+                            if (sender.userId == currentUserService.getMyId()) {
+                                var messagesService = ServiceLocator.getService(MessagesService.class);
+                                // load the last message
+                                messagesService.onResult(r);
+                                return;
+                            }
+                        }
+                        // otherwise load the last read message
+                        loadLastReadMessage();
+                    }
+                }
+        );
+    }
+
+    private void loadLastReadMessage() {
+        telegramClientService.sendClientMessage(
+                // retrieve only the last message; this is done because in some cases tdlib sends only
+                // one message in any case at the first load, so it is better to always expect to receive
+                // only one message when the chat is opened, in order to handle message loading in a more
+                // deterministic way; next messages are requested in chunks of 20 or 10 messages
+                new TdApi.GetChatHistory(selectedChat.id, selectedChat.lastReadInboxMessageId, -1, 1, false)
+        );
     }
 
     private boolean handleUpdateChatFolders(TdApi.UpdateChatFolders update) {
