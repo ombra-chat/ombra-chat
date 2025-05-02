@@ -33,12 +33,8 @@
                     <Button text="new messages" fx:id="newMessagesBtn" styleClass="text-interactive" maxWidth="10000" HBox.hgrow="ALWAYS" onAction="#loadNewMessages" />
                 </children>
             </HBox>
-            <HBox>
-                <children>
-                    <Button styleClass="btn, btn-20" fx:id="removeSelectedFileBtn" onAction="#removeSelectedFile" />
-                    <Label fx:id="selectedFileLabel" HBox.hgrow="ALWAYS" />
-                </children>
-            </HBox>
+            <VBox fx:id="selectedFilesBox">
+            </VBox>
             <HBox fx:id="sendMessageBox">
                 <children>
                     <TextField fx:id="messageText" HBox.hgrow="ALWAYS" onAction="#sendMessage" />

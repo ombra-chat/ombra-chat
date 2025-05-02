@@ -20,8 +20,14 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -50,6 +56,8 @@ public class ChatPageController {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatPageController.class);
 
+    private static final KeyCombination CTRL_V = new KeyCodeCombination(KeyCode.V, KeyCombination.CONTROL_DOWN);
+
     @FXML
     private ImageView lockImageView;
     @FXML
@@ -63,18 +71,16 @@ public class ChatPageController {
     @FXML
     private HBox newMessagesBox;
     @FXML
-    private Label selectedFileLabel;
+    private VBox selectedFilesBox;
     @FXML
     private TextField messageText;
-    @FXML
-    private Button removeSelectedFileBtn;
     @FXML
     private HBox sendMessageBox;
 
     private boolean scrollToBottom = true;
     private boolean loadingPreviousMessages = false;
     private boolean loadingNewMessages = false;
-    private File selectedFile = null;
+    private List<File> selectedFiles = new ArrayList<>();
 
     private final GuiService guiService;
     private final ChatsService chatsService;
@@ -138,13 +144,23 @@ public class ChatPageController {
             markVisibleMessagesAsRead();
         });
 
-        selectedFileLabel.managedProperty().bind(selectedFileLabel.visibleProperty());
-        removeSelectedFileBtn.managedProperty().bind(removeSelectedFileBtn.visibleProperty());
-        selectedFileLabel.setVisible(false);
-        removeSelectedFileBtn.setVisible(false);
-
         guiService.registerController(ChatPageController.class, this);
         logger.debug("{} initialized", ChatPageController.class.getSimpleName());
+
+        messageText.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            handlePaste(event);
+        });
+    }
+
+    private void handlePaste(KeyEvent event) {
+        if (CTRL_V.match(event)) {
+            var clipboard = Clipboard.getSystemClipboard();
+            if (clipboard.hasFiles()) {
+                logger.debug("Files pasted from clipboard");
+                attachFiles(clipboard.getFiles());
+                event.consume();
+            }
+        }
     }
 
     @FXML
@@ -374,30 +390,40 @@ public class ChatPageController {
         }
     }
 
-    private void setSelectedFileLabel() {
-        if (selectedFile == null) {
-            selectedFileLabel.setText("");
-            selectedFileLabel.setVisible(false);
-            removeSelectedFileBtn.setVisible(false);
-        } else {
-            selectedFileLabel.setText(selectedFile.getName());
-            selectedFileLabel.setVisible(true);
-            removeSelectedFileBtn.setVisible(true);
-        }
-    }
-
     @FXML
     private void openFileDialog() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Attach file");
-        selectedFile = fileChooser.showOpenDialog(messageText.getScene().getWindow());
-        setSelectedFileLabel();
+        var files = fileChooser.showOpenMultipleDialog(messageText.getScene().getWindow());
+        attachFiles(files);
     }
 
-    @FXML
-    private void removeSelectedFile() {
-        selectedFile = null;
-        setSelectedFileLabel();
+    private void attachFiles(List<File> files) {
+        selectedFiles.addAll(files);
+        for (var file : files) {
+            selectedFilesBox.getChildren().add(getSelectedFileBox(file));
+        }
+    }
+
+    private HBox getSelectedFileBox(File file) {
+        HBox box = new HBox();
+        box.setMaxWidth(10000);
+        HBox.setHgrow(box, Priority.ALWAYS);
+
+        Label selectedFileLabel = new Label(file.getName());
+        selectedFileLabel.setMaxWidth(10000);
+        HBox.setHgrow(selectedFileLabel, Priority.ALWAYS);
+        box.getChildren().add(selectedFileLabel);
+
+        Button removeSelectedFileBtn = new Button();
+        removeSelectedFileBtn.getStyleClass().addAll("removeSelectedFileBtn", "btn", "btn-20");
+        removeSelectedFileBtn.setOnAction((e) -> {
+            selectedFiles.remove(file);
+            selectedFilesBox.getChildren().remove(box);
+        });
+        box.getChildren().add(removeSelectedFileBtn);
+
+        return box;
     }
 
     @FXML
@@ -415,7 +441,8 @@ public class ChatPageController {
                 }
             });
         }
-        removeSelectedFile();
+        selectedFiles.clear();
+        selectedFilesBox.getChildren().clear();
         messageText.setText("");
     }
 
@@ -423,14 +450,17 @@ public class ChatPageController {
         List<TdApi.InputMessageContent> contents = new ArrayList<>();
         if (chatPublicKey == null) {
             var formattedText = new TdApi.FormattedText(messageText.getText(), new TdApi.TextEntity[]{});
-            if (selectedFile == null) {
+            if (selectedFiles.isEmpty()) {
                 contents.add(new TdApi.InputMessageText(formattedText, null, true));
             } else {
-                var inputFileLocal = new TdApi.InputFileLocal(selectedFile.getAbsolutePath());
-                contents.add(new TdApi.InputMessageDocument(inputFileLocal, null, false, formattedText));
+                for (var selectedFile : selectedFiles) {
+                    var inputFileLocal = new TdApi.InputFileLocal(selectedFile.getAbsolutePath());
+                    contents.add(new TdApi.InputMessageDocument(inputFileLocal, null, false, formattedText));
+                    formattedText = null; // set formatted text only on first file
+                }
             }
         } else {
-            if (selectedFile != null) {
+            for (var selectedFile : selectedFiles) {
                 var file = gpgService.createGpgFile(chatPublicKey, selectedFile);
                 if (file != null) {
                     var inputFileLocal = new TdApi.InputFileLocal(file.getAbsolutePath());

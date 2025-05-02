@@ -101,7 +101,7 @@
     -fx-background-image: url("icons/icons8-send.png");
 }
 
-#removeSelectedFileBtn, #closeSidebarBtn, #closeChatBtn {
+.removeSelectedFileBtn, #closeSidebarBtn, #closeChatBtn {
     -fx-background-image: url("icons/icons8-remove.png");
 }
 
