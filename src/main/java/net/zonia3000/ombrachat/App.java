@@ -11,6 +11,7 @@ import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.MessagesService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
+import net.zonia3000.ombrachat.services.ThumbnailService;
 import net.zonia3000.ombrachat.services.UsersService;
 
 /**
@@ -58,5 +59,12 @@ public class App extends Application {
         ServiceLocator.registerService(UsersService.class, new UsersService());
         ServiceLocator.registerService(MessagesService.class, new MessagesService());
         ServiceLocator.registerService(GpgService.class, new GpgService());
+        ServiceLocator.registerService(ThumbnailService.class, new ThumbnailService());
+    }
+
+    @Override
+    public void stop() {
+        var thumnailService = ServiceLocator.getService(ThumbnailService.class);
+        thumnailService.cleanup();
     }
 }

@@ -1,6 +1,5 @@
 package net.zonia3000.ombrachat.controllers;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOError;
@@ -25,7 +24,6 @@ import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.image.PixelReader;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.KeyCode;
@@ -39,7 +37,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javax.imageio.ImageIO;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
@@ -56,6 +53,7 @@ import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.MessagesService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
+import net.zonia3000.ombrachat.services.ThumbnailService;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
@@ -99,6 +97,7 @@ public class ChatPageController {
     private final SettingsService settings;
     private final TelegramClientService clientService;
     private final GpgService gpgService;
+    private final ThumbnailService thumbnailService;
 
     private final VBox container;
 
@@ -112,6 +111,7 @@ public class ChatPageController {
         this.settings = ServiceLocator.getService(SettingsService.class);
         this.clientService = ServiceLocator.getService(TelegramClientService.class);
         this.gpgService = ServiceLocator.getService(GpgService.class);
+        this.thumbnailService = ServiceLocator.getService(ThumbnailService.class);
 
         this.container = container;
     }
@@ -303,6 +303,7 @@ public class ChatPageController {
 
     public void closeChat() {
         guiService.setSelectedChat(null);
+        thumbnailService.cleanup();
     }
 
     public void setSelectedChat(TdApi.Chat selectedChat) {
@@ -493,6 +494,11 @@ public class ChatPageController {
                         scrollToBottom = true;
                     });
                 }
+                if (content instanceof TdApi.InputMessagePhoto inputMessagePhoto) {
+                    Platform.runLater(() -> {
+                        thumbnailService.removeThumbnail(inputMessagePhoto);
+                    });
+                }
             });
         }
         selectedFiles.clear();
@@ -576,38 +582,8 @@ public class ChatPageController {
     private TdApi.InputMessagePhoto getMessagePhoto(String imagePath) {
         var messagePhoto = new TdApi.InputMessagePhoto();
         messagePhoto.photo = new TdApi.InputFileLocal(imagePath);
-        messagePhoto.thumbnail = createThumbnail(imagePath);
+        messagePhoto.thumbnail = thumbnailService.createThumbnail(imagePath);
         return messagePhoto;
-    }
-
-    private TdApi.InputThumbnail createThumbnail(String imagePath) {
-        logger.debug("Generating thumbnail for {}", imagePath);
-        Image thumbnail = new Image("file:" + imagePath, 320, 320, true, true);
-        if (thumbnail.isError()) {
-            logger.error("Error creating thumbnail", thumbnail.getException());
-            return null;
-        }
-        int width = (int) thumbnail.getWidth();
-        int height = (int) thumbnail.getHeight();
-        BufferedImage buffered = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        // read each pixel and copy the ARGB values to the buffered image
-        PixelReader pr = thumbnail.getPixelReader();
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                buffered.setRGB(x, y, pr.getArgb(x, y));
-            }
-        }
-        try {
-            File tempFile = File.createTempFile("thumb", ".png");
-            ImageIO.write(buffered, "png", tempFile);
-            var thumbnailPath = tempFile.getAbsolutePath();
-            logger.debug("Thumbnail generated at {}", thumbnailPath);
-            var thumnailFileLocal = new TdApi.InputFileLocal(thumbnailPath);
-            return new TdApi.InputThumbnail(thumnailFileLocal, width, height);
-        } catch (IOException ex) {
-            logger.error("Unable to generate thumbnail", ex);
-        }
-        return null;
     }
 
     private MessageBubble getMessageBubble(TdApi.Message message) {
