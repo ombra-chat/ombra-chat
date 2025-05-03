@@ -1,8 +1,11 @@
 package net.zonia3000.ombrachat.controllers;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,11 +18,14 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelReader;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -31,6 +37,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javax.imageio.ImageIO;
 import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
@@ -399,6 +406,9 @@ public class ChatPageController {
     }
 
     private void attachFiles(List<File> files) {
+        if (files == null) {
+            return;
+        }
         selectedFiles.addAll(files);
         for (var file : files) {
             selectedFilesBox.getChildren().add(getSelectedFileBox(file));
@@ -414,6 +424,18 @@ public class ChatPageController {
         selectedFileLabel.setMaxWidth(10000);
         HBox.setHgrow(selectedFileLabel, Priority.ALWAYS);
         box.getChildren().add(selectedFileLabel);
+
+        // detect if selected file is an image
+        try (InputStream in = new FileInputStream(file)) {
+            var image = new Image(in);
+            if (!image.isError()) {
+                CheckBox checkbox = new CheckBox();
+                checkbox.setText("image");
+                checkbox.setSelected(true);
+                box.getChildren().add(checkbox);
+            }
+        } catch (Exception ignore) {
+        }
 
         Button removeSelectedFileBtn = new Button();
         removeSelectedFileBtn.getStyleClass().addAll("removeSelectedFileBtn", "btn", "btn-20");
@@ -453,10 +475,21 @@ public class ChatPageController {
             if (selectedFiles.isEmpty()) {
                 contents.add(new TdApi.InputMessageText(formattedText, null, true));
             } else {
+                int i = 0;
                 for (var selectedFile : selectedFiles) {
-                    var inputFileLocal = new TdApi.InputFileLocal(selectedFile.getAbsolutePath());
-                    contents.add(new TdApi.InputMessageDocument(inputFileLocal, null, false, formattedText));
+                    var absolutePath = selectedFile.getAbsolutePath();
+                    if (handleAttachedFileAsImage(i)) {
+                        var messagePhoto = getMessagePhoto(absolutePath);
+                        if (formattedText != null) {
+                            messagePhoto.caption = formattedText;
+                        }
+                        contents.add(messagePhoto);
+                    } else {
+                        var inputFileLocal = new TdApi.InputFileLocal(absolutePath);
+                        contents.add(new TdApi.InputMessageDocument(inputFileLocal, null, false, formattedText));
+                    }
                     formattedText = null; // set formatted text only on first file
+                    i++;
                 }
             }
         } else {
@@ -476,6 +509,54 @@ public class ChatPageController {
             }
         }
         return contents;
+    }
+
+    private boolean handleAttachedFileAsImage(int index) {
+        if (index >= selectedFilesBox.getChildren().size()) {
+            return false;
+        }
+        HBox box = (HBox) selectedFilesBox.getChildren().get(index);
+        if (box.getChildren().size() >= 2 && box.getChildren().get(1) instanceof CheckBox imageCheckbox) {
+            return imageCheckbox.isSelected();
+        }
+        return false;
+    }
+
+    private TdApi.InputMessagePhoto getMessagePhoto(String imagePath) {
+        String thumbnailPath = createThumbnail(imagePath);
+        var inputFileLocal = new TdApi.InputFileLocal(imagePath);
+        var thumnailFileLocal = new TdApi.InputFileLocal(thumbnailPath);
+        var thumbnail = new TdApi.InputThumbnail(thumnailFileLocal, 0, 0);
+        var messagePhoto = new TdApi.InputMessagePhoto();
+        messagePhoto.photo = inputFileLocal;
+        messagePhoto.thumbnail = thumbnail;
+        return messagePhoto;
+    }
+
+    private String createThumbnail(String imagePath) {
+        logger.debug("Generating thumbnail for {}", imagePath);
+        Image thumbnail = new Image("file:" + imagePath, 320, 320, true, true);
+        if (thumbnail.isError()) {
+            return imagePath;
+        }
+        int width = (int) thumbnail.getWidth();
+        int height = (int) thumbnail.getHeight();
+        BufferedImage buffered = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        // read each pixel and copy the ARGB values to the buffered image
+        PixelReader pr = thumbnail.getPixelReader();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                buffered.setRGB(x, y, pr.getArgb(x, y));
+            }
+        }
+        try {
+            File tempFile = File.createTempFile("thumb", ".png");
+            ImageIO.write(buffered, "png", tempFile);
+            return tempFile.getAbsolutePath();
+        } catch (IOException ex) {
+            logger.error("Unable to generate thumbnail", ex);
+        }
+        return imagePath;
     }
 
     private MessageBubble getMessageBubble(TdApi.Message message) {
