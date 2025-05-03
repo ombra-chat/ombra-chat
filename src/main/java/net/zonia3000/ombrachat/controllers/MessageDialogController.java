@@ -7,8 +7,12 @@ import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import org.drinkless.tdlib.TdApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MessageDialogController {
+
+    private static final Logger logger = LoggerFactory.getLogger(MessageDialogController.class);
 
     private TdApi.Message message;
     private TdApi.Chat chat;
@@ -27,6 +31,7 @@ public class MessageDialogController {
     @FXML
     private void deleteMessage() {
         var client = ServiceLocator.getService(TelegramClientService.class);
+        logger.debug("Deleting message {}", message.id);
         client.sendClientMessage(new TdApi.DeleteMessages(chat.id, new long[]{message.id}, !chat.canBeDeletedOnlyForSelf));
         closeDialog();
     }

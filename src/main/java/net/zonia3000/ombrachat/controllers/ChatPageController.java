@@ -91,7 +91,7 @@ public class ChatPageController {
     private boolean scrollToBottom = true;
     private boolean loadingPreviousMessages = false;
     private boolean loadingNewMessages = false;
-    private List<File> selectedFiles = new ArrayList<>();
+    private final List<File> selectedFiles = new ArrayList<>();
 
     private final GuiService guiService;
     private final ChatsService chatsService;
@@ -500,6 +500,25 @@ public class ChatPageController {
         messageText.setText("");
     }
 
+    public void updateMessage(long oldMessageId, TdApi.Message updatedMessage) {
+        var currentChat = chatsService.getSelectedChat();
+        if (currentChat == null) {
+            return;
+        }
+        if (currentChat.id != updatedMessage.chatId) {
+            return;
+        }
+
+        var children = chatContent.getChildrenUnmodifiable();
+        for (var child : children) {
+            var bubble = (MessageBubble) child;
+            if (bubble.getMessage().id == oldMessageId) {
+                logger.debug("Message id changed: {} -> {}", oldMessageId, updatedMessage.id);
+                bubble.updateMessage(updatedMessage);
+            }
+        }
+    }
+
     private List<TdApi.InputMessageContent> getInputMessageContents() {
         List<TdApi.InputMessageContent> contents = new ArrayList<>();
         if (chatPublicKey == null) {
@@ -612,6 +631,11 @@ public class ChatPageController {
                 .map(n -> (MessageBubble) n)
                 .filter(n -> Arrays.stream(messageIds).anyMatch(id -> n.getMessage().id == id))
                 .collect(Collectors.toList());
+
+        if (nodesToRemove.isEmpty()) {
+            logger.warn("No messages to remove found. Ids to remove: {}", messageIds);
+            return;
+        }
 
         logger.debug("Removing {} messages from the list", nodesToRemove.size());
         children.removeAll(nodesToRemove);

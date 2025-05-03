@@ -43,6 +43,9 @@ public class MessagesService {
         if (object instanceof TdApi.UpdateDeleteMessages updateDelete) {
             return handleDeleteMessages(updateDelete);
         }
+        if (object instanceof TdApi.UpdateMessageSendSucceeded update) {
+            return handleUpdateMessageSendSucceeded(update);
+        }
         return false;
     }
 
@@ -105,6 +108,17 @@ public class MessagesService {
                 return;
             }
             chatPageController.deleteMessages(update.chatId, update.messageIds);
+        });
+        return true;
+    }
+
+    private boolean handleUpdateMessageSendSucceeded(TdApi.UpdateMessageSendSucceeded update) {
+        Platform.runLater(() -> {
+            var chatPageController = guiService.getController(ChatPageController.class);
+            if (chatPageController == null) {
+                return;
+            }
+            chatPageController.updateMessage(update.oldMessageId, update.message);
         });
         return true;
     }

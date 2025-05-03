@@ -28,7 +28,8 @@ public class MessageBubble extends VBox {
     private final ChatsService chatsService;
     private final UsersService usersService;
     private final CurrentUserService currentUserService;
-    private final TdApi.Message message;
+
+    private volatile TdApi.Message message;
 
     private final Label senderLabel = new Label();
     private final Button actionsButton = new Button();
@@ -47,6 +48,10 @@ public class MessageBubble extends VBox {
         getStyleClass().add("message-bubble");
         setMy(message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == currentUserService.getMyId());
         initHeader();
+    }
+    
+    public void updateMessage(TdApi.Message message) {
+        this.message = message;
     }
 
     private void initHeader() {
