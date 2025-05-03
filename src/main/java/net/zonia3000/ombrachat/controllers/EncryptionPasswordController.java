@@ -72,6 +72,10 @@ public class EncryptionPasswordController implements ErrorHandlerController {
         UiUtils.setVisible(newPrivateKeyDetected, replacePrivateKey);
         UiUtils.setVisible(gpgPassphraseLabelOld, replacePrivateKey);
         UiUtils.setVisible(gpgPassphraseOldField, replacePrivateKey);
+
+        UiUtils.setupMiddleButtonPasteHandler(encryptionPasswordField);
+        UiUtils.setupMiddleButtonPasteHandler(gpgPassphraseField);
+        UiUtils.setupMiddleButtonPasteHandler(gpgPassphraseOldField);
     }
 
     @FXML

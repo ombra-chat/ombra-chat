@@ -21,6 +21,7 @@ public class PhoneDialogController implements ErrorHandlerController {
     private void initialize() {
         UiUtils.setVisible(errorLabel, false);
         nextBtn.setDisable(false);
+        UiUtils.setupMiddleButtonPasteHandler(phoneTextField);
     }
 
     @FXML

@@ -73,6 +73,11 @@ public class InitialConfigDialogController implements ErrorHandlerController {
         appFolderTextField.setText(getDefaultAppFolderPath());
         UiUtils.setVisible(passwordField, false);
         UiUtils.setVisible(errorLabel, false);
+        UiUtils.setupMiddleButtonPasteHandler(apiIdTextField);
+        UiUtils.setupMiddleButtonPasteHandler(apiHashTextField);
+        UiUtils.setupMiddleButtonPasteHandler(appFolderTextField);
+        UiUtils.setupMiddleButtonPasteHandler(passwordField);
+        UiUtils.setupMiddleButtonPasteHandler(gpgPassphraseField);
         checkGpg();
     }
 

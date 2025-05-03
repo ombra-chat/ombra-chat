@@ -1,5 +1,8 @@
 package net.zonia3000.ombrachat.controllers;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOError;
@@ -30,6 +33,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
@@ -158,9 +162,8 @@ public class ChatPageController {
         guiService.registerController(ChatPageController.class, this);
         logger.debug("{} initialized", ChatPageController.class.getSimpleName());
 
-        messageText.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            handlePaste(event);
-        });
+        setupPasteHandler();
+        UiUtils.setupMiddleButtonPasteHandler(messageText);
 
         chatPage.setOnDragOver(this::handleDragOver);
         chatPage.setOnDragExited(this::handleDragExited);
@@ -191,15 +194,17 @@ public class ChatPageController {
         event.consume();
     }
 
-    private void handlePaste(KeyEvent event) {
-        if (CTRL_V.match(event)) {
-            var clipboard = Clipboard.getSystemClipboard();
-            if (clipboard.hasFiles()) {
-                logger.debug("Files pasted from clipboard");
-                attachFiles(clipboard.getFiles());
-                event.consume();
+    private void setupPasteHandler() {
+        messageText.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (CTRL_V.match(event)) {
+                var clipboard = Clipboard.getSystemClipboard();
+                if (clipboard.hasFiles()) {
+                    logger.debug("Files pasted from clipboard");
+                    attachFiles(clipboard.getFiles());
+                    event.consume();
+                }
             }
-        }
+        });
     }
 
     @FXML
