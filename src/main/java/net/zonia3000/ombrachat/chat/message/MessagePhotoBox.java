@@ -42,8 +42,8 @@ public class MessagePhotoBox extends VBox {
             Platform.runLater(() -> {
                 Image image = new Image("file:" + photo.local.path);
                 ImageView imageView = new ImageView(image);
-                imageView.setFitWidth(size.width);
-                imageView.setFitHeight(size.height);
+                imageView.setFitWidth(size.width == 0 ? 320 : size.width);
+                imageView.setFitHeight(size.height == 0 ? 320 : size.height);
                 imageView.setPreserveRatio(true);
                 imageView.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                     var largerSize = messagePhoto.photo.sizes[messagePhoto.photo.sizes.length - 1];

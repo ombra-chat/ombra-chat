@@ -125,3 +125,9 @@
     -fx-alignment: center;
     -fx-padding: 5px;
 }
+
+.dragging {
+    -fx-border-width: 2px;
+    -fx-border-color: blue;    
+    -fx-border-style: dashed;
+}

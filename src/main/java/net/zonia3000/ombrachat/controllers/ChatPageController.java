@@ -27,11 +27,13 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelReader;
 import javafx.scene.input.Clipboard;
+import javafx.scene.input.DragEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -83,6 +85,8 @@ public class ChatPageController {
     private TextField messageText;
     @FXML
     private HBox sendMessageBox;
+    @FXML
+    private VBox chatPage;
 
     private boolean scrollToBottom = true;
     private boolean loadingPreviousMessages = false;
@@ -157,6 +161,34 @@ public class ChatPageController {
         messageText.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             handlePaste(event);
         });
+
+        chatPage.setOnDragOver(this::handleDragOver);
+        chatPage.setOnDragExited(this::handleDragExited);
+        chatPage.setOnDragDropped(this::handleDragDropped);
+    }
+
+    private void handleDragOver(DragEvent event) {
+        if (event.getDragboard().hasFiles()) {
+            if (!chatPage.getStyleClass().contains("dragging")) {
+                chatPage.getStyleClass().add("dragging");
+            }
+            event.acceptTransferModes(TransferMode.COPY);
+        }
+        event.consume();
+    }
+
+    private void handleDragExited(DragEvent event) {
+        chatPage.getStyleClass().removeAll("dragging");
+    }
+
+    private void handleDragDropped(DragEvent event) {
+        List<File> files = event.getDragboard().getFiles();
+        if (!files.isEmpty()) {
+            logger.debug("Dropped {} files", files.size());
+            attachFiles(files);
+        }
+        event.setDropCompleted(true);
+        event.consume();
     }
 
     private void handlePaste(KeyEvent event) {
@@ -523,21 +555,18 @@ public class ChatPageController {
     }
 
     private TdApi.InputMessagePhoto getMessagePhoto(String imagePath) {
-        String thumbnailPath = createThumbnail(imagePath);
-        var inputFileLocal = new TdApi.InputFileLocal(imagePath);
-        var thumnailFileLocal = new TdApi.InputFileLocal(thumbnailPath);
-        var thumbnail = new TdApi.InputThumbnail(thumnailFileLocal, 0, 0);
         var messagePhoto = new TdApi.InputMessagePhoto();
-        messagePhoto.photo = inputFileLocal;
-        messagePhoto.thumbnail = thumbnail;
+        messagePhoto.photo = new TdApi.InputFileLocal(imagePath);
+        messagePhoto.thumbnail = createThumbnail(imagePath);
         return messagePhoto;
     }
 
-    private String createThumbnail(String imagePath) {
+    private TdApi.InputThumbnail createThumbnail(String imagePath) {
         logger.debug("Generating thumbnail for {}", imagePath);
         Image thumbnail = new Image("file:" + imagePath, 320, 320, true, true);
         if (thumbnail.isError()) {
-            return imagePath;
+            logger.error("Error creating thumbnail", thumbnail.getException());
+            return null;
         }
         int width = (int) thumbnail.getWidth();
         int height = (int) thumbnail.getHeight();
@@ -552,11 +581,14 @@ public class ChatPageController {
         try {
             File tempFile = File.createTempFile("thumb", ".png");
             ImageIO.write(buffered, "png", tempFile);
-            return tempFile.getAbsolutePath();
+            var thumbnailPath = tempFile.getAbsolutePath();
+            logger.debug("Thumbnail generated at {}", thumbnailPath);
+            var thumnailFileLocal = new TdApi.InputFileLocal(thumbnailPath);
+            return new TdApi.InputThumbnail(thumnailFileLocal, width, height);
         } catch (IOException ex) {
             logger.error("Unable to generate thumbnail", ex);
         }
-        return imagePath;
+        return null;
     }
 
     private MessageBubble getMessageBubble(TdApi.Message message) {
