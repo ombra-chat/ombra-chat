@@ -9,6 +9,7 @@ import net.zonia3000.ombrachat.services.GpgService;
 import net.zonia3000.ombrachat.services.CurrentUserService;
 import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.MessagesService;
+import net.zonia3000.ombrachat.services.EffectsService;
 import net.zonia3000.ombrachat.services.SettingsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import net.zonia3000.ombrachat.services.ThumbnailService;
@@ -55,6 +56,7 @@ public class App extends Application {
         ServiceLocator.registerService(CurrentUserService.class, new CurrentUserService());
         ServiceLocator.registerService(GuiService.class, new GuiService(app, stage));
         ServiceLocator.registerService(TelegramClientService.class, new TelegramClientService());
+        ServiceLocator.registerService(EffectsService.class, new EffectsService());        
         ServiceLocator.registerService(ChatsService.class, new ChatsService());
         ServiceLocator.registerService(UsersService.class, new UsersService());
         ServiceLocator.registerService(MessagesService.class, new MessagesService());

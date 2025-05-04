@@ -1,8 +1,5 @@
 package net.zonia3000.ombrachat.controllers;
 
-import java.awt.Toolkit;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOError;
@@ -33,7 +30,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
@@ -324,6 +320,17 @@ public class ChatPageController {
             var writableChat = selectedChat.permissions.canSendBasicMessages;
             UiUtils.setVisible(sendMessageBox, writableChat);
             setVisible(true);
+        }
+    }
+
+    public void updateMessageReactions(long messageId, TdApi.MessageReaction[] reactions) {
+        var children = chatContent.getChildrenUnmodifiable();
+        for (var child : children) {
+            var bubble = (MessageBubble) child;
+            if (bubble.getMessage().id == messageId) {
+                bubble.setReactions(reactions);
+                return;
+            }
         }
     }
 

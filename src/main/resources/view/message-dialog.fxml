@@ -9,6 +9,8 @@
     <children>
         <VBox AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" spacing="10.0">
             <children>
+                <FlowPane fx:id="reactionsPane" hgap="8" vgap="8"></FlowPane>
+                <Separator />
                 <Button fx:id="deleteMessageBtn" text="Delete" onAction="#deleteMessage" />
             </children>
             <padding>

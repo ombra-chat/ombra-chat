@@ -131,3 +131,7 @@
     -fx-border-color: blue;    
     -fx-border-style: dashed;
 }
+
+.reaction-btn:hover {
+    -fx-effect: dropshadow(gaussian, rgba(70, 70, 70, 0.8), 5, 0, 1, 1);
+}

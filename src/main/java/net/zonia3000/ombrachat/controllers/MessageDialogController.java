@@ -1,10 +1,14 @@
 package net.zonia3000.ombrachat.controllers;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.layout.FlowPane;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.ServiceLocator;
+import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.services.ChatsService;
+import net.zonia3000.ombrachat.services.EffectsService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
@@ -14,11 +18,19 @@ public class MessageDialogController {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageDialogController.class);
 
+    private static final int REACTION_SIZE = 18;
+
     private TdApi.Message message;
     private TdApi.Chat chat;
+    private EffectsService effectsService;
+    private TelegramClientService clientService;
 
     @FXML
     private Button deleteMessageBtn;
+    @FXML
+    private FlowPane reactionsPane;
+
+    private TdApi.AvailableReactions availableReactions;
 
     public void setMessage(TdApi.Message message) {
         this.message = message;
@@ -26,6 +38,71 @@ public class MessageDialogController {
         if (!chat.canBeDeletedForAllUsers && !chat.canBeDeletedOnlyForSelf) {
             this.deleteMessageBtn.setDisable(true);
         }
+        this.effectsService = ServiceLocator.getService(EffectsService.class);
+        this.clientService = ServiceLocator.getService(TelegramClientService.class);
+        loadAvailableReactions();
+    }
+
+    private void loadAvailableReactions() {
+        var telegramClientService = ServiceLocator.getService(TelegramClientService.class);
+        telegramClientService.sendClientMessage(
+                new TdApi.GetMessageAvailableReactions(chat.id, message.id, 5),
+                (r) -> {
+                    if (r instanceof TdApi.AvailableReactions reactions) {
+                        Platform.runLater(() -> {
+                            this.availableReactions = reactions;
+                            logger.debug("Available message reactions: {}", reactions.topReactions.length);
+                            reactionsPane.getChildren().clear();
+                            for (var reaction : reactions.topReactions) {
+                                if (reaction.type instanceof TdApi.ReactionTypeEmoji emoji) {
+                                    addReactionButton(emoji.emoji);
+                                }
+                            }
+                        });
+                    }
+                }
+        );
+    }
+
+    private void addReactionButton(String emoji) {
+        var button = new Button();
+        button.setMinWidth(REACTION_SIZE);
+        button.setMinHeight(REACTION_SIZE);
+        UiUtils.setVisible(button, false);
+        effectsService.loadReactionImage(emoji, REACTION_SIZE, (reactionBackground) -> {
+            Platform.runLater(() -> {
+                button.setBackground(reactionBackground);
+                button.getStyleClass().add("reaction-btn");
+                button.setOnAction((e) -> {
+                    addReactionToMessage(emoji);
+                });
+                UiUtils.setVisible(button, true);
+            });
+        });
+        reactionsPane.getChildren().add(button);
+    }
+
+    private void addReactionToMessage(String emoji) {
+        logger.debug("Adding {} reaction", emoji);
+        clientService.sendClientMessage(new TdApi.AddMessageReaction(
+                chat.id,
+                message.id,
+                getEmojiReaction(emoji),
+                false,
+                false
+        ));
+        closeDialog();
+    }
+
+    private TdApi.ReactionTypeEmoji getEmojiReaction(String emoji) {
+        for (var reaction : availableReactions.topReactions) {
+            if (reaction.type instanceof TdApi.ReactionTypeEmoji emojiType) {
+                if (emojiType.emoji.equals(emoji)) {
+                    return emojiType;
+                }
+            }
+        }
+        return null;
     }
 
     @FXML

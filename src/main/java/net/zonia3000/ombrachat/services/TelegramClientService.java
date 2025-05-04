@@ -20,6 +20,7 @@ public class TelegramClientService {
     private ChatsService chatsService;
     private UsersService usersService;
     private MessagesService messagesService;
+    private EffectsService effectsService;
     private GuiService guiService;
 
     private TdApi.AuthorizationState lastAuthorizationState = null;
@@ -31,6 +32,7 @@ public class TelegramClientService {
         chatsService = ServiceLocator.getService(ChatsService.class);
         usersService = ServiceLocator.getService(UsersService.class);
         messagesService = ServiceLocator.getService(MessagesService.class);
+        effectsService = ServiceLocator.getService(EffectsService.class);
 
         guiService = ServiceLocator.getService(GuiService.class);
 
@@ -92,6 +94,9 @@ public class TelegramClientService {
                     return;
                 }
                 if (messagesService.onResult(object)) {
+                    return;
+                }
+                if (effectsService.onResult(object)) {
                     return;
                 }
                 if (object instanceof TdApi.UpdateAuthorizationState update) {

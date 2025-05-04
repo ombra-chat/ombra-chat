@@ -4,6 +4,7 @@ import java.io.IOError;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -20,20 +21,29 @@ import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.controllers.MessageDialogController;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.CurrentUserService;
+import net.zonia3000.ombrachat.services.EffectsService;
+import net.zonia3000.ombrachat.services.TelegramClientService;
 import net.zonia3000.ombrachat.services.UsersService;
 import org.drinkless.tdlib.TdApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MessageBubble extends VBox {
+
+    private static final Logger logger = LoggerFactory.getLogger(MessageBubble.class);
 
     private final ChatsService chatsService;
     private final UsersService usersService;
     private final CurrentUserService currentUserService;
+    private final TelegramClientService clientService;
+    private final EffectsService effectsService;
 
     private volatile TdApi.Message message;
 
     private final Label senderLabel = new Label();
     private final Button actionsButton = new Button();
     private VBox contentBox;
+    private HBox reactionsBox;
 
     private boolean read;
     private boolean processingRead;
@@ -44,12 +54,14 @@ public class MessageBubble extends VBox {
         this.chatsService = ServiceLocator.getService(ChatsService.class);
         this.usersService = ServiceLocator.getService(UsersService.class);
         this.currentUserService = ServiceLocator.getService(CurrentUserService.class);
+        this.clientService = ServiceLocator.getService(TelegramClientService.class);
+        this.effectsService = ServiceLocator.getService(EffectsService.class);
         this.message = message;
         getStyleClass().add("message-bubble");
         setMy(message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == currentUserService.getMyId());
         initHeader();
     }
-    
+
     public void updateMessage(TdApi.Message message) {
         this.message = message;
     }
@@ -144,13 +156,25 @@ public class MessageBubble extends VBox {
     }
 
     private void setFooter() {
-        HBox footer = new HBox();
+        VBox footer = new VBox();
+        footer.setMaxWidth(10000);
+        HBox.setHgrow(footer, Priority.ALWAYS);
+
+        HBox firstRow = new HBox();
         Label dateLabel = new Label();
         dateLabel.setText(formatDate());
         dateLabel.setMaxWidth(10000);
         dateLabel.getStyleClass().add("msg-date");
         HBox.setHgrow(dateLabel, Priority.ALWAYS);
-        footer.getChildren().add(dateLabel);
+        firstRow.getChildren().add(dateLabel);
+        footer.getChildren().add(firstRow);
+
+        reactionsBox = new HBox();
+        if (message.interactionInfo != null && message.interactionInfo.reactions != null) {
+            setReactions(message.interactionInfo.reactions.reactions);
+        }
+        footer.getChildren().add(reactionsBox);
+
         getChildren().add(footer);
     }
 
@@ -158,6 +182,39 @@ public class MessageBubble extends VBox {
         Date currentDate = new Date(1000l * message.date);
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         return formatter.format(currentDate);
+    }
+
+    public void setReactions(TdApi.MessageReaction[] reactions) {
+        reactionsBox.getChildren().clear();
+        if (reactions == null) {
+            return;
+        }
+        for (var reaction : reactions) {
+            if (reaction.type instanceof TdApi.ReactionTypeEmoji reactionType) {
+                effectsService.loadReactionImage(reactionType.emoji, 18, (background) -> {
+                    Platform.runLater(() -> {
+                        Button button = new Button();
+                        button.setBackground(background);
+                        if (reaction.isChosen) {
+                            button.getStyleClass().add("reaction-btn");
+                            button.setOnAction((e) -> {
+                                removeReaction(reactionType);
+                            });
+                        }
+                        reactionsBox.getChildren().add(button);
+                    });
+                });
+            }
+        }
+    }
+
+    private void removeReaction(TdApi.ReactionTypeEmoji reactionType) {
+        logger.debug("Removing reaction {}", reactionType.emoji);
+        clientService.sendClientMessage(new TdApi.RemoveMessageReaction(
+                message.chatId,
+                message.id,
+                reactionType
+        ));
     }
 
     private void setSender() {
