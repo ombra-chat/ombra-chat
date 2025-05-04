@@ -437,6 +437,8 @@ public class ChatPageController {
             if (node instanceof MessageBubble bubble) {
                 if (bubble.isFrom(user)) {
                     bubble.setSender(user.usernames.editableUsername);
+                } else if (bubble.isForwaredFrom(user)) {
+                    bubble.setForwardedFrom(user.usernames.editableUsername);
                 }
             }
         }

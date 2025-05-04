@@ -41,7 +41,7 @@ public class MessageBubble extends VBox {
     private volatile TdApi.Message message;
 
     private final Label senderLabel = new Label();
-    private final Button actionsButton = new Button();
+    private final Label forwaredFromLabel = new Label();
     private VBox contentBox;
     private HBox reactionsBox;
 
@@ -68,15 +68,20 @@ public class MessageBubble extends VBox {
 
     private void initHeader() {
         HBox headerBox = new HBox();
-        initSenderLabel();
-        headerBox.getChildren().add(senderLabel);
-        actionsButton.getStyleClass().addAll("btn", "btn-20", "message-action-btn");
-        actionsButton.setOnAction((e) -> openMessageDialog());
-        headerBox.getChildren().add(actionsButton);
+
+        VBox leftBox = new VBox();
+        leftBox.setMaxWidth(10000);
+        HBox.setHgrow(leftBox, Priority.ALWAYS);
+        initSenderLabel(leftBox);
+        initForwardLabel(leftBox);
+        headerBox.getChildren().add(leftBox);
+
+        initMessageActionsButton(headerBox);
+
         getChildren().add(headerBox);
     }
 
-    private void initSenderLabel() {
+    private void initSenderLabel(VBox container) {
         senderLabel.setTextFill(Color.BLUE);
         senderLabel.getStyleClass().add("bold");
         senderLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
@@ -84,7 +89,34 @@ public class MessageBubble extends VBox {
         });
         senderLabel.setMaxWidth(10000);
         HBox.setHgrow(senderLabel, Priority.ALWAYS);
-        setSender();
+        senderLabel.setText(getSenderTitle(message.senderId));
+        container.getChildren().add(senderLabel);
+    }
+
+    private void initMessageActionsButton(HBox container) {
+        Button actionsButton = new Button();
+        actionsButton.getStyleClass().addAll("btn", "btn-20", "message-action-btn");
+        actionsButton.setOnAction((e) -> openMessageDialog());
+        container.getChildren().add(actionsButton);
+    }
+
+    private void initForwardLabel(VBox container) {
+        var forwardInfo = message.forwardInfo;
+        if (forwardInfo == null) {
+            return;
+        }
+        HBox headerBox = new HBox();
+        Label text = new Label("Forwarded from ");
+        if (forwardInfo.source == null) {
+            forwaredFromLabel.setText(getSenderTitle(forwardInfo.origin));
+        } else {
+            forwaredFromLabel.setText(getSenderTitle(forwardInfo.source.senderId));
+        }
+        forwaredFromLabel.setTextFill(Color.BLUE);
+        forwaredFromLabel.getStyleClass().addAll("bold", "pb");
+        headerBox.getChildren().add(text);
+        headerBox.getChildren().add(forwaredFromLabel);
+        container.getChildren().add(headerBox);
     }
 
     public TdApi.Message getMessage() {
@@ -155,6 +187,16 @@ public class MessageBubble extends VBox {
         return false;
     }
 
+    public boolean isForwaredFrom(TdApi.User user) {
+        if (message.forwardInfo == null || message.forwardInfo.source == null) {
+            return false;
+        }
+        if (message.forwardInfo.source.senderId instanceof TdApi.MessageSenderUser senderUser) {
+            return senderUser.userId == user.id;
+        }
+        return false;
+    }
+
     private void setFooter() {
         VBox footer = new VBox();
         footer.setMaxWidth(10000);
@@ -217,28 +259,59 @@ public class MessageBubble extends VBox {
         ));
     }
 
-    private void setSender() {
-        var sender = message.senderId;
+    private String getSenderTitle(TdApi.MessageSender sender) {
         if (sender instanceof TdApi.MessageSenderChat senderChat) {
             var chat = chatsService.getChat(senderChat.chatId);
             if (chat != null) {
-                setSender(chat.title);
+                return chat.title;
             }
         } else if (sender instanceof TdApi.MessageSenderUser senderUser) {
-            var chat = chatsService.getChat(senderUser.userId);
+            return getSenderTitle(senderUser.userId);
+        }
+        logger.warn("Sender title is null {}", sender);
+        return null;
+    }
+
+    private String getSenderTitle(TdApi.MessageOrigin origin) {
+        if (origin instanceof TdApi.MessageOriginChannel originChannel) {
+            var chat = chatsService.getChat(originChannel.chatId);
             if (chat != null) {
-                setSender(chat.title);
-            } else {
-                var userLabel = usersService.getUserDisplayText(senderUser.userId);
-                if (userLabel != null) {
-                    setSender(userLabel);
-                }
+                return chat.title;
+            }
+            return originChannel.authorSignature;
+        } else if (origin instanceof TdApi.MessageOriginChat originChat) {
+            var chat = chatsService.getChat(originChat.senderChatId);
+            if (chat != null) {
+                return chat.title;
+            }
+        } else if (origin instanceof TdApi.MessageOriginHiddenUser originHiddenUser) {
+            return originHiddenUser.senderName;
+        } else if (origin instanceof TdApi.MessageOriginUser originUser) {
+            return getSenderTitle(originUser.senderUserId);
+        }
+        logger.warn("Sender title is null {}", origin);
+        return null;
+    }
+
+    private String getSenderTitle(long userId) {
+        var chat = chatsService.getChat(userId);
+        if (chat != null) {
+            return chat.title;
+        } else {
+            var userLabel = usersService.getUserDisplayText(userId);
+            if (userLabel != null) {
+                return userLabel;
             }
         }
+        return null;
     }
 
     public void setSender(String title) {
         senderLabel.setText(title);
+    }
+
+    public void setForwardedFrom(String title) {
+        forwaredFromLabel.setText(title);
     }
 
     private void openMessageDialog() {

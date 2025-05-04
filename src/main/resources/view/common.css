@@ -46,6 +46,10 @@
     -fx-padding: 20 0 0 0;
 }
 
+.pb {
+    -fx-padding: 0 0 10 0;
+}
+
 .btn {
     -fx-background-repeat: no-repeat;
     -fx-background-position: center;
