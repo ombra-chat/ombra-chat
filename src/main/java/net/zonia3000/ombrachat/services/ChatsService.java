@@ -58,12 +58,17 @@ public class ChatsService {
         return selectedChat;
     }
 
+    public Stream<TdApi.Chat> getChatStream() {
+        return chatFolders.get(0).stream()
+                .map(id -> chats.get(id));
+    }
+
     public boolean setSelectedChat(TdApi.Chat selectedChat) {
         synchronized (lock) {
             if (selectedChat != null && this.selectedChat != null && selectedChat.id == this.selectedChat.id) {
                 return false;
             }
-            logger.debug("Updating selected chat");
+            logger.debug("Updating selected chat [id={}]", selectedChat == null ? null : selectedChat.id);
             if (this.selectedChat != null && selectedChat == null) {
                 telegramClientService.sendClientMessage(new TdApi.CloseChat(this.selectedChat.id));
             }

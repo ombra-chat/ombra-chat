@@ -3,6 +3,7 @@ package net.zonia3000.ombrachat.chat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
@@ -15,40 +16,32 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.text.Font;
 import net.zonia3000.ombrachat.ServiceLocator;
-import net.zonia3000.ombrachat.UiUtils;
-import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
 import org.drinkless.tdlib.TdApi;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class ChatsListView extends ListView<TdApi.Chat> {
-
-    private static final Logger logger = LoggerFactory.getLogger(ChatsListView.class);
-
-    private TdApi.Chat lastSelectedChat;
+public class ChatSelectionView extends ListView<TdApi.Chat> {
 
     private final GuiService guiService;
-    private final ChatsService chatsService;
 
-    public ChatsListView() {
+    private Consumer<TdApi.Chat> chatConsumer;
+
+    public ChatSelectionView() {
         guiService = ServiceLocator.getService(GuiService.class);
-        chatsService = ServiceLocator.getService(ChatsService.class);
 
         setCellFactory(lv -> new CustomListCell());
 
         getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 
         getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null) {
-                lastSelectedChat = newValue;
-                guiService.setSelectedChat(newValue);
+            if (newValue != null && chatConsumer != null) {
+                chatConsumer.accept(newValue);
             }
         });
+    }
 
-        chatsService.loadChats();
+    public void setAction(Consumer<TdApi.Chat> chatConsumer) {
+        this.chatConsumer = chatConsumer;
     }
 
     public void setChatsList(Collection<TdApi.Chat> collection) {
@@ -57,10 +50,6 @@ public class ChatsListView extends ListView<TdApi.Chat> {
             items.add(chat);
         }
         this.setItems(items);
-    }
-
-    public void setSelectedChat(TdApi.Chat chat) {
-        getSelectionModel().select(chat);
     }
 
     public class CustomListCell extends ListCell<TdApi.Chat> {
@@ -86,17 +75,6 @@ public class ChatsListView extends ListView<TdApi.Chat> {
                 textLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
                 textLabel.setMaxWidth(Integer.MAX_VALUE);
                 rowNodes.add(textLabel);
-
-                Label numberLabel = new Label(String.valueOf(chat.unreadCount));
-                numberLabel.setFont(new Font(15));
-                numberLabel.setAlignment(Pos.CENTER);
-                if (chat.notificationSettings.muteFor > 0) {
-                    numberLabel.setStyle("-fx-text-fill: blue;");
-                } else {
-                    numberLabel.setStyle("-fx-text-fill: red;");
-                }
-                UiUtils.setVisible(numberLabel, chat.unreadCount > 0);
-                rowNodes.add(numberLabel);
 
                 HBox hBox = new HBox(10);
                 hBox.getChildren().addAll(rowNodes);

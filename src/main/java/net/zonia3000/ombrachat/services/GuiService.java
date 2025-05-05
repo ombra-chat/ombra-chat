@@ -232,7 +232,7 @@ public class GuiService {
         }
         var mainWindowController = getController(MainWindowController.class);
         if (mainWindowController != null) {
-            mainWindowController.onChatSelected();
+            mainWindowController.setSelectedChat(selectedChat);
         }
         var chatPageController = getController(ChatPageController.class);
         if (chatPageController != null) {

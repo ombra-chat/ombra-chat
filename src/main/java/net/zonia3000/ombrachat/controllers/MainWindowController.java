@@ -4,7 +4,6 @@ import java.io.IOError;
 import java.io.IOException;
 import java.util.Collection;
 import javafx.animation.TranslateTransition;
-import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -47,8 +46,6 @@ public class MainWindowController implements ErrorHandlerController {
     private SplitPane splitPane;
     @FXML
     private VBox chatPage;
-    @FXML
-    private Label usernameLabel;
     @FXML
     private AnchorPane sidebar;
 
@@ -125,8 +122,9 @@ public class MainWindowController implements ErrorHandlerController {
         computeSplitPaneChildrenVisibility();
     }
 
-    public void onChatSelected() {
+    public void setSelectedChat(TdApi.Chat selectedChat) {
         computeSplitPaneChildrenVisibility();
+        chatsList.setSelectedChat(selectedChat);
     }
 
     private void computeSplitPaneChildrenVisibility() {

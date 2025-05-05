@@ -1,7 +1,12 @@
 package net.zonia3000.ombrachat.controllers;
 
+import java.io.IOError;
+import java.io.IOException;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.FlowPane;
 import javafx.stage.Stage;
@@ -111,6 +116,22 @@ public class MessageDialogController {
         logger.debug("Deleting message {}", message.id);
         client.sendClientMessage(new TdApi.DeleteMessages(chat.id, new long[]{message.id}, !chat.canBeDeletedOnlyForSelf));
         closeDialog();
+    }
+
+    @FXML
+    private void forwardMessage() {
+        try {
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(MessageDialogController.class.getResource("/view/forward-dialog.fxml"));
+            Parent root = loader.load();
+            ((ForwardDialogController) loader.getController()).setMessageToForward(message);
+            Scene scene = new Scene(root);
+            UiUtils.setCommonCss(scene);
+            Stage stage = (Stage) deleteMessageBtn.getScene().getWindow();
+            stage.setScene(scene);
+        } catch (IOException ex) {
+            throw new IOError(ex);
+        }
     }
 
     private void closeDialog() {
