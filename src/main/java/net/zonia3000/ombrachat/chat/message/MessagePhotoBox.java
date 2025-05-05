@@ -13,9 +13,11 @@ import net.zonia3000.ombrachat.components.SelectableText;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import org.drinkless.tdlib.TdApi;
 
-public class MessagePhotoBox extends VBox {
+public class MessagePhotoBox extends VBox implements SelectableBox {
 
     private final TelegramClientService clientService;
+
+    private final SelectableText textLabel = new SelectableText();
 
     public MessagePhotoBox(TdApi.MessagePhoto messagePhoto) {
         clientService = ServiceLocator.getService(TelegramClientService.class);
@@ -23,7 +25,6 @@ public class MessagePhotoBox extends VBox {
         setPhoto(messagePhoto);
 
         if (messagePhoto.caption != null) {
-            SelectableText textLabel = new SelectableText();
             textLabel.setText(messagePhoto.caption.text);
             getChildren().add(textLabel);
         }
@@ -86,5 +87,10 @@ public class MessagePhotoBox extends VBox {
                 }
             });
         }
+    }
+
+    @Override
+    public String getSelectedText() {
+        return textLabel.getSelectedText();
     }
 }

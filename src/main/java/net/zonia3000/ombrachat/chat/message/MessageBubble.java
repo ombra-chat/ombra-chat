@@ -15,18 +15,16 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.controllers.MessageDialogController;
-import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.CurrentUserService;
 import net.zonia3000.ombrachat.services.EffectsService;
+import net.zonia3000.ombrachat.services.MessagesService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
-import net.zonia3000.ombrachat.services.UsersService;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +33,7 @@ public class MessageBubble extends VBox {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageBubble.class);
 
-    private final ChatsService chatsService;
-    private final UsersService usersService;
+    private final MessagesService messagesService;
     private final CurrentUserService currentUserService;
     private final TelegramClientService clientService;
     private final EffectsService effectsService;
@@ -54,8 +51,7 @@ public class MessageBubble extends VBox {
     private boolean gpg;
 
     public MessageBubble(TdApi.Message message) {
-        this.chatsService = ServiceLocator.getService(ChatsService.class);
-        this.usersService = ServiceLocator.getService(UsersService.class);
+        this.messagesService = ServiceLocator.getService(MessagesService.class);
         this.currentUserService = ServiceLocator.getService(CurrentUserService.class);
         this.clientService = ServiceLocator.getService(TelegramClientService.class);
         this.effectsService = ServiceLocator.getService(EffectsService.class);
@@ -68,6 +64,7 @@ public class MessageBubble extends VBox {
 
     public void updateMessage(TdApi.Message message) {
         this.message = message;
+        initRepliesBox();
     }
 
     private void initHeader() {
@@ -86,14 +83,13 @@ public class MessageBubble extends VBox {
     }
 
     private void initSenderLabel(VBox container) {
-        senderLabel.setTextFill(Color.BLUE);
-        senderLabel.getStyleClass().add("bold");
+        senderLabel.getStyleClass().add("sender-label");
         senderLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             // TODO
         });
         senderLabel.setMaxWidth(10000);
         HBox.setHgrow(senderLabel, Priority.ALWAYS);
-        senderLabel.setText(getSenderTitle(message.senderId));
+        senderLabel.setText(messagesService.getSenderTitle(message.senderId));
         container.getChildren().add(senderLabel);
     }
 
@@ -112,12 +108,11 @@ public class MessageBubble extends VBox {
         HBox headerBox = new HBox();
         Label text = new Label("Forwarded from ");
         if (forwardInfo.source == null) {
-            forwaredFromLabel.setText(getSenderTitle(forwardInfo.origin));
+            forwaredFromLabel.setText(messagesService.getSenderTitle(forwardInfo.origin));
         } else {
-            forwaredFromLabel.setText(getSenderTitle(forwardInfo.source.senderId));
+            forwaredFromLabel.setText(messagesService.getSenderTitle(forwardInfo.source.senderId));
         }
-        forwaredFromLabel.setTextFill(Color.BLUE);
-        forwaredFromLabel.getStyleClass().addAll("bold", "pb");
+        forwaredFromLabel.getStyleClass().addAll("sender-label", "pb");
         headerBox.getChildren().add(text);
         headerBox.getChildren().add(forwaredFromLabel);
         container.getChildren().add(headerBox);
@@ -140,16 +135,16 @@ public class MessageBubble extends VBox {
         if (message.replyTo instanceof TdApi.MessageReplyToMessage reply) {
             clientService.sendClientMessage(new TdApi.GetRepliedMessage(message.chatId, message.id), (r) -> {
                 if (r instanceof TdApi.Message replyToMessage) {
-                    var senderTitle = getSenderTitle(replyToMessage.senderId);
+                    var senderTitle = messagesService.getSenderTitle(replyToMessage.senderId);
                     if (senderTitle != null) {
                         var senderText = new Text(senderTitle + " ");
-                        senderText.setFill(Color.BLUE);
+                        senderText.getStyleClass().add("sender-label");
                         textFlow.getChildren().add(senderText);
                     }
 
                     Text text = new Text();
                     if (reply.quote == null) {
-                        var textContent = MessageUtils.getTextContent(replyToMessage.content);
+                        var textContent = messagesService.getTextContent(replyToMessage.content);
                         if (textContent == null || textContent.isBlank()) {
                             textContent = replyToMessage.content.getClass().getCanonicalName();
                         }
@@ -303,53 +298,6 @@ public class MessageBubble extends VBox {
         ));
     }
 
-    private String getSenderTitle(TdApi.MessageSender sender) {
-        if (sender instanceof TdApi.MessageSenderChat senderChat) {
-            var chat = chatsService.getChat(senderChat.chatId);
-            if (chat != null) {
-                return chat.title;
-            }
-        } else if (sender instanceof TdApi.MessageSenderUser senderUser) {
-            return getSenderTitle(senderUser.userId);
-        }
-        logger.warn("Sender title is null {}", sender);
-        return null;
-    }
-
-    private String getSenderTitle(TdApi.MessageOrigin origin) {
-        if (origin instanceof TdApi.MessageOriginChannel originChannel) {
-            var chat = chatsService.getChat(originChannel.chatId);
-            if (chat != null) {
-                return chat.title;
-            }
-            return originChannel.authorSignature;
-        } else if (origin instanceof TdApi.MessageOriginChat originChat) {
-            var chat = chatsService.getChat(originChat.senderChatId);
-            if (chat != null) {
-                return chat.title;
-            }
-        } else if (origin instanceof TdApi.MessageOriginHiddenUser originHiddenUser) {
-            return originHiddenUser.senderName;
-        } else if (origin instanceof TdApi.MessageOriginUser originUser) {
-            return getSenderTitle(originUser.senderUserId);
-        }
-        logger.warn("Sender title is null {}", origin);
-        return null;
-    }
-
-    private String getSenderTitle(long userId) {
-        var chat = chatsService.getChat(userId);
-        if (chat != null) {
-            return chat.title;
-        } else {
-            var userLabel = usersService.getUserDisplayText(userId);
-            if (userLabel != null) {
-                return userLabel;
-            }
-        }
-        return null;
-    }
-
     public void setSender(String title) {
         senderLabel.setText(title);
     }
@@ -363,7 +311,14 @@ public class MessageBubble extends VBox {
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(MessageDialogController.class.getResource("/view/message-dialog.fxml"));
             Parent root = loader.load();
-            ((MessageDialogController) loader.getController()).setMessage(message);
+            String selectedText = null;
+            if (contentBox instanceof SelectableBox selectableBox) {
+                selectedText = selectableBox.getSelectedText();
+                if (selectedText.isBlank()) {
+                    selectedText = null;
+                }
+            }
+            ((MessageDialogController) loader.getController()).setMessage(message, selectedText);
             Scene scene = new Scene(root);
             UiUtils.setCommonCss(scene);
             Stage newStage = new Stage();

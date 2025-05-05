@@ -20,11 +20,13 @@ public class MessagesService {
     private final TelegramClientService telegramClientService;
     private final GuiService guiService;
     private final ChatsService chatsService;
+    private final UsersService usersService;
 
     public MessagesService() {
         telegramClientService = ServiceLocator.getService(TelegramClientService.class);
         guiService = ServiceLocator.getService(GuiService.class);
         chatsService = ServiceLocator.getService(ChatsService.class);
+        usersService = ServiceLocator.getService(UsersService.class);
     }
 
     public boolean onResult(TdApi.Object object) {
@@ -157,6 +159,78 @@ public class MessagesService {
         telegramClientService.sendClientMessage(
                 new TdApi.GetChatHistory(selectedChat.id, messageId, -10, 10, false)
         );
+    }
+
+    public String getSenderTitle(TdApi.MessageSender sender) {
+        if (sender instanceof TdApi.MessageSenderChat senderChat) {
+            var chat = chatsService.getChat(senderChat.chatId);
+            if (chat != null) {
+                return chat.title;
+            }
+        } else if (sender instanceof TdApi.MessageSenderUser senderUser) {
+            return getSenderTitle(senderUser.userId);
+        }
+        logger.warn("Sender title is null {}", sender);
+        return null;
+    }
+
+    public String getSenderTitle(TdApi.MessageOrigin origin) {
+        if (origin instanceof TdApi.MessageOriginChannel originChannel) {
+            var chat = chatsService.getChat(originChannel.chatId);
+            if (chat != null) {
+                return chat.title;
+            }
+            return originChannel.authorSignature;
+        } else if (origin instanceof TdApi.MessageOriginChat originChat) {
+            var chat = chatsService.getChat(originChat.senderChatId);
+            if (chat != null) {
+                return chat.title;
+            }
+        } else if (origin instanceof TdApi.MessageOriginHiddenUser originHiddenUser) {
+            return originHiddenUser.senderName;
+        } else if (origin instanceof TdApi.MessageOriginUser originUser) {
+            return getSenderTitle(originUser.senderUserId);
+        }
+        logger.warn("Sender title is null {}", origin);
+        return null;
+    }
+
+    public String getSenderTitle(long userId) {
+        var chat = chatsService.getChat(userId);
+        if (chat != null) {
+            return chat.title;
+        } else {
+            var userLabel = usersService.getUserDisplayText(userId);
+            if (userLabel != null) {
+                return userLabel;
+            }
+        }
+        return null;
+    }
+
+    public String getTextContent(TdApi.MessageContent content) {
+        if (content instanceof TdApi.MessageText messageText) {
+            return messageText.text.text;
+        }
+        if (content instanceof TdApi.MessagePhoto messagePhoto) {
+            if (messagePhoto.caption != null) {
+                return messagePhoto.caption.text;
+            }
+            return null;
+        }
+        if (content instanceof TdApi.MessageDocument messageDocument) {
+            if (messageDocument.caption != null) {
+                return messageDocument.caption.text;
+            }
+            return null;
+        }
+        if (content instanceof TdApi.MessageVideo messageVideo) {
+            if (messageVideo.caption != null) {
+                return messageVideo.caption.text;
+            }
+            return null;
+        }
+        return null;
     }
 
     public void resetLastMessage() {

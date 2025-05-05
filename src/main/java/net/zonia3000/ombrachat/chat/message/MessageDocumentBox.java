@@ -16,7 +16,7 @@ import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MessageDocumentBox extends VBox implements FileBox {
+public class MessageDocumentBox extends VBox implements FileBox, SelectableBox {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageDocumentBox.class);
 
@@ -121,5 +121,10 @@ public class MessageDocumentBox extends VBox implements FileBox {
         } else {
             logger.error("Desktop is not supported on this platform.");
         }
+    }
+
+    @Override
+    public String getSelectedText() {
+        return this.captionLabel.getSelectedText();
     }
 }

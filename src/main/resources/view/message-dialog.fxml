@@ -12,6 +12,7 @@
                 <FlowPane fx:id="reactionsPane" hgap="8" vgap="8"></FlowPane>
                 <Separator />
                 <Button fx:id="forwardMessageBtn" text="Forward" onAction="#forwardMessage" />
+                <Button fx:id="replyToMessageBtn" text="Reply" onAction="#replyToMessage" />
                 <Button fx:id="deleteMessageBtn" text="Delete" onAction="#deleteMessage" />
             </children>
             <padding>

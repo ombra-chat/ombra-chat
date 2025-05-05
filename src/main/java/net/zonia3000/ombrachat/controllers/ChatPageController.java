@@ -35,6 +35,7 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.services.GpgService;
@@ -78,6 +79,10 @@ public class ChatPageController {
     @FXML
     private HBox newMessagesBox;
     @FXML
+    private HBox replyToBox;
+    @FXML
+    private Text replyToUserLabel;
+    @FXML
     private VBox selectedFilesBox;
     @FXML
     private TextField messageText;
@@ -103,6 +108,8 @@ public class ChatPageController {
 
     private PGPPublicKey chatPublicKey;
     private TdApi.Message oldestUnreadMessage = null;
+    private TdApi.Message replyToMessage;
+    private String replyToQuote;
 
     public ChatPageController(VBox container) {
         this.guiService = ServiceLocator.getService(GuiService.class);
@@ -164,6 +171,8 @@ public class ChatPageController {
         chatPage.setOnDragOver(this::handleDragOver);
         chatPage.setOnDragExited(this::handleDragExited);
         chatPage.setOnDragDropped(this::handleDragDropped);
+
+        UiUtils.setVisible(replyToBox, false);
     }
 
     private void handleDragOver(DragEvent event) {
@@ -321,6 +330,24 @@ public class ChatPageController {
             UiUtils.setVisible(sendMessageBox, writableChat);
             setVisible(true);
         }
+        setReplyToMessage(null, null);
+    }
+
+    public void setReplyToMessage(TdApi.Message replyToMessage, String replyToQuote) {
+        this.replyToMessage = replyToMessage;
+        this.replyToQuote = replyToQuote;
+        if (replyToMessage == null) {
+            UiUtils.setVisible(replyToBox, false);
+        } else {
+            var senderTitle = messagesService.getSenderTitle(replyToMessage.senderId);
+            replyToUserLabel.setText(senderTitle);
+            UiUtils.setVisible(replyToBox, true);
+        }
+    }
+
+    @FXML
+    private void removeReplyTo() {
+        setReplyToMessage(null, null);
     }
 
     public void updateMessageReactions(long messageId, TdApi.MessageReaction[] reactions) {
@@ -501,8 +528,20 @@ public class ChatPageController {
         if (contents == null || contents.isEmpty()) {
             return;
         }
+        TdApi.InputMessageReplyToMessage replyTo = null;
+        if (replyToMessage != null) {
+            TdApi.InputTextQuote textQuote = null;
+            if (replyToQuote != null) {
+                var formattedQuote = new TdApi.FormattedText(replyToQuote, null);
+                textQuote = new TdApi.InputTextQuote(formattedQuote, 0);
+            }
+            replyTo = new TdApi.InputMessageReplyToMessage(
+                    replyToMessage.id,
+                    textQuote
+            );
+        }
         for (var content : contents) {
-            clientService.sendClientMessage(new TdApi.SendMessage(chatsService.getSelectedChat().id, 0, null, null, null, content), (TdApi.Object object) -> {
+            clientService.sendClientMessage(new TdApi.SendMessage(chatsService.getSelectedChat().id, 0, replyTo, null, null, content), (TdApi.Object object) -> {
                 if (object instanceof TdApi.Message message) {
                     Platform.runLater(() -> {
                         scrollToBottom = true;
@@ -518,6 +557,7 @@ public class ChatPageController {
         selectedFiles.clear();
         selectedFilesBox.getChildren().clear();
         messageText.setText("");
+        setReplyToMessage(null, null);
     }
 
     public void updateMessage(long oldMessageId, TdApi.Message updatedMessage) {

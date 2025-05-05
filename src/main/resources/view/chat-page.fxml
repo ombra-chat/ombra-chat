@@ -4,6 +4,7 @@
 <?import java.lang.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.image.*?>
+<?import javafx.scene.text.*?>
 
 <fx:root fx:id="chatPage" type="javafx.scene.layout.VBox" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
     <VBox>
@@ -31,6 +32,15 @@
             <HBox fx:id="newMessagesBox">
                 <children>
                     <Button text="new messages" fx:id="newMessagesBtn" styleClass="text-interactive" maxWidth="10000" HBox.hgrow="ALWAYS" onAction="#loadNewMessages" />
+                </children>
+            </HBox>
+            <HBox fx:id="replyToBox" visible="false">
+                <children>
+                    <TextFlow maxWidth="10000" HBox.hgrow="ALWAYS">
+                        <Text text="Reply to: " styleClass="bold" />
+                        <Text fx:id="replyToUserLabel" styleClass="sender-label" />
+                    </TextFlow>
+                    <Button fx:id="removeReplyToBtn" styleClass="btn, btn-20" onAction="#removeReplyTo" />
                 </children>
             </HBox>
             <VBox fx:id="selectedFilesBox">

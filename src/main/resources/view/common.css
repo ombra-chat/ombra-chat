@@ -22,6 +22,12 @@
     -fx-border-color: blue;
 }
 
+.sender-label {
+    -fx-fill: blue;
+    -fx-text-fill: blue;
+    -fx-font-weight: bold;
+}
+
 .msg-date {
     -fx-font-size: 11px;
     -fx-font-style: italic;
@@ -105,7 +111,7 @@
     -fx-background-image: url("icons/icons8-send.png");
 }
 
-.removeSelectedFileBtn, #closeSidebarBtn, #closeChatBtn {
+.removeSelectedFileBtn, #closeSidebarBtn, #closeChatBtn, #removeReplyToBtn {
     -fx-background-image: url("icons/icons8-remove.png");
 }
 
@@ -132,7 +138,7 @@
 
 .dragging {
     -fx-border-width: 2px;
-    -fx-border-color: blue;    
+    -fx-border-color: blue;
     -fx-border-style: dashed;
 }
 

@@ -79,6 +79,9 @@ public class SelectableText extends TextFlow {
         if (end >= textContent.length()) {
             end = textContent.length() - 1;
         }
+        if (start < 0 || end < 0 || end >= textContent.length()) {
+            return "";
+        }
         return textContent.substring(start, end);
     }
 

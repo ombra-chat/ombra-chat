@@ -14,6 +14,7 @@ import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.EffectsService;
+import net.zonia3000.ombrachat.services.GuiService;
 import net.zonia3000.ombrachat.services.TelegramClientService;
 import org.drinkless.tdlib.TdApi;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ public class MessageDialogController {
     private static final int REACTION_SIZE = 18;
 
     private TdApi.Message message;
+    private String selectedText;
     private TdApi.Chat chat;
     private EffectsService effectsService;
     private TelegramClientService clientService;
@@ -37,8 +39,9 @@ public class MessageDialogController {
 
     private TdApi.AvailableReactions availableReactions;
 
-    public void setMessage(TdApi.Message message) {
+    public void setMessage(TdApi.Message message, String selectedText) {
         this.message = message;
+        this.selectedText = selectedText;
         chat = ServiceLocator.getService(ChatsService.class).getSelectedChat();
         if (!chat.canBeDeletedForAllUsers && !chat.canBeDeletedOnlyForSelf) {
             this.deleteMessageBtn.setDisable(true);
@@ -115,6 +118,17 @@ public class MessageDialogController {
         var client = ServiceLocator.getService(TelegramClientService.class);
         logger.debug("Deleting message {}", message.id);
         client.sendClientMessage(new TdApi.DeleteMessages(chat.id, new long[]{message.id}, !chat.canBeDeletedOnlyForSelf));
+        closeDialog();
+    }
+
+    @FXML
+    private void replyToMessage() {
+        var guiService = ServiceLocator.getService(GuiService.class);
+        var chatPageController = guiService.getController(ChatPageController.class);
+        if (chatPageController == null) {
+            return;
+        }
+        chatPageController.setReplyToMessage(message, selectedText);
         closeDialog();
     }
 
