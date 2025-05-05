@@ -21,14 +21,8 @@ import net.zonia3000.ombrachat.UiUtils;
 import net.zonia3000.ombrachat.services.ChatsService;
 import net.zonia3000.ombrachat.services.GuiService;
 import org.drinkless.tdlib.TdApi;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ChatsListView extends ListView<TdApi.Chat> {
-
-    private static final Logger logger = LoggerFactory.getLogger(ChatsListView.class);
-
-    private TdApi.Chat lastSelectedChat;
 
     private final GuiService guiService;
     private final ChatsService chatsService;
@@ -43,7 +37,6 @@ public class ChatsListView extends ListView<TdApi.Chat> {
 
         getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
-                lastSelectedChat = newValue;
                 guiService.setSelectedChat(newValue);
             }
         });

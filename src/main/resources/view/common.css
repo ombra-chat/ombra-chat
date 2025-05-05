@@ -139,3 +139,11 @@
 .reaction-btn:hover {
     -fx-effect: dropshadow(gaussian, rgba(70, 70, 70, 0.8), 5, 0, 1, 1);
 }
+
+.replies-box {
+    -fx-border-color: rgba(173,216,230,1);
+    -fx-border-style: none none none solid;
+    -fx-border-width: 0 0 0 3px;
+    -fx-background-color: rgba(173,216,230,0.5);
+    -fx-padding: 5px;
+}

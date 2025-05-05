@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -15,6 +16,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import net.zonia3000.ombrachat.ServiceLocator;
 import net.zonia3000.ombrachat.UiUtils;
@@ -60,6 +63,7 @@ public class MessageBubble extends VBox {
         getStyleClass().add("message-bubble");
         setMy(message.senderId instanceof TdApi.MessageSenderUser senderUser && senderUser.userId == currentUserService.getMyId());
         initHeader();
+        initRepliesBox();
     }
 
     public void updateMessage(TdApi.Message message) {
@@ -117,6 +121,46 @@ public class MessageBubble extends VBox {
         headerBox.getChildren().add(text);
         headerBox.getChildren().add(forwaredFromLabel);
         container.getChildren().add(headerBox);
+    }
+
+    private void initRepliesBox() {
+        if (message.replyTo == null) {
+            return;
+        }
+
+        HBox repliesBox = new HBox();
+        repliesBox.getStyleClass().add("replies-box");
+        VBox.setMargin(repliesBox, new Insets(0, 0, 5, 0));
+
+        TextFlow textFlow = new TextFlow();
+        repliesBox.getChildren().add(textFlow);
+
+        getChildren().add(repliesBox);
+
+        if (message.replyTo instanceof TdApi.MessageReplyToMessage reply) {
+            clientService.sendClientMessage(new TdApi.GetRepliedMessage(message.chatId, message.id), (r) -> {
+                if (r instanceof TdApi.Message replyToMessage) {
+                    var senderTitle = getSenderTitle(replyToMessage.senderId);
+                    if (senderTitle != null) {
+                        var senderText = new Text(senderTitle + " ");
+                        senderText.setFill(Color.BLUE);
+                        textFlow.getChildren().add(senderText);
+                    }
+
+                    Text text = new Text();
+                    if (reply.quote == null) {
+                        var textContent = MessageUtils.getTextContent(replyToMessage.content);
+                        if (textContent == null || textContent.isBlank()) {
+                            textContent = replyToMessage.content.getClass().getCanonicalName();
+                        }
+                        text.setText(textContent);
+                    } else {
+                        text.setText(reply.quote.text.text);
+                    }
+                    textFlow.getChildren().add(text);
+                }
+            });
+        }
     }
 
     public TdApi.Message getMessage() {
