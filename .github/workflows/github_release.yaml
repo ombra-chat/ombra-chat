@@ -38,6 +38,21 @@ jobs:
       - name: Install tdlib to local maven repo
         run: mvn install:install-file -Dfile=tdlib-v${TDLIB_VERSION}.jar -DgroupId=org.drinkless -DartifactId=tdlib -Dversion=${TDLIB_VERSION} -Dpackaging=jar
 
+      - run: mvn clean package
+
+      - name: workaround for missing imageio-webp module-info #1
+        run: cp lib/module-info.java ~/.m2/repository/com/twelvemonkeys/imageio/imageio-webp/3.12.0
+
+      - name: workaround for missing imageio-webp module-info #2
+        run: |
+          cd ~/.m2/repository/com/twelvemonkeys/imageio/imageio-webp/3.12.0
+          javac --patch-module com.twelvemonkeys.imageio.webp=imageio-webp-3.12.0.jar module-info.java
+
+      - name: workaround for missing imageio-webp module-info #3
+        run: |
+          cd ~/.m2/repository/com/twelvemonkeys/imageio/imageio-webp/3.12.0
+          jar uf imageio-webp-3.12.0.jar module-info.class
+
       - name: Create package
         run: mvn clean javafx:jlink
 
