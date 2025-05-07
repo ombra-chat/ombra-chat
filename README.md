@@ -22,6 +22,8 @@ The app named OmbraChat because "ombra" means "shadow" in Italian.
 
 Currently it has been tested only on Linux, but it could work also on other OS.
 
+Have a look at the [changelog](CHANGELOG.md) to see the implemented features.
+
 ## Why?
 
 There are numerous open-source messaging applications that offer robust end-to-end encryption support. However, the existence of multiple options often leads to fragmentation, with users reluctant to create numerous accounts. Consequently, even tech-savvy individuals tend to use mostly Telegram, where encrypted chats are not created by default and not supported by the official desktop client.
@@ -34,11 +36,7 @@ Moreover, switching to alternative clients with their own encryption will create
 
 Download the zip file attached to the [last release](https://github.com/ombra-chat/ombra-chat/releases). It **should** contain everything you need to start the app, just by executing `./bin/ombrachat`.
 
-You need glib >= 2.35 and you might need to install the following dependency:
-
-```sh
-sudo apt install libc++-dev
-```
+You need glib >= 2.35.
 
 Tested on:
 
@@ -127,7 +125,7 @@ Preferences are stored in `~/.java/.userPrefs/net/zonia3000/ombrachat/services/p
 
 Install [OpenJDK 21](https://jdk.java.net/java-se-ri/21) and maven.
 
-Install `libtdjni.so` and `tdlib.jar` from https://github.com/ombra-chat/tdlib-java.
+Install `libtdjni.so` and `tdlib.jar` from https://github.com/ombra-chat/tdlib-java (or build your own version).
 
 To build and run:
 
@@ -135,7 +133,11 @@ To build and run:
 mvn clean javafx:run
 ```
 
-Use the following command to build a self-contained runtime image:
+### JLink build
+
+In order to use jlink to build a self-contained runtime image, it is necessary to run the `./lib/patch-modules.sh` script.
+
+Them, use the following command to build:
 
 ```bash
 mvn clean javafx:jlink
@@ -164,18 +166,6 @@ java.lang.UnsatisfiedLinkError: no tdjni in java.library.path: /usr/java/package
 ```
 
 You need to copy the `libtdjni.so` to one of the locations specified in the error.
-
-### libc++.so.1: cannot open shared object file
-
-```
-java.lang.UnsatisfiedLinkError: /home/xonya/code/ombra-chat/target/ombrachat/lib/libtdjni.so: libc++.so.1: cannot open shared object file: No such file or directory
-```
-
-Can be solved by:
-
-```bash
-sudo apt install libc++-dev
-```
 
 ## License
 
