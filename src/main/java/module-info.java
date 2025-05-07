@@ -7,6 +7,9 @@ module ombrachat {
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pg;
     requires com.twelvemonkeys.imageio.webp;
+    requires com.twelvemonkeys.imageio.core;
+    requires com.twelvemonkeys.imageio.metadata;
+    requires com.twelvemonkeys.common.lang;
     requires org.slf4j;
     requires org.slf4j.simple;
     exports net.zonia3000.ombrachat;
