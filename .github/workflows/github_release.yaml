@@ -4,9 +4,6 @@ on:
     tags:
       - '*'
 
-env:
-  TDLIB_VERSION: 1.8.47
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -20,6 +17,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Extract tdlib version
+        run: echo "TDLIB_VERSION=`grep '>tdlib<' -A1 pom.xml | awk 'NR==2' | awk -F'[<>]' '{print $3}'`" >> $GITHUB_ENV
 
       - name: Download tdlib.jar
         run: wget https://github.com/ombra-chat/tdlib-java/releases/download/v${TDLIB_VERSION}/tdlib-v${TDLIB_VERSION}.jar
