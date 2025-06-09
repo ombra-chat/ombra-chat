@@ -34,10 +34,10 @@ public class MessagesService {
             return false;
         }
         if (object instanceof TdApi.Messages messages) {
-            return handleMessages(messages.messages);
+            return handleMessages(messages.messages, false);
         }
         if (object instanceof TdApi.UpdateNewMessage newMessage) {
-            return handleMessages(new TdApi.Message[]{newMessage.message});
+            return handleMessages(new TdApi.Message[]{newMessage.message}, true);
         }
         if (object instanceof TdApi.UpdateFile updateFile) {
             return handleUpdateFile(updateFile);
@@ -54,7 +54,7 @@ public class MessagesService {
         return false;
     }
 
-    private boolean handleMessages(TdApi.Message[] messages) {
+    private boolean handleMessages(TdApi.Message[] messages, boolean single) {
         if (messages == null) {
             return true;
         }
@@ -70,6 +70,10 @@ public class MessagesService {
                 telegramClientService.sendClientMessage(new TdApi.GetChatHistory(selectedChat.id, 0, 0, 1, false));
                 return true;
             }
+            if (single && selectedChat.unreadCount > 0) {
+                // ignore UpdateNewMessage if there are unread messages on the chat
+                return true;
+            }
             List<TdApi.Message> messagesToAdd = new ArrayList<>();
             for (var message : messages) {
                 if (message.chatId == selectedChat.id) {
@@ -80,7 +84,9 @@ public class MessagesService {
                     messagesToAdd.add(message);
                 }
             }
-            updateMessagesOnGui(messagesToAdd);
+            if (!messagesToAdd.isEmpty()) {
+                updateMessagesOnGui(messagesToAdd);
+            }
             return true;
         }
     }

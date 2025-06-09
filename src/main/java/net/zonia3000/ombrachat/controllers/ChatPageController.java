@@ -410,9 +410,19 @@ public class ChatPageController {
                 var selectedChat = chatsService.getSelectedChat();
                 var hasNewMessagesToLoad = selectedChat != null && selectedChat.unreadCount > 0;
                 UiUtils.setVisible(newMessagesBox, hasNewMessagesToLoad);
-            } else {
+            } else if (bubblesToAdd.getLast().getMessage().id < alreadyLoadedIds.getFirst()) {
                 logger.debug("Adding {} messages to beginning of chat page", bubblesToAdd.size());
                 children.addAll(0, bubblesToAdd);
+            } else {
+                var insertAt = 0;
+                var firstIdToAdd = bubblesToAdd.getFirst().getMessage().id;
+                for (var id : alreadyLoadedIds) {
+                    if (id > firstIdToAdd) {
+                        children.addAll(insertAt, bubblesToAdd);
+                        break;
+                    }
+                    insertAt++;
+                }
             }
         }
         markVisibleMessagesAsRead();

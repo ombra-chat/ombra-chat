@@ -1,5 +1,6 @@
 open module ombrachat {
     exports net.zonia3000.ombrachat;
+    requires java.desktop;
     requires javafx.controls;
     requires javafx.fxml;
     requires org.junit.jupiter.api;

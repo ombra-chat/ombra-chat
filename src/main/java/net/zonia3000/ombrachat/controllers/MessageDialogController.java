@@ -117,7 +117,7 @@ public class MessageDialogController {
     private void deleteMessage() {
         var client = ServiceLocator.getService(TelegramClientService.class);
         logger.debug("Deleting message {}", message.id);
-        client.sendClientMessage(new TdApi.DeleteMessages(chat.id, new long[]{message.id}, !chat.canBeDeletedOnlyForSelf));
+        client.sendClientMessage(new TdApi.DeleteMessages(chat.id, new long[]{message.id}, chat.canBeDeletedForAllUsers));
         closeDialog();
     }
 
