@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+* fixed messages loading issue
+* changed app icon and title when there are unread messages
+* updated tdlib to 1.8.50
+
 ## 0.2.0
 
 * enabled uploading of multiple files
