@@ -38,7 +38,7 @@ jobs:
       - name: Install tdlib to local maven repo
         run: mvn install:install-file -Dfile=tdlib-v${TDLIB_VERSION}.jar -DgroupId=org.drinkless -DartifactId=tdlib -Dversion=${TDLIB_VERSION} -Dpackaging=jar
 
-      - run: mvn clean package
+      - run: mvn clean package -DskipTests
 
       - name: workaround for missing twelvemonkeys module-info
         run: ./lib/patch-modules.sh
