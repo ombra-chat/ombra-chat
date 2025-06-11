@@ -22,6 +22,9 @@ public class UiUtils {
 
     private static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase().contains("linux");
 
+    private static final String LOGO_DEFAULT = "/view/icons/ombra-chat-logo.png";
+    private static final String LOGO_UNREAD_MESSAGES = "/view/icons/ombra-chat-logo-unread-messages.png";
+
     /**
      * Lazy initialized.
      */
@@ -47,14 +50,24 @@ public class UiUtils {
     }
 
     public static void setAppIcon(Stage stage) {
-        var icon = getAppIcon();
+        setAppIcon(stage, false);
+    }
+
+    public static void setAppIcon(Stage stage, boolean unreadMessages) {
+        var icon = getAppIcon(unreadMessages);
         if (icon != null) {
+            stage.getIcons().clear();
             stage.getIcons().add(icon);
         }
     }
 
     public static Image getAppIcon() {
-        try (InputStream in = UiUtils.class.getResourceAsStream("/view/icons/ombra-chat-logo.png")) {
+        return getAppIcon(false);
+    }
+
+    private static Image getAppIcon(boolean unreadMessages) {
+        try (InputStream in = UiUtils.class.getResourceAsStream(
+                unreadMessages ? LOGO_UNREAD_MESSAGES : LOGO_DEFAULT)) {
             return new Image(in);
         } catch (IOException ex) {
             logger.error("Unable to initialize app icon", ex);

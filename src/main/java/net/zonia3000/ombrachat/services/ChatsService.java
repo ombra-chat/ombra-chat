@@ -50,6 +50,8 @@ public class ChatsService {
             return handleUpdateChatAddedToList(update);
         } else if (object instanceof TdApi.UpdateChatReadInbox update) {
             return handleUpdateChatReadInbox(update);
+        } else if (object instanceof TdApi.UpdateUnreadChatCount update) {
+            return handleUpdateUnreadChatCount(update);
         }
         return false;
     }
@@ -225,6 +227,13 @@ public class ChatsService {
             chat.positions = update.positions;
         }
         updateChatsListOnGui();
+        return true;
+    }
+
+    private boolean handleUpdateUnreadChatCount(TdApi.UpdateUnreadChatCount update) {
+        if (update.chatList instanceof TdApi.ChatListMain) {
+            guiService.setUnreadChats(update.unreadUnmutedCount > 0);
+        }
         return true;
     }
 

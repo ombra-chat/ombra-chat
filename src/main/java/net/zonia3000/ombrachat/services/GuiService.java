@@ -48,6 +48,8 @@ public class GuiService {
 
     private static final Map<Class<?>, Object> controllers = new HashMap<>();
 
+    private boolean unreadChats;
+
     public GuiService(App app, Stage primaryStage) {
         this.app = app;
         this.primaryStage = primaryStage;
@@ -262,5 +264,20 @@ public class GuiService {
             currentSelectable.resetSelection();
         }
         currentSelectable = selectableText;
+    }
+
+    public void setUnreadChats(boolean unread) {
+        if (unreadChats == unread) {
+            return;
+        }
+        unreadChats = unread;
+        Platform.runLater(() -> {
+            if (unreadChats) {
+                primaryStage.setTitle("OmbraChat *");
+            } else {
+                primaryStage.setTitle("OmbraChat");
+            }
+            UiUtils.setAppIcon(primaryStage, unreadChats);
+        });
     }
 }
