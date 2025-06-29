@@ -1,7 +1,11 @@
+use std::sync::Mutex;
+
 use crate::{
     crypto::gpg,
     settings::{self, InitialConfigCheckResult},
+    AppState,
 };
+use tauri::Manager;
 
 #[tauri::command]
 pub fn check_initial_config() -> InitialConfigCheckResult {
@@ -36,4 +40,16 @@ pub fn save_initial_config<R: tauri::Runtime>(
 ) -> Result<(), String> {
     settings::save_initial_config(&app, api_id, api_hash, folder, gpg_password, encrypt_db)
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn check_gpg_password<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    password: &str,
+) -> Result<(), String> {
+    gpg::check_secret_key(&app, password).map_err(|e| e.to_string())?;
+    let state = app.state::<Mutex<AppState>>();
+    let mut state = state.lock().unwrap();
+    state.gpg_password = password.into();
+    Ok(())
 }
