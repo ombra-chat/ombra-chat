@@ -25,3 +25,6 @@ serde_json = "1"
 
 tdjson-sys = { path = "../../../tdjson-sys" }
 tauri-plugin-store = "2"
+sequoia-openpgp = "2.0.0"
+tauri-plugin-dialog = "2"
+rand = "0.9.1"

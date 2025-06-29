@@ -1,0 +1,169 @@
+<script setup lang="ts">
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
+import { onMounted, ref } from 'vue';
+
+const apiId = ref('');
+const apiHash = ref('');
+const applicationFolder = ref('');
+const gpgPassword = ref('');
+const gpgKeyFingerprint = ref('');
+const gpgError = ref('');
+const encryptDatabase = ref(true);
+const validationErrors = ref({} as Record<string, string>);
+const initError = ref('');
+
+type InitialConfigCheckResult = {
+    defaultFolder: string
+}
+
+onMounted(async () => {
+    const result = await invoke<InitialConfigCheckResult>("check_initial_config");
+    applicationFolder.value = result.defaultFolder;
+});
+
+async function generateGpgKey() {
+    gpgKeyFingerprint.value = '';
+    gpgError.value = '';
+    try {
+        const fingerprint = await invoke<string>("generate_gpg_key", { password: gpgPassword.value });
+        gpgKeyFingerprint.value = fingerprint;
+    } catch (err) {
+        gpgError.value = `Error generating GPG key: ${(err as string)}`;
+    }
+}
+
+async function importGpgKey() {
+    const file = await open({ multiple: false, directory: false, });
+    if (file === null) {
+        return;
+    }
+    gpgKeyFingerprint.value = '';
+    gpgError.value = '';
+    try {
+        const fingerprint = await invoke<string>("import_gpg_key", {
+            keyPath: file, password: gpgPassword.value
+        });
+        gpgKeyFingerprint.value = fingerprint;
+    } catch (err) {
+        gpgError.value = `Error importing GPG key: ${(err as string)}`;
+    }
+}
+
+function resetKey() {
+    gpgKeyFingerprint.value = '';
+}
+
+async function next() {
+    initError.value = '';
+    const valid = validateFields();
+    if (!valid) {
+        return;
+    }
+    if (!gpgKeyFingerprint.value) {
+        initError.value = 'Please generate or import a GPG key';
+        return;
+    }
+    try {
+        await invoke<string>("save_initial_config", {
+            apiId: apiId.value,
+            apiHash: apiHash.value,
+            folder: applicationFolder.value,
+            gpgPassword: gpgPassword.value,
+            encryptDb: encryptDatabase.value,
+        });
+    } catch (err) {
+        initError.value = err as string;
+    }
+}
+
+function validateFields() {
+    validationErrors.value = {};
+    if (!apiId.value) {
+        validationErrors.value['apiId'] = 'Field is required';
+    }
+    if (!apiHash.value) {
+        validationErrors.value['apiHash'] = 'Field is required';
+    }
+    if (!applicationFolder.value) {
+        validationErrors.value['applicationFolder'] = 'Field is required';
+    }
+    return Object.keys(validationErrors.value).length === 0;
+}
+</script>
+
+<template>
+    <form @submit.prevent="next" class="m-5">
+        <div class="field mb-0">
+            <label class="label mb-0" for="api-id">API ID</label>
+            <div class="control">
+                <input class="input" type="text" id="api-id" v-model="apiId"
+                    :class="{ 'is-danger': validationErrors['apiId'] }">
+            </div>
+        </div>
+        <span class="has-text-danger" v-if="validationErrors['apiId']">
+            {{ validationErrors['apiId'] }}
+        </span>
+        <div class="field mb-0 mt-3">
+            <label class="label mb-0" for="api-hash">API Hash</label>
+            <div class="control">
+                <input class="input" type="text" id="api-hash" v-model="apiHash"
+                    :class="{ 'is-danger': validationErrors['apiHash'] }">
+            </div>
+        </div>
+        <span class="has-text-danger" v-if="validationErrors['apiHash']">
+            {{ validationErrors['apiHash'] }}
+        </span>
+        <p class="mt-1"><a href="https://my.telegram.org" target="_blank">Obtain API credentials</a></p>
+        <div class="field mb-0 mt-2">
+            <label class="label mb-0" for="application-folder">Application folder</label>
+            <div class="control">
+                <input class="input" type="text" id="application-folder" v-model="applicationFolder"
+                    :class="{ 'is-danger': validationErrors['applicationFolder'] }">
+            </div>
+        </div>
+        <span class="has-text-danger" v-if="validationErrors['applicationFolder']">
+            {{ validationErrors['applicationFolder'] }}
+        </span>
+        <div class="field mt-3">
+            <label class="label mb-0" for="password">GPG key password</label>
+            <div class="control">
+                <input class="input" type="password" id="password" v-model="gpgPassword" @input="resetKey" @change="resetKey">
+            </div>
+        </div>
+        <div class="field is-grouped">
+            <div class="control">
+                <button type="button" class="button is-primary is-dark mr-2" @click="generateGpgKey">Generate GPG
+                    key</button>
+                <button type="button" class="button is-primary" @click="importGpgKey">Select GPG key</button>
+            </div>
+        </div>
+        <div class="message is-success" v-if="gpgKeyFingerprint">
+            <div class="message-body">
+                Key fingerprint: <code>{{ gpgKeyFingerprint }}</code>
+            </div>
+        </div>
+        <div class="message is-danger" v-if="gpgError">
+            <div class="message-body">
+                {{ gpgError }}
+            </div>
+        </div>
+        <div class="field mb-0">
+            <label class="checkbox">
+                <input type="checkbox" v-bind:checked="encryptDatabase" />
+                Encrypt Telegram database
+            </label>
+        </div>
+        <p class="has-text-primary-10"><i>A random password encrypted with your GPG key will be used</i></p>
+        <div class="message is-danger mt-3" v-if="initError">
+            <div class="message-body">
+                {{ initError }}
+            </div>
+        </div>
+        <div class="field is-grouped mt-3">
+            <div class="control">
+                <button class="button is-link" type="submit">Next</button>
+            </div>
+        </div>
+    </form>
+</template>
