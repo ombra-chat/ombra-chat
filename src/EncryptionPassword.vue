@@ -2,17 +2,18 @@
 import { invoke } from '@tauri-apps/api/core';
 import { ref } from 'vue';
 
-const password = ref('');
+const passphrase = ref('');
 const error = ref('');
 
 async function next() {
   error.value = '';
   try {
-    await invoke('check_gpg_password', { password: password.value });
+    await invoke('check_gpg_passphrase', { passphrase: passphrase.value });
+    await invoke('start_telegram_client');
   } catch (err) {
     const message = err as string;
-    if (message === 'unexpected EOF') {
-      error.value = 'Invalid password';
+    if (message === 'invalid input') {
+      error.value = 'Invalid passphrase';
     } else {
       error.value = err as string;
     }
@@ -23,9 +24,9 @@ async function next() {
 <template>
   <form @submit.prevent="next" class="m-5">
     <div class="field mt-3">
-      <label class="label mb-0" for="password">GPG password</label>
+      <label class="label mb-0" for="passphrase">GPG passphrase</label>
       <div class="control">
-        <input class="input" type="password" id="password" v-model="password" />
+        <input class="input" type="passphrase" id="passphrase" v-model="passphrase" />
       </div>
     </div>
     <div class="message is-danger mt-3" v-if="error">

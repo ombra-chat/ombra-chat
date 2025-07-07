@@ -1,17 +1,21 @@
+mod store;
 mod commands;
 mod crypto;
 mod settings;
+mod telegram;
 
 use std::sync::Mutex;
 use tauri::Manager;
 
 #[derive(Default)]
 struct AppState {
-    gpg_password: String,
+    gpg_passphrase: String,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    env_logger::init();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -21,11 +25,12 @@ pub fn run() {
             commands::init::generate_gpg_key,
             commands::init::import_gpg_key,
             commands::init::save_initial_config,
-            commands::init::check_gpg_password,
+            commands::init::check_gpg_passphrase,
+            commands::telegram::start_telegram_client,
         ])
         .setup(|app| {
             app.manage(Mutex::new(AppState {
-                gpg_password: "".into(),
+                gpg_passphrase: "".into(),
             }));
             Ok(())
         })

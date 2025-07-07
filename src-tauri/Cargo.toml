@@ -23,8 +23,15 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-tdjson-sys = { path = "../../../tdjson-sys" }
+tdlib = { path = "../../tdlib-rs/tdlib" }
 tauri-plugin-store = "2"
-sequoia-openpgp = "2.0.0"
 tauri-plugin-dialog = "2"
-rand = "0.9.1"
+rand = "0.8.5"
+tokio = "1.45.1"
+log = "0.4.27"
+env_logger = "0.11.8"
+trpl = "0.2.0"
+pgp = "0.16.0"
+pbkdf2 = "0.12.2"
+hex = "0.4.3"
+sha2 = "0.10.9"

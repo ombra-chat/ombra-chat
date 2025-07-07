@@ -6,12 +6,13 @@ import { onMounted, ref } from 'vue';
 const apiId = ref('');
 const apiHash = ref('');
 const applicationFolder = ref('');
-const gpgPassword = ref('');
+const gpgPassphrase = ref('');
 const gpgKeyFingerprint = ref('');
 const gpgError = ref('');
 const encryptDatabase = ref(true);
 const validationErrors = ref({} as Record<string, string>);
 const initError = ref('');
+const loadingKey = ref(false);
 
 type InitialConfigCheckResult = {
     defaultFolder: string
@@ -26,10 +27,13 @@ async function generateGpgKey() {
     gpgKeyFingerprint.value = '';
     gpgError.value = '';
     try {
-        const fingerprint = await invoke<string>("generate_gpg_key", { password: gpgPassword.value });
+        loadingKey.value = true;
+        const fingerprint = await invoke<string>("generate_gpg_key", { passphrase: gpgPassphrase.value });
         gpgKeyFingerprint.value = fingerprint;
     } catch (err) {
         gpgError.value = `Error generating GPG key: ${(err as string)}`;
+    } finally {
+        loadingKey.value = false;
     }
 }
 
@@ -41,12 +45,15 @@ async function importGpgKey() {
     gpgKeyFingerprint.value = '';
     gpgError.value = '';
     try {
+        loadingKey.value = true;
         const fingerprint = await invoke<string>("import_gpg_key", {
-            keyPath: file, password: gpgPassword.value
+            keyPath: file, passphrase: gpgPassphrase.value
         });
         gpgKeyFingerprint.value = fingerprint;
     } catch (err) {
         gpgError.value = `Error importing GPG key: ${(err as string)}`;
+    } finally {
+        loadingKey.value = false;
     }
 }
 
@@ -69,7 +76,7 @@ async function next() {
             apiId: apiId.value,
             apiHash: apiHash.value,
             folder: applicationFolder.value,
-            gpgPassword: gpgPassword.value,
+            gpgPassphrase: gpgPassphrase.value,
             encryptDb: encryptDatabase.value,
         });
     } catch (err) {
@@ -126,16 +133,21 @@ function validateFields() {
             {{ validationErrors['applicationFolder'] }}
         </span>
         <div class="field mt-3">
-            <label class="label mb-0" for="password">GPG key password</label>
+            <label class="label mb-0" for="passphrase">GPG key passphrase</label>
             <div class="control">
-                <input class="input" type="password" id="password" v-model="gpgPassword" @input="resetKey" @change="resetKey">
+                <input class="input" type="passphrase" id="passphrase" v-model="gpgPassphrase" @input="resetKey"
+                    @change="resetKey">
             </div>
         </div>
         <div class="field is-grouped">
             <div class="control">
-                <button type="button" class="button is-primary is-dark mr-2" @click="generateGpgKey">Generate GPG
-                    key</button>
-                <button type="button" class="button is-primary" @click="importGpgKey">Select GPG key</button>
+                <button type="button" class="button is-primary is-dark mr-2" @click="generateGpgKey"
+                    :disabled="loadingKey">
+                    Generate GPG key
+                </button>
+                <button type="button" class="button is-primary" @click="importGpgKey" :disabled="loadingKey">
+                    Select GPG key
+                </button>
             </div>
         </div>
         <div class="message is-success" v-if="gpgKeyFingerprint">
