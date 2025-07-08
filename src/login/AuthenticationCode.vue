@@ -2,7 +2,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { ref } from 'vue';
 
-const passphrase = ref('');
+const code = ref('');
 const error = ref('');
 const disableNextBtn = ref(false);
 
@@ -10,16 +10,10 @@ async function next() {
   error.value = '';
   disableNextBtn.value = true;
   try {
-    await invoke('check_gpg_passphrase', { passphrase: passphrase.value });
-    await invoke('start_telegram_client');
+    await invoke('set_authentication_code', { code: code.value });
   } catch (err) {
     disableNextBtn.value = false;
-    const message = err as string;
-    if (message === 'invalid input') {
-      error.value = 'Invalid passphrase';
-    } else {
-      error.value = err as string;
-    }
+    error.value = err as string;
   }
 }
 </script>
@@ -27,9 +21,9 @@ async function next() {
 <template>
   <form @submit.prevent="next" class="m-5">
     <div class="field mt-3">
-      <label class="label mb-0" for="passphrase">GPG passphrase</label>
+      <label class="label mb-0" for="code">Authentication code</label>
       <div class="control">
-        <input class="input" type="password" id="passphrase" v-model="passphrase" />
+        <input class="input" type="text" id="code" v-model="code" />
       </div>
     </div>
     <div class="message is-danger mt-3" v-if="error">
@@ -39,7 +33,7 @@ async function next() {
     </div>
     <div class="field is-grouped mt-3">
       <div class="control mr-auto ml-auto">
-        <button class="button is-link" type="submit">Next</button>
+        <button class="button is-link" type="submit" :disabled="disableNextBtn">Next</button>
       </div>
     </div>
   </form>

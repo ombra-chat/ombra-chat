@@ -1,9 +1,11 @@
-use std::sync::Mutex;
+use std::{sync::Mutex, thread};
 
 use crate::{
     crypto::gpg,
     settings::{self, InitialConfigCheckResult},
-    store, AppState,
+    store,
+    telegram::client::Client,
+    AppState,
 };
 use pgp::types::KeyDetails;
 use tauri::Manager;
@@ -57,4 +59,12 @@ pub fn check_gpg_passphrase<R: tauri::Runtime>(
     let mut state = state.lock().unwrap();
     state.gpg_passphrase = passphrase.into();
     Ok(())
+}
+
+#[tauri::command]
+pub fn start_telegram_client<R: tauri::Runtime>(app: tauri::AppHandle<R>) {
+    thread::spawn(move || {
+        let client = Client::new();
+        client.start(&app);
+    });
 }

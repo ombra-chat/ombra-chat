@@ -1,0 +1,3 @@
+<template>
+  LOGGED IN
+</template>
