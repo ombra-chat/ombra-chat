@@ -4,6 +4,8 @@ import type { Chat, ChatFolder } from './model';
 export const store = reactive<{
   sidebarExpanded: boolean;
   toggleSidebar: () => void;
+  settingsModalActive: boolean;
+  toggleSettingsModal: () => void;
   chatFolders: ChatFolder[];
   chatsMap: { [id: number]: Chat };
   // key are folders id, values are id of chats in each folder
@@ -16,6 +18,10 @@ export const store = reactive<{
   sidebarExpanded: false,
   toggleSidebar() {
     this.sidebarExpanded = !this.sidebarExpanded;
+  },
+  settingsModalActive: false,
+  toggleSettingsModal() {
+    this.settingsModalActive = !this.settingsModalActive;
   },
   chatFolders: [],
   chatsMap: {},

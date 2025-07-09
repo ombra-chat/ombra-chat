@@ -5,6 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 import Sidebar from './Sidebar.vue';
 import { store } from './store';
 import ChatsList from './ChatsList.vue';
+import SettingsModal from './SettingsModal.vue';
 
 onMounted(async () => {
   let chatsLoaded = false;
@@ -38,6 +39,7 @@ onMounted(async () => {
         TODO: current chat
       </div>
     </div>
+    <SettingsModal />
   </div>
 </template>
 

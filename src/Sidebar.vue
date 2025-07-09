@@ -9,6 +9,11 @@ async function logout() {
     console.error(err as string);
   }
 }
+
+function openSettingsModal() {
+  store.toggleSettingsModal();
+  store.toggleSidebar();
+}
 </script>
 
 <template>
@@ -23,6 +28,7 @@ async function logout() {
       </a>
     </div>
     <ul class="menu-list">
+      <li><a href="#" @click="openSettingsModal">Settings</a></li>
       <li><a href="#" @click="logout">Logout</a></li>
     </ul>
   </aside>
