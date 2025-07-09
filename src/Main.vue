@@ -4,6 +4,7 @@ import ChatFolders from './ChatFolders.vue';
 import { invoke } from '@tauri-apps/api/core';
 import Sidebar from './Sidebar.vue';
 import { store } from './store';
+import ChatsList from './ChatsList.vue';
 
 onMounted(async () => {
   let chatsLoaded = false;
@@ -20,18 +21,18 @@ onMounted(async () => {
 <template>
   <div id="main-wrapper">
     <Sidebar />
-    <div id="top-bar">
+    <div id="top-bar" class="mb-2">
       <a class="navbar-burger" role="button" aria-label="menu" aria-expanded="false" @click="store.toggleSidebar">
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
       </a>
+      <ChatFolders />
     </div>
-    <ChatFolders />
     <div id="main-container">
       <div id="chat-lists-container">
-        TODO: chat lists
+        <ChatsList />
       </div>
       <div id="current-chat-container">
         TODO: current chat
@@ -41,6 +42,10 @@ onMounted(async () => {
 </template>
 
 <style>
+#top-bar {
+  border-bottom: 1px #eee solid;
+}
+
 #main-wrapper {
   position: absolute;
   top: 0;
@@ -63,6 +68,9 @@ onMounted(async () => {
   top: 0;
   bottom: 0;
   left: 0;
+  border-right: 1px #eee solid;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #current-chat-container {

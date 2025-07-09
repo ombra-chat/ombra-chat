@@ -7,9 +7,7 @@ use pgp::crypto::sym::SymmetricKeyAlgorithm;
 use pgp::types::{KeyDetails, PublicKeyTrait};
 use rand::thread_rng;
 use std::io::Cursor;
-use std::sync::Mutex;
 use std::{error::Error, fs::File, io::BufReader};
-use tauri::Manager;
 
 fn encrypt(
     keys: Vec<&PublicSubkey>,

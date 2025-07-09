@@ -1,10 +1,10 @@
-use crate::{settings, should_close, AppState};
-use serde::Serialize;
+use crate::telegram::chats;
+use crate::{emit, settings, state};
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use std::sync::{atomic::AtomicBool, mpsc::channel};
-use std::sync::{Arc, Mutex};
 use std::thread;
-use tauri::{Emitter, Manager};
+use tdlib::enums::OptionValue;
 
 pub struct Client {
     client_id: i32,
@@ -22,11 +22,7 @@ impl Client {
         let client_id = self.client_id;
         let close = Arc::new(AtomicBool::new(false));
 
-        {
-            let state = app.state::<Mutex<AppState>>();
-            let mut state = state.lock().unwrap();
-            state.client_id = client_id;
-        }
+        state::set_client_id(app, client_id);
 
         let close_clone = close.clone();
         thread::spawn(move || {
@@ -44,7 +40,7 @@ impl Client {
             trpl::run(async {
                 self.handle_update(app, update).await;
             });
-            if should_close(app) {
+            if state::close_requested(app) {
                 break;
             }
         }
@@ -59,6 +55,10 @@ impl Client {
     ) {
         use tdlib::enums::AuthorizationState;
         use tdlib::enums::Update;
+
+        if chats::handle_chat_update(app, &update).await {
+            return;
+        }
 
         match update {
             Update::AuthorizationState(state) => match state.authorization_state {
@@ -75,15 +75,29 @@ impl Client {
                     emit(app, "ask-login-password", ());
                 }
                 AuthorizationState::Ready => {
+                    state::set_logged_in(app, true);
                     emit(app, "logged-in", ());
                 }
-                AuthorizationState::LoggingOut => {
+                AuthorizationState::LoggingOut | AuthorizationState::Closing => {
+                    log::trace!("authorization state {:?}", state);
                     // ignored
+                }
+                AuthorizationState::Closed => {
+                    state::request_close(app);
+                    log::trace!("exit(0)");
+                    app.exit(0);
                 }
                 _ => {
                     log::warn!("Unsupported authorization state {:?}", state);
                 }
             },
+            Update::Option(option) => {
+                if option.name == "my_id" {
+                    if let OptionValue::Integer(value) = option.value {
+                        log::info!("My ID: {}", value.value);
+                    }
+                }
+            }
             _ => {
                 // TODO
             }
@@ -116,8 +130,6 @@ impl Client {
             "Desktop".into(),
             String::new(),
             "1.0".into(),
-            true,
-            false,
             self.client_id,
         )
         .await
@@ -152,21 +164,4 @@ fn init(client_id: i32) {
             log::warn!("Error retrieving the tdlib version: {:?}", e);
         }
     });
-}
-
-fn emit<S: Serialize + Clone, R: tauri::Runtime>(
-    app: &tauri::AppHandle<R>,
-    event: &str,
-    payload: S,
-) {
-    log::trace!("Emitting event {}", event);
-    app.emit(event, payload).unwrap_or_else(|err| {
-        log::error!("Error emitting event: {}", err);
-    });
-}
-
-pub fn get_client_id<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> i32 {
-    let state = app.state::<Mutex<AppState>>();
-    let state = state.lock().unwrap();
-    state.client_id
 }
