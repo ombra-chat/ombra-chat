@@ -1,18 +1,10 @@
-use std::{sync::Mutex, thread};
-
-use crate::{
-    crypto::gpg,
-    settings::{self, InitialConfigCheckResult},
-    store,
-    telegram::client::Client,
-    AppState,
-};
+use crate::{crypto::gpg, settings, state, store, telegram::client::Client};
 use pgp::types::KeyDetails;
-use tauri::Manager;
+use std::thread;
 
 #[tauri::command]
-pub fn check_initial_config() -> InitialConfigCheckResult {
-    settings::check_initial_config()
+pub fn get_default_folder() -> String {
+    settings::get_default_folder()
 }
 
 #[tauri::command]
@@ -55,9 +47,7 @@ pub fn check_gpg_passphrase<R: tauri::Runtime>(
 ) -> Result<(), String> {
     let key = gpg::get_my_key(&app).map_err(|e| e.to_string())?;
     gpg::check_secret_key(&key, passphrase).map_err(|e| e.to_string())?;
-    let state = app.state::<Mutex<AppState>>();
-    let mut state = state.lock().unwrap();
-    state.gpg_passphrase = passphrase.into();
+    state::set_gpg_passphrase(&app, passphrase);
     Ok(())
 }
 

@@ -1,4 +1,4 @@
-use crate::{store, AppState};
+use crate::{state, store};
 use pgp::composed::{
     ArmorOptions, Deserializable, KeyType, Message, MessageBuilder, PublicSubkey,
     SecretKeyParamsBuilder, SignedPublicKey, SignedSecretKey, SubkeyParamsBuilder,
@@ -80,7 +80,7 @@ pub fn decrypt_string_to_string<R: tauri::Runtime>(
 ) -> Result<String, Box<dyn Error>> {
     log::trace!("decrypt_string_to_string");
     let key = get_my_key(app)?;
-    let passphrase = get_gpg_passphrase(app);
+    let passphrase = state::get_gpg_passphrase(app);
     let data = decrypt_armored(&key, &passphrase, armored_input.into_bytes())?;
     Ok(String::from_utf8(data)?)
 }
@@ -192,13 +192,6 @@ pub fn get_my_key<R: tauri::Runtime>(
     let armored = store::get_secret_key(app);
     let key = SignedSecretKey::from_string(&armored)?.0;
     Ok(key)
-}
-
-fn get_gpg_passphrase<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> String {
-    log::trace!("get_gpg_passphrase");
-    let state = app.state::<Mutex<AppState>>();
-    let state = state.lock().unwrap();
-    state.gpg_passphrase.to_string()
 }
 
 #[cfg(test)]

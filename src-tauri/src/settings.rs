@@ -14,18 +14,10 @@ pub fn get_default_ombra_chat_folder() -> Option<PathBuf> {
     }
 }
 
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InitialConfigCheckResult {
-    default_folder: String,
-}
-
-pub fn check_initial_config() -> InitialConfigCheckResult {
-    let default_folder = get_default_ombra_chat_folder()
+pub fn get_default_folder() -> String {
+    get_default_ombra_chat_folder()
         .map(|path| path.to_string_lossy().into_owned())
-        .unwrap_or_else(|| String::new());
-
-    InitialConfigCheckResult { default_folder }
+        .unwrap_or_else(|| String::new())
 }
 
 pub fn save_initial_config<R: tauri::Runtime>(
