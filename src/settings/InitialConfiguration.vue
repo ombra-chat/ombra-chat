@@ -14,13 +14,8 @@ const validationErrors = ref({} as Record<string, string>);
 const initError = ref('');
 const loadingKey = ref(false);
 
-type InitialConfigCheckResult = {
-    defaultFolder: string
-}
-
 onMounted(async () => {
-    const result = await invoke<InitialConfigCheckResult>("check_initial_config");
-    applicationFolder.value = result.defaultFolder;
+    applicationFolder.value = await invoke<string>("get_default_folder");
 });
 
 async function generateGpgKey() {

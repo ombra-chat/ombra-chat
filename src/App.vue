@@ -11,6 +11,8 @@ import PhoneNumber from './login/PhoneNumber.vue';
 import AuthenticationCode from './login/AuthenticationCode.vue';
 import AuthenticationPassword from './login/AuthenticationPassword.vue';
 import Main from './Main.vue';
+import { handleChatsUpdates } from './services/chats';
+import { invoke } from '@tauri-apps/api/core';
 
 enum MainWindowState {
   LOADING,
@@ -27,13 +29,10 @@ const state = ref(MainWindowState.LOADING);
 let unlisteners: UnlistenFn[] = [];
 
 onBeforeMount(async () => {
-  if (await isInitialConfigDone()) {
-    state.value = MainWindowState.GPG_PASSWORD;
-  } else {
-    state.value = MainWindowState.INITIAL_CONFIG;
-  }
 
-  unlisteners.push(
+  state.value = await getInitialState();
+
+  unlisteners = [
     await listen<any>('ask-login-phone-number', () => {
       state.value = MainWindowState.PHONE_NUMBER;
     }),
@@ -46,8 +45,33 @@ onBeforeMount(async () => {
     await listen<any>('logged-in', () => {
       state.value = MainWindowState.LOGGED_IN;
     }),
-  );
+    ...await handleChatsUpdates()
+  ];
 });
+
+async function getInitialState() {
+  if (await isInitialConfigDone()) {
+    if (await isLoggedIn()) {
+      return MainWindowState.LOGGED_IN;
+    }
+    return MainWindowState.GPG_PASSWORD;
+  }
+  return MainWindowState.INITIAL_CONFIG;
+}
+
+/**
+ * The login state is set by the "logged-in" event. This function is needed to avoid 
+ * that the GPG password prompt is displayed again when manually reloading the page 
+ * (thing that you usually do only for debugging).
+ */
+async function isLoggedIn() {
+  try {
+    return await invoke<boolean>('is_logged_in');
+  } catch (err) {
+    console.error(err);
+  }
+  return false;
+}
 
 onDeactivated(() => {
   for (const unlist of unlisteners) {
@@ -72,7 +96,7 @@ onDeactivated(() => {
   <div v-else-if="state === MainWindowState.AUTH_PASSWORD">
     <AuthenticationPassword />
   </div>
-  <div v-else-if="state === MainWindowState.LOGGED_IN" class="container">
+  <div v-else-if="state === MainWindowState.LOGGED_IN">
     <Main />
   </div>
 </template>
