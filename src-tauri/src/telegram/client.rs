@@ -1,4 +1,4 @@
-use crate::telegram::chats;
+use crate::telegram::{chats, messages};
 use crate::{emit, settings, state};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -56,7 +56,10 @@ impl Client {
         use tdlib::enums::AuthorizationState;
         use tdlib::enums::Update;
 
-        if chats::handle_chat_update(app, &update).await {
+        if chats::handle_chats_update(app, &update).await {
+            return;
+        }
+        if messages::handle_messages_update(app, &update).await {
             return;
         }
 
@@ -94,7 +97,7 @@ impl Client {
             Update::Option(option) => {
                 if option.name == "my_id" {
                     if let OptionValue::Integer(value) = option.value {
-                        log::info!("My ID: {}", value.value);
+                        emit(app, "my-id", value.value);
                     }
                 }
             }

@@ -1,31 +1,20 @@
 import { reactive } from 'vue'
-import type { Chat, ChatFolder } from './model';
+import type { Chat, ChatFolder, Message } from './model';
 
-export const store = reactive<{
-  sidebarExpanded: boolean;
-  toggleSidebar: () => void;
-  settingsModalActive: boolean;
-  toggleSettingsModal: () => void;
-  chatFolders: ChatFolder[];
-  chatsMap: { [id: number]: Chat };
-  // key are folders id, values are id of chats in each folder
-  chatFoldersMap: { [id: number]: number[] };
-  selectedChatFolderId: number;
-  addChat: (chat: Chat) => void;
-  addChatToFolder: (folder_id: number, chat_id: number) => void;
-  test: any;
-}>({
+export const store = reactive({
   sidebarExpanded: false,
   toggleSidebar() {
     this.sidebarExpanded = !this.sidebarExpanded;
   },
+  myId: 0,
   settingsModalActive: false,
   toggleSettingsModal() {
     this.settingsModalActive = !this.settingsModalActive;
   },
-  chatFolders: [],
-  chatsMap: {},
-  chatFoldersMap: {},
+  chatFolders: [] as ChatFolder[],
+  chatsMap: {} as { [id: number]: Chat },
+  // key are folders id, values are id of chats in each folder
+  chatFoldersMap: {} as { [id: number]: number[] },
   selectedChatFolderId: 0,
   addChat(chat: Chat) {
     this.chatsMap[chat.id] = chat;
@@ -39,5 +28,36 @@ export const store = reactive<{
     }
     this.chatFoldersMap[folder_id] = chats;
   },
-  test: null
+  selectedChat: null as Chat | null,
+  selectChat(id: number | null) {
+    if (id === null) {
+      this.selectedChat = null;
+    } else {
+      const chat = (this.chatsMap as { [id: number]: Chat })[id];
+      this.selectedChat = chat || null;
+    }
+  },
+  lastMessageId: 0,
+  currentMessages: [] as Message[],
+  addMessages(newMessages: Message[]) {
+    const chat = this.selectedChat as null | Chat;
+    if (chat === null) {
+      return;
+    }
+    const messages = this.currentMessages as Message[];
+    for (const message of newMessages) {
+      if (message.chat_id !== chat.id) {
+        return;
+      }
+      if (!messages.find(m => m.id === message.id)) {
+        messages.push(message);
+      }
+    }
+    messages.sort((m1: Message, m2: Message) => m1.id < m2.id ? -1 : 1);
+    this.lastMessageId = messages[messages.length - 1];
+  },
+  clearMessages() {
+    const messages = this.currentMessages as Message[];
+    messages.splice(0, messages.length);
+  }
 });

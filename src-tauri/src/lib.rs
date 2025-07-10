@@ -29,6 +29,9 @@ pub fn run() {
             commands::login::is_logged_in,
             commands::login::logout,
             commands::chats::load_chats,
+            commands::chats::open_chat,
+            commands::chats::close_chat,
+            commands::chats::get_chat_history,
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));

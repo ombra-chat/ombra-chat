@@ -13,6 +13,7 @@ import AuthenticationPassword from './login/AuthenticationPassword.vue';
 import Main from './Main.vue';
 import { handleChatsUpdates } from './services/chats';
 import { invoke } from '@tauri-apps/api/core';
+import { store } from './store';
 
 enum MainWindowState {
   LOADING,
@@ -44,6 +45,9 @@ onBeforeMount(async () => {
     }),
     await listen<any>('logged-in', () => {
       state.value = MainWindowState.LOGGED_IN;
+    }),
+    await listen<number>('my-id', (event) => {
+      store.myId = event.payload;
     }),
     ...await handleChatsUpdates()
   ];

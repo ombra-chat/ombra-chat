@@ -1,21 +1,15 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import ChatFolders from './ChatFolders.vue';
-import { invoke } from '@tauri-apps/api/core';
 import Sidebar from './Sidebar.vue';
 import { store } from './store';
 import ChatsList from './ChatsList.vue';
 import SettingsModal from './SettingsModal.vue';
+import ChatPage from './ChatPage.vue';
+import { loadChats } from './services/chats';
 
 onMounted(async () => {
-  let chatsLoaded = false;
-  while (!chatsLoaded) {
-    try {
-      await invoke('load_chats');
-    } catch (err) {
-      chatsLoaded = true;
-    }
-  }
+  await loadChats();
 });
 </script>
 
@@ -36,7 +30,7 @@ onMounted(async () => {
         <ChatsList />
       </div>
       <div id="current-chat-container">
-        TODO: current chat
+        <ChatPage />
       </div>
     </div>
     <SettingsModal />

@@ -38,30 +38,80 @@ export type ChatPermission = {
 }
 
 export type UpdateNewChat = {
-  chat: {
-    id: number;
-    type: { '@type': ChatType; user_id: number };
-    title: string;
-    photo: any;
-    permissions: ChatPermission;
-    unread_count: number;
-    last_read_inbox_message_id: number;
-    last_read_outbox_message_id: number;
-    unread_mention_count: number;
-    unread_reaction_count: number;
-    available_reactions: { '@type': AvailableReactionsType, max_reaction_count: number };
-  }
+  chat: Chat
 }
 
 export type Chat = {
   id: number;
+  type: { '@type': ChatType; user_id: number };
   title: string;
+  photo: any;
   permissions: ChatPermission;
+  unread_count: number;
+  last_read_inbox_message_id: number;
+  last_read_outbox_message_id: number;
+  unread_mention_count: number;
+  unread_reaction_count: number;
+  available_reactions: { '@type': AvailableReactionsType; max_reaction_count: number };
 }
 
 export type UpdateChatAddedToList = {
   chat_id: number;
-  chat_list: { '@type': 'chatListMain', }
-  | { '@type': 'chatListFolder', chat_folder_id: number }
-  | { '@type': 'chatListArchive' }
+  chat_list: { '@type': 'chatListMain'; }
+  | { '@type': 'chatListFolder'; chat_folder_id: number }
+  | { '@type': 'chatListArchive' };
+}
+
+export type FormattedText = {
+  text: string;
+  entities: any[];
+}
+
+export type MessageText = {
+  '@type': 'messageText';
+  text: FormattedText
+}
+
+export type MessagePhoto = {
+  '@type': 'messagePhoto';
+  photo: any;
+  caption: FormattedText;
+}
+
+export type MessageContent = MessageText | MessagePhoto;
+
+export type MessageSenderUser = {
+  '@type': 'messageSenderUser';
+  user_id: number;
+}
+
+export type MessageSenderChat = {
+  '@type': 'messageSenderChat';
+  chat_id: number;
+}
+
+export type UpdateNewMessage = {
+  message: Message
+}
+
+export type MessageSender = MessageSenderUser | MessageSenderChat;
+
+export type Message = {
+  id: number;
+  sender_id: MessageSender;
+  chat_id: number;
+  is_pinned: boolean;
+  contains_unread_mention: boolean;
+  date: number;
+  edit_date: number;
+  interaction_info: any;
+  unread_reactions: any[];
+  reply_to: any;
+  has_sensitive_content: boolean;
+  content: MessageContent;
+}
+
+export type Messages = {
+  total_count: number;
+  messages: Message[];
 }

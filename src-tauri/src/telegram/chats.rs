@@ -2,7 +2,7 @@ use crate::emit;
 
 use tdlib::enums::Update;
 
-pub async fn handle_chat_update<R: tauri::Runtime>(
+pub async fn handle_chats_update<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     update: &Update,
 ) -> bool {
