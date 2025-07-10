@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faAngleDown, faAngleUp } from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps<{
   values: Array<{ id: number, label: string }>,
@@ -34,7 +36,8 @@ const label = computed(() => {
       <button class="button" aria-haspopup="true" aria-controls="chat-folders-dropdown" @click="toggleDropdown">
         <span>{{ label }}</span>
         <span class="icon is-small">
-          <i class="fas fa-angle-down" aria-hidden="true"></i>
+          <FontAwesomeIcon :icon="faAngleUp" v-if="active" />
+          <FontAwesomeIcon :icon="faAngleDown" v-else />
         </span>
       </button>
     </div>

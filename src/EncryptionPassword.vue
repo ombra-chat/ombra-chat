@@ -39,7 +39,7 @@ async function next() {
     </div>
     <div class="field is-grouped mt-3">
       <div class="control mr-auto ml-auto">
-        <button class="button is-link" type="submit">Next</button>
+        <button class="button is-link" type="submit" :disabled="disableNextBtn">Next</button>
       </div>
     </div>
   </form>
