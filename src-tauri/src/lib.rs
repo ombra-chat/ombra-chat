@@ -32,6 +32,8 @@ pub fn run() {
             commands::chats::open_chat,
             commands::chats::close_chat,
             commands::chats::get_chat_history,
+            commands::files::download_file,
+            commands::files::get_photo,
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));

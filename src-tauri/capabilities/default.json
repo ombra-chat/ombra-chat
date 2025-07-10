@@ -7,8 +7,24 @@
   ],
   "permissions": [
     "core:default",
-    "opener:default",
     "store:default",
-    "dialog:default"
+    "dialog:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "**/tdlib/photos/*"
+        },
+        {
+          "path": "**/.*/tdlib/photos/*"
+        },
+        {
+          "path": "**/tdlib/documents/*"
+        },
+        {
+          "path": "**/.*/tdlib/documents/*"
+        }
+      ]
+    }
   ]
 }

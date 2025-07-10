@@ -72,9 +72,42 @@ export type MessageText = {
   text: FormattedText
 }
 
+export type LocalFile = {
+  path: string;
+  can_be_downloaded: boolean;
+  can_be_deleted: boolean;
+  is_downloading_active: boolean;
+  is_downloading_completed: boolean;
+}
+
+export type RemoteFile = {
+  id: string;
+  unique_id: string;
+  is_uploading_active: boolean;
+  is_uploading_completed: boolean;
+  uploaded_size: number;
+}
+
+export type File = {
+  id: number;
+  size: number;
+  local: LocalFile;
+  remote: RemoteFile;
+}
+
+export type PhotoSize = {
+  width: number;
+  height: number;
+  photo: File;
+}
+
+export type Photo = {
+  sizes: PhotoSize[]
+}
+
 export type MessagePhoto = {
   '@type': 'messagePhoto';
-  photo: any;
+  photo: Photo;
   caption: FormattedText;
 }
 

@@ -5,9 +5,7 @@ import { store } from './store';
 
 async function chatContentScrolled(event: Event) {
   const element = event.target as HTMLElement;
-  if (element.scrollTop === 0) {
-    console.log('bottom!')
-  } else if (element.scrollHeight - element.getBoundingClientRect().height + element.scrollTop === 0) {
+  if (element.scrollHeight - element.getBoundingClientRect().height + element.scrollTop === 0) {
     await loadPreviousMessages();
   }
 }
@@ -20,7 +18,7 @@ async function chatContentScrolled(event: Event) {
         {{ store.selectedChat.title }}
       </div>
     </div>
-    <div id="chat-content" class="p-1" @scroll="chatContentScrolled">
+    <div id="chat-content" class="p-1 has-background-link-light" @scroll="chatContentScrolled">
       <MessageBubble :message="message" v-for="message in store.currentMessages" />
     </div>
     <div id="send-message-box">
