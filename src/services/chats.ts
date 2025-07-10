@@ -1,6 +1,6 @@
 import { listen } from '@tauri-apps/api/event'
 import { store } from '../store'
-import { Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateNewChat, UpdateNewMessage } from '../model';
+import { InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateNewChat, UpdateNewMessage } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -133,4 +133,15 @@ export async function loadPreviousMessages(fromMessage: Message | undefined = un
     limit: 20
   });
   store.addMessages(messages);
+}
+
+export async function sendMessage(chatId: number, replyTo: InputMessageReplyTo | null, content: InputMessageContent): Promise<Message> {
+  return await invoke<Message>('send_message', {
+    chatId,
+    messageThreadId: 0,
+    replyTo,
+    options: null,
+    replyMarkup: null,
+    inputMessageContent: content
+  });
 }

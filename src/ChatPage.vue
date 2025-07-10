@@ -1,13 +1,39 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import MessageBubble from './messages/MessageBubble.vue';
-import { loadPreviousMessages } from './services/chats';
+import { loadPreviousMessages, sendMessage } from './services/chats';
 import { store } from './store';
+import { FormattedText, InputMessageContent, InputMessageText } from './model';
+
+const newMessageText = ref('');
 
 async function chatContentScrolled(event: Event) {
   const element = event.target as HTMLElement;
   if (element.scrollHeight - element.getBoundingClientRect().height + element.scrollTop === 0) {
     await loadPreviousMessages();
   }
+}
+
+async function send() {
+  const contents = getInputMessageContents();
+  const chat = store.selectedChat;
+  if (contents.length === 0 || !chat) {
+    return;
+  }
+  for (const content of contents) {
+    await sendMessage(chat.id, null, content);
+    const chatContent = document.getElementById('chat-content');
+    if (chatContent) {
+      chatContent.scrollTo(0, chatContent.scrollHeight);
+    }
+  }
+  newMessageText.value = '';
+}
+
+function getInputMessageContents(): InputMessageContent[] {
+  const formattedText: FormattedText = { text: newMessageText.value, entities: [] };
+  const message: InputMessageText = { '@type': 'inputMessageText', text: formattedText, clear_draft: true };
+  return [message];
 }
 </script>
 
@@ -22,8 +48,8 @@ async function chatContentScrolled(event: Event) {
       <MessageBubble :message="message" v-for="message in store.currentMessages" />
     </div>
     <div id="send-message-box">
-      <input type="text" class="input" id="new-message-text" />
-      <button class="button is-link">Send</button>
+      <input type="text" class="input" id="new-message-text" v-model="newMessageText" @keyup.enter="send" />
+      <button class="button is-link" @click="send">Send</button>
     </div>
   </div>
 </template>

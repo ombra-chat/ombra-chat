@@ -148,3 +148,21 @@ export type Messages = {
   total_count: number;
   messages: Message[];
 }
+
+export type InputTextQuote = {
+  text: FormattedText;
+  position: number;
+}
+
+export type InputMessageReplyTo = {
+  message_id: number;
+  quote: InputTextQuote;
+}
+
+export type InputMessageText = {
+  '@type': 'inputMessageText',
+  text: FormattedText;
+  clear_draft: boolean;
+}
+
+export type InputMessageContent = InputMessageText;

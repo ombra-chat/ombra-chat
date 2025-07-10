@@ -32,6 +32,7 @@ pub fn run() {
             commands::chats::open_chat,
             commands::chats::close_chat,
             commands::chats::get_chat_history,
+            commands::chats::send_message,
             commands::files::download_file,
             commands::files::get_photo,
         ])
