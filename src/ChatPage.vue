@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onDeactivated, onMounted, ref } from 'vue';
 import MessageBubble from './messages/MessageBubble.vue';
 import { loadPreviousMessages, sendMessage } from './services/chats';
 import { store } from './store';
-import { FormattedText, InputMessageContent, InputMessageText } from './model';
+import { open } from '@tauri-apps/plugin-dialog';
+import { listen, UnlistenFn } from '@tauri-apps/api/event'
+import { FormattedText, InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageText } from './model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faPaperPlane, faGear, faPaperclip } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faGear, faPaperclip, faX } from '@fortawesome/free-solid-svg-icons';
+import { createThumbnail, getImageSize, removeThumbnail } from './services/files';
+
+type SimpleFile = { path: string };
+type ImageFile = { path: string; image: boolean; width: number; height: number };
+type SelectedFile = SimpleFile | ImageFile;
 
 const newMessageText = ref('');
+const selectedFiles = ref([] as SelectedFile[]);
+const dragging = ref(false);
 
 async function chatContentScrolled(event: Event) {
   const element = event.target as HTMLElement;
@@ -17,30 +26,151 @@ async function chatContentScrolled(event: Event) {
 }
 
 async function send() {
-  const contents = getInputMessageContents();
+  const contents = await getInputMessageContents();
   const chat = store.selectedChat;
   if (contents.length === 0 || !chat) {
     return;
   }
   for (const content of contents) {
     await sendMessage(chat.id, null, content);
+    if (content['@type'] === 'inputMessagePhoto') {
+      await removeThumbnail(content.photo.path);
+    }
     const chatContent = document.getElementById('chat-content');
     if (chatContent) {
       chatContent.scrollTo(0, chatContent.scrollHeight);
     }
   }
   newMessageText.value = '';
+  selectedFiles.value = [];
 }
 
-function getInputMessageContents(): InputMessageContent[] {
-  const formattedText: FormattedText = { text: newMessageText.value, entities: [] };
-  const message: InputMessageText = { '@type': 'inputMessageText', text: formattedText, clear_draft: true };
-  return [message];
+async function getInputMessageContents(): Promise<InputMessageContent[]> {
+  let formattedText: FormattedText | null = newMessageText.value === '' ? null : { text: newMessageText.value, entities: [] };
+  const contents: InputMessageContent[] = [];
+  if (selectedFiles.value.length === 0) {
+    if (formattedText !== null) {
+      contents.push(
+        { '@type': 'inputMessageText', text: formattedText, clear_draft: true } as InputMessageText
+      )
+    }
+  } else {
+    for (const selectedFile of selectedFiles.value) {
+      if ('image' in selectedFile && selectedFile.image) {
+        const content = await getInputMessagePhoto(selectedFile, formattedText);
+        if (content !== null) {
+          contents.push(content);
+        }
+      } else {
+        contents.push(getInputMessageDocument(selectedFile.path, formattedText));
+      }
+      formattedText = null; // set formatted text only on first file
+    }
+  }
+  return contents;
 }
+
+function getInputMessageDocument(path: string, caption: FormattedText | null): InputMessageDocument {
+  return {
+    '@type': 'inputMessageDocument',
+    document: {
+      '@type': 'inputFileLocal',
+      path
+    },
+    caption,
+    thumbnail: null,
+    disable_content_type_detection: true,
+  };
+}
+
+async function getInputMessagePhoto(file: ImageFile, caption: FormattedText | null): Promise<InputMessagePhoto | null> {
+  try {
+    const thumbnail = await createThumbnail(file.path);
+    return {
+      '@type': 'inputMessagePhoto',
+      added_sticker_file_ids: [],
+      caption,
+      has_spoiler: false,
+      width: file.width,
+      height: file.height,
+      photo: {
+        '@type': 'inputFileLocal',
+        path: file.path
+      },
+      thumbnail,
+      self_destruct_type: null,
+      show_caption_above_media: false
+    }
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+async function selectFiles() {
+  const files = await open({ multiple: true, directory: false, });
+  if (files === null || files.length === 0) {
+    return;
+  }
+  await addFiles(files);
+}
+
+async function addFiles(files: string[]) {
+  const filesToAdd: SelectedFile[] = [];
+  for (const file of files) {
+    const image = await getImageInfo(file);
+    filesToAdd.push(image !== null ? image : { path: file });
+  }
+  selectedFiles.value = selectedFiles.value.concat(filesToAdd);
+}
+
+async function getImageInfo(path: string): Promise<ImageFile | null> {
+  if (!isImage(path)) {
+    return null;
+  }
+  const dimensions = await getImageSize(path);
+  if (dimensions === null) {
+    return null;
+  }
+  return { path, image: true, width: dimensions.width, height: dimensions.height };
+}
+
+function isImage(path: string) {
+  for (const extension of ['png', 'jpg', 'jpeg', 'jpg', 'gif']) {
+    if (path.endsWith(extension)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getFileName(path: string) {
+  return path.split('/').pop()?.split('\\').pop();
+}
+
+async function removeFile(index: number) {
+  selectedFiles.value = selectedFiles.value.filter((_, i) => i !== index);
+}
+
+let unlistener: UnlistenFn | undefined = undefined;
+
+onMounted(async () => {
+  unlistener = await listen('tauri://drag-drop', event => {
+    const { payload } = event;
+    addFiles((payload as any).paths);
+  })
+});
+
+onDeactivated(() => {
+  if (unlistener) {
+    unlistener();
+  }
+});
 </script>
 
 <template>
-  <div v-if="store.selectedChat !== null" id="chat-page">
+  <div v-if="store.selectedChat !== null" id="chat-page" :class="{ 'dragging': dragging }"
+    @dragover.prevent="() => (dragging = true)" @dragleave="() => (dragging = false)">
     <div id="chat-header" class="pb-1 pb-2">
       <div id="chat-title" class="has-text-link mt-1 has-text-weight-bold">
         {{ store.selectedChat.title }}
@@ -52,9 +182,25 @@ function getInputMessageContents(): InputMessageContent[] {
     <div id="chat-content" class="p-1 has-background-link-light" @scroll="chatContentScrolled">
       <MessageBubble :message="message" v-for="message in store.currentMessages" />
     </div>
+    <div id="files-box" class="p-1" v-if="selectedFiles.length > 0">
+      <div v-for="(file, index) in selectedFiles" class="file-box">
+        <div class="selected-file-name ml-1">{{ getFileName(file.path) }}</div>
+        <div v-if="'image' in file" class="mr-3 selected-file-image-checkbox">
+          <label class="checkbox">
+            <input type="checkbox" v-model="file.image" />
+            image
+          </label>
+        </div>
+        <div>
+          <a href="#" class="has-text-danger mr-3" @click="() => removeFile(index)">
+            <FontAwesomeIcon :icon="faX" />
+          </a>
+        </div>
+      </div>
+    </div>
     <div id="send-message-box">
       <input type="text" class="input" id="new-message-text" v-model="newMessageText" @keyup.enter="send" />
-      <button type="button" class="button is-primary" aria-label="Attach file">
+      <button type="button" class="button is-primary" @click="selectFiles" aria-label="Attach file">
         <FontAwesomeIcon :icon="faPaperclip" />
       </button>
       <button type="button" class="button is-link" @click="send" aria-label="Send">
@@ -96,7 +242,28 @@ function getInputMessageContents(): InputMessageContent[] {
   flex-direction: row;
 }
 
-#new-message-text {
+#send-message-box input,
+#send-message-box button {
+  border-radius: 0;
+}
+
+.file-box {
+  display: flex;
+  flex-direction: row;
+}
+
+.selected-file-name {
   flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selected-file-image-checkbox {
+  white-space: nowrap;
+}
+
+.dragging {
+  border: 3px rgb(71, 172, 255) dashed;
 }
 </style>

@@ -45,7 +45,8 @@ onMounted(async () => {
 #main-wrapper {
   position: absolute;
   top: 0;
-  right: 0;
+  /* this ugly margin is needed to prevent WebKit scrollbar issue... */
+  right: 20px;
   left: 0;
   bottom: 0;
   display: flex;

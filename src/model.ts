@@ -96,9 +96,10 @@ export type File = {
 }
 
 export type PhotoSize = {
+  type: string;
+  photo: File;
   width: number;
   height: number;
-  photo: File;
 }
 
 export type Photo = {
@@ -165,4 +166,49 @@ export type InputMessageText = {
   clear_draft: boolean;
 }
 
-export type InputMessageContent = InputMessageText;
+export type InputFileLocal = {
+  '@type': 'inputFileLocal',
+  path: string;
+}
+
+export type InputFile = InputFileLocal;
+
+export type InputThumbnail = {
+  thumbnail: InputFile;
+  width: number;
+  height: number;
+}
+
+export type MessageSelfDestructTypeTimer = {
+  '@type': 'messageSelfDestructTypeTimer';
+  self_destruct_time: number;
+}
+
+export type MessageSelfDestructTypeImmediately = {
+  '@type': 'messageSelfDestructTypeImmediately';
+}
+
+export type MessageSelfDestructType = MessageSelfDestructTypeTimer | MessageSelfDestructTypeImmediately;
+
+export type InputMessagePhoto = {
+  '@type': 'inputMessagePhoto';
+  photo: InputFile;
+  thumbnail: InputThumbnail;
+  width: number;
+  height: number;
+  caption: FormattedText | null;
+  added_sticker_file_ids: number[];
+  show_caption_above_media: boolean;
+  self_destruct_type: MessageSelfDestructType | null;
+  has_spoiler: boolean;
+}
+
+export type InputMessageDocument = {
+  '@type': 'inputMessageDocument';
+  document: InputFile;
+  thumbnail: InputThumbnail | null;
+  disable_content_type_detection: boolean;
+  caption: FormattedText | null;
+}
+
+export type InputMessageContent = InputMessageText | InputMessagePhoto | InputMessageDocument;

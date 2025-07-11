@@ -19,30 +19,44 @@ const size = computed(() => {
 })
 
 async function selectPhotoSize(content: MessagePhoto) {
-  if (content.photo.sizes.length > 0) {
-    const size = content.photo.sizes[0];
-    await setPhoto(content, size.photo, size);
+  const sizes = getUsablePhotoSize(content);
+  if (sizes.length > 0) {
+    const smallest = sizes[0];
+    await setPhoto(content, smallest.photo, smallest);
   }
+}
+
+function getUsablePhotoSize(content: MessagePhoto): PhotoSize[] {
+  return content.photo.sizes.filter(s => {
+    const localFile = s.photo.local;
+    return (
+      // See https://core.telegram.org/api/files#image-thumbnail-types
+      s.type !== 't' && s.type !== 'i' && s.type !== 'j' &&
+      ((localFile.is_downloading_completed && localFile.path !== '') || localFile.can_be_downloaded)
+    )
+  })
 }
 
 async function setPhoto(content: MessagePhoto, photo: File, size: PhotoSize) {
   if (photo.local.is_downloading_completed) {
-    photoSrc.value = await getPhoto(photo.local.path);
+    if (photo.local.path !== '') {
+      photoSrc.value = await getPhoto(photo.local.path);
+    }
   } else {
     const file = await downloadFile(photo.id);
     if (file) {
-      await setPhoto(content, photo, size);
+      await setPhoto(content, file, size);
     }
   }
 }
 
 async function openPhoto() {
-  const sizes = props.content.photo.sizes;
+  const sizes = getUsablePhotoSize(props.content);
   if (sizes.length === 0) {
     return;
   }
-  const largerSize = sizes[sizes.length - 1];
-  await openPhotoInNewWindow(largerSize.photo, largerSize);
+  const largest = sizes[sizes.length - 1];
+  await openPhotoInNewWindow(largest.photo, largest);
 }
 
 async function openPhotoInNewWindow(photo: File, largerSize: PhotoSize) {

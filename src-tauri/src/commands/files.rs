@@ -1,7 +1,9 @@
-use crate::{state, store};
+use crate::{state, store, thumbnails};
 use base64::Engine;
+use image::GenericImageView;
 use std::io::Read;
 use std::{fs::File, path::Path};
+use tdlib::enums::InputThumbnail;
 
 #[tauri::command]
 pub async fn download_file<R: tauri::Runtime>(
@@ -14,14 +16,7 @@ pub async fn download_file<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-pub fn get_photo<R: tauri::Runtime>(
-    app: tauri::AppHandle<R>,
-    path: &str,
-) -> Result<String, String> {
-    let folder = store::get_application_folder(&app);
-    if !is_path_in_parent(path, &folder) {
-        return Err("Path outside application folder".into());
-    }
+pub fn get_photo(path: &str) -> Result<String, String> {
     let mut file = File::open(path).map_err(|e| e.to_string())?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
@@ -29,19 +24,31 @@ pub fn get_photo<R: tauri::Runtime>(
     Ok(format!("data:image/jpeg;base64,{}", base64_data))
 }
 
-fn is_path_in_parent(path: &str, parent: &str) -> bool {
-    let path = Path::new(path);
-    let parent = Path::new(parent);
-
-    // Normalize the paths to avoid issues with different representations
-    let path = path.canonicalize().ok();
-    let parent = parent.canonicalize().ok();
-
-    match (path, parent) {
-        (Some(path), Some(parent)) => {
-            // Check if the path starts with the parent path
-            path.starts_with(&parent)
+#[tauri::command]
+pub fn get_image_size(path: &str) -> Option<(u32, u32)> {
+    let img_path = Path::new(path);
+    match image::open(img_path) {
+        Ok(img) => {
+            return Some(img.dimensions());
         }
-        _ => false, // Return false if either path cannot be normalized
+        Err(_) => {
+            return None;
+        }
     }
+}
+
+#[tauri::command]
+pub fn create_thumbnail<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    path: &str,
+) -> Result<InputThumbnail, String> {
+    thumbnails::create_thumbnail(&app, path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn remove_thumbnail<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    path: &str,
+) -> Result<(), String> {
+    thumbnails::remove_thumbnail(&app, path).map_err(|e| e.to_string())
 }

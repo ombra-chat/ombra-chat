@@ -85,22 +85,10 @@ onDeactivated(() => {
 
 </script>
 <template>
-  <div v-if="state === MainWindowState.INITIAL_CONFIG">
-    <InitialConfiguration />
-  </div>
-  <div v-else-if="state === MainWindowState.GPG_PASSWORD">
-    <EncryptionPassword />
-  </div>
-  <div v-else-if="state === MainWindowState.PHONE_NUMBER">
-    <PhoneNumber />
-  </div>
-  <div v-else-if="state === MainWindowState.AUTH_CODE">
-    <AuthenticationCode />
-  </div>
-  <div v-else-if="state === MainWindowState.AUTH_PASSWORD">
-    <AuthenticationPassword />
-  </div>
-  <div v-else-if="state === MainWindowState.LOGGED_IN">
-    <Main />
-  </div>
+  <InitialConfiguration v-if="state === MainWindowState.INITIAL_CONFIG" />
+  <EncryptionPassword v-else-if="state === MainWindowState.GPG_PASSWORD" />
+  <PhoneNumber v-else-if="state === MainWindowState.PHONE_NUMBER" />
+  <AuthenticationCode v-else-if="state === MainWindowState.AUTH_CODE" />
+  <AuthenticationPassword v-else-if="state === MainWindowState.AUTH_PASSWORD" />
+  <Main v-else-if="state === MainWindowState.LOGGED_IN" />
 </template>

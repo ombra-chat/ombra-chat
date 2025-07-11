@@ -13,13 +13,10 @@
       "identifier": "opener:allow-open-path",
       "allow": [
         {
-          "path": "**/tdlib/photos/*"
+          "path": "**/*"
         },
         {
           "path": "**/.*/tdlib/photos/*"
-        },
-        {
-          "path": "**/tdlib/documents/*"
         },
         {
           "path": "**/.*/tdlib/documents/*"

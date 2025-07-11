@@ -4,6 +4,7 @@ mod settings;
 mod state;
 mod store;
 mod telegram;
+mod thumbnails;
 use serde::Serialize;
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
@@ -35,6 +36,9 @@ pub fn run() {
             commands::chats::send_message,
             commands::files::download_file,
             commands::files::get_photo,
+            commands::files::get_image_size,
+            commands::files::create_thumbnail,
+            commands::files::remove_thumbnail,
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));
