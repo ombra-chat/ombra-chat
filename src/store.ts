@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import type { Chat, ChatFolder, Message } from './model';
+import type { Chat, ChatFolder, Message, File } from './model';
 
 export const store = reactive({
   sidebarExpanded: false,
@@ -59,5 +59,23 @@ export const store = reactive({
   clearMessages() {
     const messages = this.currentMessages as Message[];
     messages.splice(0, messages.length);
+  },
+  updateFile(file: File) {
+    const messages = this.currentMessages as Message[];
+    this.currentMessages = messages.map(m => {
+      if (m.content['@type'] === 'messageDocument') {
+        if (m.content.document.document.id === file.id) {
+          m.content.document.document = file;
+        }
+      } else if (m.content['@type'] === 'messagePhoto') {
+        for (const size of m.content.photo.sizes) {
+          if (size.photo.id === file.id) {
+            size.photo = file;
+            break;
+          }
+        }
+      }
+      return m;
+    });
   }
 });

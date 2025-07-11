@@ -36,6 +36,9 @@ async function save() {
         <p class="menu-label">Default chat folder</p>
         <Dropdown :values="store.chatFolders.map(f => ({ id: f.id, label: f.name }))" :default-value="selectedId"
           @change="selectFolder" />
+
+        <p class="menu-label">GPG Key</p>
+        <button class="button is-primary" @click="save">Download key</button>
       </section>
       <footer class="modal-card-foot p-2">
         <div class="buttons">

@@ -5,6 +5,7 @@ import TextMessage from './TextMessage.vue';
 import NotSupportedMessage from './NotSupportedMessage.vue';
 import { store } from '../store';
 import { computed } from 'vue';
+import DocumentMessage from './DocumentMessage.vue';
 
 const props = defineProps<{
   message: Message
@@ -21,6 +22,8 @@ const isMyMessage = computed(() => {
     <div class="card-content p-3">
       <TextMessage v-if="props.message.content['@type'] === 'messageText'" :content="props.message.content" />
       <PhotoMessage v-else-if="props.message.content['@type'] === 'messagePhoto'" :content="props.message.content" />
+      <DocumentMessage v-else-if="props.message.content['@type'] === 'messageDocument'"
+        :content="props.message.content" />
       <NotSupportedMessage v-else :content="props.message.content" />
     </div>
   </div>

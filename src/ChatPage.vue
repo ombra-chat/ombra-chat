@@ -8,7 +8,7 @@ import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { FormattedText, InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageText } from './model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPaperPlane, faGear, faPaperclip, faX } from '@fortawesome/free-solid-svg-icons';
-import { createThumbnail, getImageSize, removeThumbnail } from './services/files';
+import { createThumbnail, getFileName, getImageSize, removeThumbnail } from './services/files';
 
 type SimpleFile = { path: string };
 type ImageFile = { path: string; image: boolean; width: number; height: number };
@@ -142,10 +142,6 @@ function isImage(path: string) {
     }
   }
   return false;
-}
-
-function getFileName(path: string) {
-  return path.split('/').pop()?.split('\\').pop();
 }
 
 async function removeFile(index: number) {

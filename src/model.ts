@@ -72,6 +72,18 @@ export type MessageText = {
   text: FormattedText
 }
 
+export type Document = {
+  file_name: string;
+  mime_type: string;
+  document: File;
+}
+
+export type MessageDocument = {
+  '@type': 'messageDocument';
+  document: Document;
+  caption: FormattedText;
+}
+
 export type LocalFile = {
   path: string;
   can_be_downloaded: boolean;
@@ -112,7 +124,7 @@ export type MessagePhoto = {
   caption: FormattedText;
 }
 
-export type MessageContent = MessageText | MessagePhoto;
+export type MessageContent = MessageText | MessagePhoto | MessageDocument;
 
 export type MessageSenderUser = {
   '@type': 'messageSenderUser';
@@ -212,3 +224,7 @@ export type InputMessageDocument = {
 }
 
 export type InputMessageContent = InputMessageText | InputMessagePhoto | InputMessageDocument;
+
+export type UpdateFile = {
+  file: File;
+}

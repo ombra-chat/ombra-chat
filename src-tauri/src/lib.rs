@@ -39,6 +39,7 @@ pub fn run() {
             commands::files::get_image_size,
             commands::files::create_thumbnail,
             commands::files::remove_thumbnail,
+            commands::files::save_file,
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));

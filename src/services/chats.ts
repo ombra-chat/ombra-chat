@@ -1,6 +1,6 @@
 import { listen } from '@tauri-apps/api/event'
 import { store } from '../store'
-import { InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateNewChat, UpdateNewMessage } from '../model';
+import { InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateFile, UpdateNewChat, UpdateNewMessage } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -38,6 +38,10 @@ export async function handleChatsUpdates() {
         return;
       }
       store.addMessages([message]);
+    }),
+    await listen<UpdateFile>('update-file', (event) => {
+      const { file } = event.payload;
+      store.updateFile(file);
     }),
   ]
 }

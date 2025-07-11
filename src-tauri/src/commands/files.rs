@@ -1,6 +1,7 @@
 use crate::{state, store, thumbnails};
 use base64::Engine;
 use image::GenericImageView;
+use std::fs;
 use std::io::Read;
 use std::{fs::File, path::Path};
 use tdlib::enums::InputThumbnail;
@@ -51,4 +52,12 @@ pub fn remove_thumbnail<R: tauri::Runtime>(
     path: &str,
 ) -> Result<(), String> {
     thumbnails::remove_thumbnail(&app, path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn save_file(from_path: &str, to_path: &str) -> Result<(), String> {
+    let from = Path::new(from_path);
+    let to = Path::new(to_path);
+    fs::copy(from, to).map_err(|e| e.to_string())?;
+    Ok(())
 }
