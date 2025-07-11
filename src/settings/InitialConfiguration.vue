@@ -6,9 +6,9 @@ import { onMounted, ref } from 'vue';
 const apiId = ref('');
 const apiHash = ref('');
 const applicationFolder = ref('');
-const gpgPassphrase = ref('');
-const gpgKeyFingerprint = ref('');
-const gpgError = ref('');
+const pgpPassphrase = ref('');
+const pgpKeyFingerprint = ref('');
+const pgpError = ref('');
 const encryptDatabase = ref(true);
 const validationErrors = ref({} as Record<string, string>);
 const initError = ref('');
@@ -18,42 +18,42 @@ onMounted(async () => {
     applicationFolder.value = await invoke<string>("get_default_folder");
 });
 
-async function generateGpgKey() {
-    gpgKeyFingerprint.value = '';
-    gpgError.value = '';
+async function generatePgpKey() {
+    pgpKeyFingerprint.value = '';
+    pgpError.value = '';
     try {
         loadingKey.value = true;
-        const fingerprint = await invoke<string>("generate_gpg_key", { passphrase: gpgPassphrase.value });
-        gpgKeyFingerprint.value = fingerprint;
+        const fingerprint = await invoke<string>("generate_pgp_key", { passphrase: pgpPassphrase.value });
+        pgpKeyFingerprint.value = fingerprint;
     } catch (err) {
-        gpgError.value = `Error generating GPG key: ${(err as string)}`;
+        pgpError.value = `Error generating PGP key: ${(err as string)}`;
     } finally {
         loadingKey.value = false;
     }
 }
 
-async function importGpgKey() {
+async function importPgpKey() {
     const file = await open({ multiple: false, directory: false, });
     if (file === null) {
         return;
     }
-    gpgKeyFingerprint.value = '';
-    gpgError.value = '';
+    pgpKeyFingerprint.value = '';
+    pgpError.value = '';
     try {
         loadingKey.value = true;
-        const fingerprint = await invoke<string>("import_gpg_key", {
-            keyPath: file, passphrase: gpgPassphrase.value
+        const fingerprint = await invoke<string>("import_pgp_key", {
+            keyPath: file, passphrase: pgpPassphrase.value
         });
-        gpgKeyFingerprint.value = fingerprint;
+        pgpKeyFingerprint.value = fingerprint;
     } catch (err) {
-        gpgError.value = `Error importing GPG key: ${(err as string)}`;
+        pgpError.value = `Error importing PGP key: ${(err as string)}`;
     } finally {
         loadingKey.value = false;
     }
 }
 
 function resetKey() {
-    gpgKeyFingerprint.value = '';
+    pgpKeyFingerprint.value = '';
 }
 
 async function next() {
@@ -62,8 +62,8 @@ async function next() {
     if (!valid) {
         return;
     }
-    if (!gpgKeyFingerprint.value) {
-        initError.value = 'Please generate or import a GPG key';
+    if (!pgpKeyFingerprint.value) {
+        initError.value = 'Please generate or import a PGP key';
         return;
     }
     try {
@@ -71,7 +71,7 @@ async function next() {
             apiId: apiId.value,
             apiHash: apiHash.value,
             folder: applicationFolder.value,
-            gpgPassphrase: gpgPassphrase.value,
+            pgpPassphrase: pgpPassphrase.value,
             encryptDb: encryptDatabase.value,
         });
     } catch (err) {
@@ -128,31 +128,31 @@ function validateFields() {
             {{ validationErrors['applicationFolder'] }}
         </span>
         <div class="field mt-3">
-            <label class="label mb-0" for="passphrase">GPG key passphrase</label>
+            <label class="label mb-0" for="passphrase">PGP key passphrase</label>
             <div class="control">
-                <input class="input" type="passphrase" id="passphrase" v-model="gpgPassphrase" @input="resetKey"
+                <input class="input" type="passphrase" id="passphrase" v-model="pgpPassphrase" @input="resetKey"
                     @change="resetKey">
             </div>
         </div>
         <div class="field is-grouped">
             <div class="control">
-                <button type="button" class="button is-primary is-dark mr-2" @click="generateGpgKey"
+                <button type="button" class="button is-primary is-dark mr-2" @click="generatePgpKey"
                     :disabled="loadingKey">
-                    Generate GPG key
+                    Generate PGP key
                 </button>
-                <button type="button" class="button is-primary" @click="importGpgKey" :disabled="loadingKey">
-                    Select GPG key
+                <button type="button" class="button is-primary" @click="importPgpKey" :disabled="loadingKey">
+                    Select PGP key
                 </button>
             </div>
         </div>
-        <div class="message is-success" v-if="gpgKeyFingerprint">
+        <div class="message is-success" v-if="pgpKeyFingerprint">
             <div class="message-body">
-                Key fingerprint: <code>{{ gpgKeyFingerprint }}</code>
+                Key fingerprint: <code>{{ pgpKeyFingerprint }}</code>
             </div>
         </div>
-        <div class="message is-danger" v-if="gpgError">
+        <div class="message is-danger" v-if="pgpError">
             <div class="message-body">
-                {{ gpgError }}
+                {{ pgpError }}
             </div>
         </div>
         <div class="field mb-0">
@@ -161,7 +161,7 @@ function validateFields() {
                 Encrypt Telegram database
             </label>
         </div>
-        <p class="has-text-primary-10"><i>A random password encrypted with your GPG key will be used</i></p>
+        <p class="has-text-primary-10"><i>A random password encrypted with your PGP key will be used</i></p>
         <div class="message is-danger mt-3" v-if="initError">
             <div class="message-body">
                 {{ initError }}

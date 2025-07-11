@@ -19,10 +19,10 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             commands::init::get_default_folder,
-            commands::init::generate_gpg_key,
-            commands::init::import_gpg_key,
+            commands::init::generate_pgp_key,
+            commands::init::import_pgp_key,
             commands::init::save_initial_config,
-            commands::init::check_gpg_passphrase,
+            commands::init::check_pgp_passphrase,
             commands::init::start_telegram_client,
             commands::login::set_authentication_phone_number,
             commands::login::set_authentication_code,
@@ -40,6 +40,9 @@ pub fn run() {
             commands::files::create_thumbnail,
             commands::files::remove_thumbnail,
             commands::files::save_file,
+            commands::pgp::get_my_key_fingerprint,
+            commands::pgp::export_secret_key,
+            commands::pgp::export_public_key,
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));

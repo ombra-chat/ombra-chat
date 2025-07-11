@@ -78,7 +78,7 @@ pub fn decrypt_string_to_string<R: tauri::Runtime>(
 ) -> Result<String, Box<dyn Error>> {
     log::trace!("decrypt_string_to_string");
     let key = get_my_key(app)?;
-    let passphrase = state::get_gpg_passphrase(app);
+    let passphrase = state::get_pgp_passphrase(app);
     let data = decrypt_armored(&key, &passphrase, armored_input.into_bytes())?;
     Ok(String::from_utf8(data)?)
 }

@@ -1,2 +1,2 @@
-pub mod gpg;
+pub mod pgp;
 pub mod utils;

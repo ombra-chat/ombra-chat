@@ -18,7 +18,7 @@ import { store } from './store';
 enum MainWindowState {
   LOADING,
   INITIAL_CONFIG,
-  GPG_PASSWORD,
+  PGP_PASSWORD,
   PHONE_NUMBER,
   AUTH_CODE,
   AUTH_PASSWORD,
@@ -58,14 +58,14 @@ async function getInitialState() {
     if (await isLoggedIn()) {
       return MainWindowState.LOGGED_IN;
     }
-    return MainWindowState.GPG_PASSWORD;
+    return MainWindowState.PGP_PASSWORD;
   }
   return MainWindowState.INITIAL_CONFIG;
 }
 
 /**
  * The login state is set by the "logged-in" event. This function is needed to avoid 
- * that the GPG password prompt is displayed again when manually reloading the page 
+ * that the PGP password prompt is displayed again when manually reloading the page 
  * (thing that you usually do only for debugging).
  */
 async function isLoggedIn() {
@@ -86,7 +86,7 @@ onDeactivated(() => {
 </script>
 <template>
   <InitialConfiguration v-if="state === MainWindowState.INITIAL_CONFIG" />
-  <EncryptionPassword v-else-if="state === MainWindowState.GPG_PASSWORD" />
+  <EncryptionPassword v-else-if="state === MainWindowState.PGP_PASSWORD" />
   <PhoneNumber v-else-if="state === MainWindowState.PHONE_NUMBER" />
   <AuthenticationCode v-else-if="state === MainWindowState.AUTH_CODE" />
   <AuthenticationPassword v-else-if="state === MainWindowState.AUTH_PASSWORD" />

@@ -10,7 +10,7 @@ async function next() {
   error.value = '';
   disableNextBtn.value = true;
   try {
-    await invoke('check_gpg_passphrase', { passphrase: passphrase.value });
+    await invoke('check_pgp_passphrase', { passphrase: passphrase.value });
     await invoke('start_telegram_client');
   } catch (err) {
     disableNextBtn.value = false;
@@ -27,7 +27,7 @@ async function next() {
 <template>
   <form @submit.prevent="next" class="m-5">
     <div class="field mt-3">
-      <label class="label mb-0" for="passphrase">GPG passphrase</label>
+      <label class="label mb-0" for="passphrase">PGP passphrase</label>
       <div class="control">
         <input class="input" type="password" id="passphrase" v-model="passphrase" />
       </div>
