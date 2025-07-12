@@ -92,4 +92,10 @@ onMounted(async () => {
   /* prevent hiding the button on large screens */
   display: inline-flex !important;
 }
+
+.nowrap {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 </style>

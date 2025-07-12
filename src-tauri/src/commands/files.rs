@@ -1,4 +1,4 @@
-use crate::{state, store, thumbnails};
+use crate::{state, thumbnails};
 use base64::Engine;
 use image::GenericImageView;
 use std::fs;

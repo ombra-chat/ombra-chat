@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { MessageDocument } from '../model';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { downloadFile, saveFile } from '../services/files';

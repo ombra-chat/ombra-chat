@@ -82,8 +82,8 @@ onDeactivated(() => {
     unlist();
   }
 });
-
 </script>
+
 <template>
   <InitialConfiguration v-if="state === MainWindowState.INITIAL_CONFIG" />
   <EncryptionPassword v-else-if="state === MainWindowState.PGP_PASSWORD" />

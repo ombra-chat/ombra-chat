@@ -3,6 +3,7 @@ import { store } from '../store'
 import { InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateFile, UpdateNewChat, UpdateNewMessage } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
+import { getChatKey } from './keys';
 
 export async function handleChatsUpdates() {
   return [
@@ -74,6 +75,7 @@ export async function selectChat(id: number) {
       store.addMessages([lastMessage]);
       await loadPreviousMessages(lastMessage);
     }
+    store.selectedChatKey = await getChatKey(id);
   } catch (err) {
     console.error(err);
   }

@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use tauri_plugin_store::StoreExt;
 
 static API_ID: &str = "api-id";
@@ -8,6 +9,7 @@ static ENCRYPT_DATABASE: &str = "encrypt-database";
 static ENCRYPTED_DATABASE_PASSWORD: &str = "encrypted-database-password";
 static ENCRYPTION_SALT: &str = "encryption-salt";
 static INITIAL_CONFIG_DONE: &str = "initial-config-done";
+static CHATS: &str = "chats";
 
 fn get_string<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
@@ -128,4 +130,60 @@ pub fn set_encryption_salt<R: tauri::Runtime>(app: &tauri::AppHandle<R>, encrypt
 
 pub fn set_initial_config_done<R: tauri::Runtime>(app: &tauri::AppHandle<R>, done: bool) {
     set_value(app, INITIAL_CONFIG_DONE, done)
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct ChatConfig {
+    pub chat_id: i64,
+    pub key: String,
+}
+
+pub fn set_chat_config<R: tauri::Runtime>(app: &tauri::AppHandle<R>, new_config: ChatConfig) {
+    let mut configs = get_chats_config(app);
+
+    // Remove existing config with the same chat_id
+    configs = configs
+        .into_iter()
+        .filter(|config| config.chat_id != new_config.chat_id)
+        .collect();
+
+    configs.push(new_config);
+
+    set_chats_config(app, configs);
+}
+
+pub fn remove_chat_config<R: tauri::Runtime>(app: &tauri::AppHandle<R>, chat_id: i64) {
+    let mut configs = get_chats_config(app);
+    configs = configs
+        .into_iter()
+        .filter(|config| config.chat_id != chat_id)
+        .collect();
+    set_chats_config(app, configs);
+}
+
+pub fn get_chat_config<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    chat_id: i64,
+) -> Option<ChatConfig> {
+    let configs = get_chats_config(app);
+    configs.into_iter().find(|config| config.chat_id == chat_id)
+}
+
+fn get_chats_config<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Vec<ChatConfig> {
+    let chats_config = get_string(app, CHATS, "");
+    if chats_config != "" {
+        if let Ok(value) = serde_json::from_str(&chats_config) {
+            return value;
+        }
+    }
+    return Vec::new();
+}
+
+fn set_chats_config<R: tauri::Runtime>(app: &tauri::AppHandle<R>, chat_configs: Vec<ChatConfig>) {
+    match serde_json::to_string(&chat_configs) {
+        Ok(value) => set_value(app, CHATS, value),
+        Err(err) => {
+            log::error!("{}", err);
+        }
+    }
 }

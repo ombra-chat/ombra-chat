@@ -228,3 +228,8 @@ export type InputMessageContent = InputMessageText | InputMessagePhoto | InputMe
 export type UpdateFile = {
   file: File;
 }
+
+export type PublicKeyFingerprints = {
+  primary: string;
+  encryption_keys: string[];
+}

@@ -7,8 +7,9 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { FormattedText, InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageText } from './model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faPaperPlane, faGear, faPaperclip, faX } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faGear, faPaperclip, faX, faKey } from '@fortawesome/free-solid-svg-icons';
 import { createThumbnail, getFileName, getImageSize, removeThumbnail } from './services/files';
+import ChatSettingsModal from './ChatSettingsModal.vue';
 
 type SimpleFile = { path: string };
 type ImageFile = { path: string; image: boolean; width: number; height: number };
@@ -167,20 +168,28 @@ onDeactivated(() => {
 <template>
   <div v-if="store.selectedChat !== null" id="chat-page" :class="{ 'dragging': dragging }"
     @dragover.prevent="() => (dragging = true)" @dragleave="() => (dragging = false)">
-    <div id="chat-header" class="pb-1 pb-2">
-      <div id="chat-title" class="has-text-link mt-1 has-text-weight-bold">
-        {{ store.selectedChat.title }}
+    <div id="chat-header" class="pb-1">
+      <div id="chat-title" class="mt-1">
+        <div class="has-text-link has-text-weight-bold" :class="{ 'pb-2': store.selectedChatKey === '' }">
+          {{ store.selectedChat.title }}
+        </div>
+        <div v-if="store.selectedChatKey !== ''" class="ml-2 mt-1 nowrap">
+          <FontAwesomeIcon :icon="faKey" />
+          <code class="ml-2">{{ store.selectedChatKey }}</code>
+        </div>
       </div>
-      <button type="button" class="button is-text" aria-label="Settings">
+      <div id="chat-settings-btn-wrapper">
+      <button type="button" class="button ml-2" @click="store.toggleChatSettingsModal" aria-label="Settings">
         <FontAwesomeIcon :icon="faGear" />
       </button>
+      </div>
     </div>
     <div id="chat-content" class="p-1 has-background-link-light" @scroll="chatContentScrolled">
       <MessageBubble :message="message" v-for="message in store.currentMessages" />
     </div>
     <div id="files-box" class="p-1" v-if="selectedFiles.length > 0">
       <div v-for="(file, index) in selectedFiles" class="file-box">
-        <div class="selected-file-name ml-1">{{ getFileName(file.path) }}</div>
+        <div class="selected-file-name ml-1 nowrap">{{ getFileName(file.path) }}</div>
         <div v-if="'image' in file" class="mr-3 selected-file-image-checkbox">
           <label class="checkbox">
             <input type="checkbox" v-model="file.image" />
@@ -204,6 +213,7 @@ onDeactivated(() => {
       </button>
     </div>
   </div>
+  <ChatSettingsModal />
 </template>
 
 <style>
@@ -221,6 +231,14 @@ onDeactivated(() => {
 
 #chat-title {
   flex-grow: 1;
+  overflow: hidden;
+}
+
+#chat-settings-btn-wrapper {
+  margin: auto;
+}
+
+#chat-title .has-text-link {
   text-align: center;
 }
 
@@ -250,9 +268,6 @@ onDeactivated(() => {
 
 .selected-file-name {
   flex-grow: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .selected-file-image-checkbox {

@@ -43,6 +43,10 @@ pub fn run() {
             commands::pgp::get_my_key_fingerprint,
             commands::pgp::export_secret_key,
             commands::pgp::export_public_key,
+            commands::pgp::load_public_key,
+            commands::pgp::save_chat_key,
+            commands::pgp::remove_chat_key,
+            commands::pgp::get_chat_key,
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));

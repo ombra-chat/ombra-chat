@@ -6,7 +6,7 @@ use pgp::composed::{
 use pgp::crypto::sym::SymmetricKeyAlgorithm;
 use pgp::types::{KeyDetails, PublicKeyTrait};
 use rand::thread_rng;
-use std::io::Cursor;
+use std::io::{Cursor, Read};
 use std::{error::Error, fs::File, io::BufReader};
 
 fn encrypt(
@@ -153,6 +153,15 @@ pub fn load_public_key(armored: &str) -> Result<SignedPublicKey, Box<dyn Error>>
     log::trace!("load_public_key");
     let key = SignedPublicKey::from_string(armored)?.0;
     Ok(key)
+}
+
+pub fn load_public_key_from_file(key_path: &str) -> Result<SignedPublicKey, Box<dyn Error>> {
+    log::trace!("load_public_key_from_file");
+    let file = File::open(key_path)?;
+    let mut reader = BufReader::new(file);
+    let mut armored_data = String::new();
+    reader.read_to_string(&mut armored_data)?;
+    Ok(load_public_key(&armored_data)?)
 }
 
 pub fn check_secret_key(

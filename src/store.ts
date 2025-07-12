@@ -8,8 +8,12 @@ export const store = reactive({
   },
   myId: 0,
   settingsModalActive: false,
+  chatSettingsModalActive: false,
   toggleSettingsModal() {
     this.settingsModalActive = !this.settingsModalActive;
+  },
+  toggleChatSettingsModal() {
+    this.chatSettingsModalActive = !this.chatSettingsModalActive;
   },
   chatFolders: [] as ChatFolder[],
   chatsMap: {} as { [id: number]: Chat },
@@ -37,6 +41,7 @@ export const store = reactive({
       this.selectedChat = chat || null;
     }
   },
+  selectedChatKey: '',
   lastMessageId: 0,
   currentMessages: [] as Message[],
   addMessages(newMessages: Message[]) {
