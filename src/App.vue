@@ -14,6 +14,7 @@ import Main from './Main.vue';
 import { handleChatsUpdates } from './services/chats';
 import { invoke } from '@tauri-apps/api/core';
 import { store } from './store';
+import { handleUsersUpdates } from './services/users';
 
 enum MainWindowState {
   LOADING,
@@ -49,7 +50,8 @@ onBeforeMount(async () => {
     await listen<number>('my-id', (event) => {
       store.myId = event.payload;
     }),
-    ...await handleChatsUpdates()
+    ...await handleChatsUpdates(),
+    ...await handleUsersUpdates()
   ];
 });
 

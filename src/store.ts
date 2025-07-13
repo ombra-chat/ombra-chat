@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import type { Chat, ChatFolder, Message, File } from './model';
+import type { Chat, ChatFolder, Message, File, User } from './model';
 
 export const store = reactive({
   sidebarExpanded: false,
@@ -23,7 +23,11 @@ export const store = reactive({
   chatsMap: {} as { [id: number]: Chat },
   // key are folders id, values are id of chats in each folder
   chatFoldersMap: {} as { [id: number]: number[] },
+  usersMap: {} as { [id: number]: User },
   selectedChatFolderId: 0,
+  getChat(chatId: number): Chat | undefined {
+    return this.chatsMap[chatId];
+  },
   addChat(chat: Chat) {
     this.chatsMap[chat.id] = chat;
   },
@@ -91,5 +95,12 @@ export const store = reactive({
       }
       return m;
     });
+  },
+  getUser(userId: number): User | undefined {
+    const usersMap = this.usersMap as { [id: number]: User };
+    return usersMap[userId];
+  },
+  updateUser(user: User) {
+    this.usersMap[user.id] = user;
   }
 });

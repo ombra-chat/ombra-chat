@@ -238,3 +238,78 @@ export type UpdateDeleteMessages = {
   message_ids: number[];
   chat_id: number;
 }
+
+export type Usernames = {
+  active_usernames: string[];
+  disabled_usernames: string[];
+  editable_username: string;
+}
+
+export type UserStatusEmpty = {
+  '@type': 'userStatusEmpty';
+}
+
+export type UserStatusOnline = {
+  '@type': 'userStatusOnline';
+}
+
+export type UserStatusOffline = {
+  '@type': 'userStatusOffline';
+}
+
+export type UserStatusRecently = {
+  '@type': 'userStatusRecently';
+}
+
+export type UserStatusLastWeek = {
+  '@type': 'userStatusLastWeek';
+}
+
+export type UserStatusLastMonth = {
+  '@type': 'userStatusLastMonth';
+}
+
+export type UserStatus = UserStatusEmpty | UserStatusOnline | UserStatusOffline | UserStatusRecently | UserStatusLastWeek | UserStatusLastMonth;
+
+export type ProfilePhoto = {
+  id: number;
+  small: File;
+  big: File;
+  is_personal: boolean;
+}
+
+export type UserTypeRegular = {
+  '@type': 'userTypeRegular';
+}
+
+export type UserTypeDeleted = {
+  '@type': 'userTypeDeleted';
+}
+
+export type UserTypeBot = {
+  '@type': 'userTypeBot';
+}
+
+export type UserTypeUnknown = {
+  '@type': 'userTypeUnknown';
+}
+
+export type UserType = UserTypeRegular | UserTypeDeleted | UserTypeBot | UserTypeUnknown;
+
+export type User = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  usernames: Usernames | null;
+  phone_number: string;
+  status: UserStatus;
+  profile_photo: ProfilePhoto;
+  is_contact: boolean;
+  is_mutual_contact: boolean;
+  is_close_friend: boolean;
+  user_type: UserType;
+}
+
+export type UpdateUser = {
+  user: User;
+}

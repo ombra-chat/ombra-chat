@@ -1,4 +1,4 @@
-use crate::telegram::{chats, messages};
+use crate::telegram::{chats, messages, users};
 use crate::{emit, settings, state};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -60,6 +60,9 @@ impl Client {
             return;
         }
         if messages::handle_messages_update(app, &update).await {
+            return;
+        }
+        if users::handle_users_update(app, &update).await {
             return;
         }
 

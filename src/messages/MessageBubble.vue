@@ -10,6 +10,7 @@ import { faGear } from '@fortawesome/free-solid-svg-icons';
 import { store } from '../store';
 import { computed } from 'vue';
 import DocumentMessage from './DocumentMessage.vue';
+import { getUserDisplayText } from '../services/users';
 
 const props = defineProps<{
   message: Message
@@ -34,6 +35,19 @@ const isPgpTextMessage = computed(() => {
     && content.document.file_name.endsWith('.txt.pgp')
 });
 
+const senderTitle = computed(() => {
+  const senderId = props.message.sender_id;
+  if (senderId['@type'] === 'messageSenderUser') {
+    return getUserDisplayText(senderId.user_id);
+  } else if (senderId['@type'] === 'messageSenderChat') {
+    const chat = store.getChat(senderId.chat_id);
+    if (chat) {
+      return chat.title;
+    }
+  }
+  return '';
+})
+
 async function openMessageModal(message: Message) {
   store.selectedMessage = message;
   store.toggleMessageModal();
@@ -45,6 +59,9 @@ async function openMessageModal(message: Message) {
     <div class="card-content p-3">
       <div class="message-header">
         <div class="message-sender">
+          <p v-if="senderTitle" class="mb-2 wrap">
+            <strong class="has-text-link">{{ senderTitle }}</strong>
+          </p>
         </div>
         <div class="message-actions">
           <a href="#" @click="() => openMessageModal(props.message)">
