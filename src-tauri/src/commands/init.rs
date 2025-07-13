@@ -45,7 +45,7 @@ pub fn check_pgp_passphrase<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     passphrase: &str,
 ) -> Result<(), String> {
-    let key = crypto::pgp::get_my_key(&app).map_err(|e| e.to_string())?;
+    let key = state::get_my_key(&app).map_err(|e| e.to_string())?;
     crypto::pgp::check_secret_key(&key, passphrase).map_err(|e| e.to_string())?;
     state::set_pgp_passphrase(&app, passphrase);
     Ok(())

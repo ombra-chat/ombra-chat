@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPaperPlane, faGear, faPaperclip, faX, faKey } from '@fortawesome/free-solid-svg-icons';
 import { createThumbnail, getFileName, getImageSize, removeThumbnail } from './services/files';
 import ChatSettingsModal from './ChatSettingsModal.vue';
+import { createPgpFile, createPgpTextFile, encryptNameAndCaption } from './services/pgp';
 
 type SimpleFile = { path: string };
 type ImageFile = { path: string; image: boolean; width: number; height: number };
@@ -47,8 +48,16 @@ async function send() {
 }
 
 async function getInputMessageContents(): Promise<InputMessageContent[]> {
-  let formattedText: FormattedText | null = newMessageText.value === '' ? null : { text: newMessageText.value, entities: [] };
+  if (store.selectedChatKey === '') {
+    return await getStandardInputMessageContents();
+  } else {
+    return await getPgpInputMessageContents();
+  }
+}
+
+async function getStandardInputMessageContents(): Promise<InputMessageContent[]> {
   const contents: InputMessageContent[] = [];
+  let formattedText = getSimpleFormattedText(newMessageText.value);
   if (selectedFiles.value.length === 0) {
     if (formattedText !== null) {
       contents.push(
@@ -69,6 +78,41 @@ async function getInputMessageContents(): Promise<InputMessageContent[]> {
     }
   }
   return contents;
+}
+
+async function getPgpInputMessageContents(): Promise<InputMessageContent[]> {
+  const contents: InputMessageContent[] = [];
+  const chatId = store.selectedChat!.id;
+  if (selectedFiles.value.length === 0) {
+    if (newMessageText.value !== '') {
+      const file = await createPgpTextFile(newMessageText.value, chatId);
+      if (file !== null) {
+        contents.push(
+          getInputMessageDocument(file, null)
+        );
+      }
+    }
+  } else {
+    let caption = newMessageText.value === '' ? null : newMessageText.value;
+    for (const selectedFile of selectedFiles.value) {
+      const file = await createPgpFile(selectedFile.path, chatId);
+      if (file !== null) {
+        const ciphertext = await encryptNameAndCaption(getFileName(selectedFile.path), caption, chatId);
+        contents.push(
+          getInputMessageDocument(file, getSimpleFormattedText(ciphertext))
+        );
+        caption = null; // set caption text only on first file
+      }
+    }
+  }
+  return contents;
+}
+
+function getSimpleFormattedText(text: string | null): FormattedText | null {
+  if (text === null || text === '') {
+    return null;
+  }
+  return { text, entities: [] };
 }
 
 function getInputMessageDocument(path: string, caption: FormattedText | null): InputMessageDocument {
@@ -126,6 +170,9 @@ async function addFiles(files: string[]) {
 }
 
 async function getImageInfo(path: string): Promise<ImageFile | null> {
+  if (store.selectedChatKey !== '') {
+    return null;
+  }
   if (!isImage(path)) {
     return null;
   }
@@ -179,9 +226,9 @@ onDeactivated(() => {
         </div>
       </div>
       <div id="chat-settings-btn-wrapper">
-      <button type="button" class="button ml-2" @click="store.toggleChatSettingsModal" aria-label="Settings">
-        <FontAwesomeIcon :icon="faGear" />
-      </button>
+        <button type="button" class="button ml-2" @click="store.toggleChatSettingsModal" aria-label="Settings">
+          <FontAwesomeIcon :icon="faGear" />
+        </button>
       </div>
     </div>
     <div id="chat-content" class="p-1 has-background-link-light" @scroll="chatContentScrolled">

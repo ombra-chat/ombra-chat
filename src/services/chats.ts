@@ -3,7 +3,7 @@ import { store } from '../store'
 import { InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateFile, UpdateNewChat, UpdateNewMessage } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
-import { getChatKey } from './keys';
+import { getChatKey } from './pgp';
 
 export async function handleChatsUpdates() {
   return [

@@ -20,6 +20,9 @@
         },
         {
           "path": "**/.*/tdlib/documents/*"
+        },
+        {
+          "path": "**/.*/pgp/messages/*"
         }
       ]
     }

@@ -1,6 +1,5 @@
 use crate::{
-    crypto::{self, pgp},
-    store,
+    crypto::{self, pgp}, state, store
 };
 use std::{env, error::Error, fs, path::PathBuf};
 
@@ -30,7 +29,7 @@ pub fn save_initial_config<R: tauri::Runtime>(
 ) -> Result<(), Box<dyn Error>> {
     log::trace!("save_initial_config");
 
-    let key = pgp::get_my_key(app)?;
+    let key = state::get_my_key(app)?;
     pgp::check_secret_key(&key, pgp_password)?;
 
     let api_id: i32 = api_id.parse::<i32>()?;
@@ -39,7 +38,7 @@ pub fn save_initial_config<R: tauri::Runtime>(
     if encrypt_db {
         let password = crypto::utils::generate_random_password();
         let key = pgp::get_encryption_key_from_secret_key(&key)?;
-        let password = pgp::encrypt_string_to_string(vec![&key], password)?;
+        let password = pgp::encrypt_string_to_string(vec![key], &password)?;
         encrypted_password = Some(password.to_string());
     }
 
@@ -90,7 +89,7 @@ pub fn get_tdlib_parameters<R: tauri::Runtime>(
     let mut database_encryption_key = String::new();
     if encrypt_database {
         let encrypted_password = store::get_encrypted_database_password(app);
-        let password = pgp::decrypt_string_to_string(app, encrypted_password)?;
+        let password = pgp::decrypt_string_to_string(app, &encrypted_password)?;
         let salt = store::get_encryption_salt(app);
         database_encryption_key = crypto::utils::generate_derived_key(&password, &salt)?;
     }

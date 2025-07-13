@@ -47,6 +47,12 @@ pub fn run() {
             commands::pgp::save_chat_key,
             commands::pgp::remove_chat_key,
             commands::pgp::get_chat_key,
+            commands::pgp::create_pgp_text_file,
+            commands::pgp::create_pgp_file,
+            commands::pgp::decrypt_file_to_string,
+            commands::pgp::decrypt_file,
+            commands::pgp::encrypt_string,
+            commands::pgp::decrypt_string,
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));

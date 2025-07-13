@@ -1,3 +1,4 @@
+use crate::crypto::utils;
 use crate::{state, store};
 use pgp::composed::{
     ArmorOptions, Deserializable, KeyType, Message, MessageBuilder, PublicSubkey,
@@ -6,11 +7,13 @@ use pgp::composed::{
 use pgp::crypto::sym::SymmetricKeyAlgorithm;
 use pgp::types::{KeyDetails, PublicKeyTrait};
 use rand::thread_rng;
-use std::io::{Cursor, Read};
+use std::fs;
+use std::io::{Cursor, Read, Write};
+use std::path::PathBuf;
 use std::{error::Error, fs::File, io::BufReader};
 
 fn encrypt(
-    keys: Vec<&PublicSubkey>,
+    keys: Vec<PublicSubkey>,
     bytes: impl Into<pgp::bytes::Bytes>,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
     log::trace!("encrypt");
@@ -26,16 +29,16 @@ fn encrypt(
 }
 
 pub fn encrypt_string_to_string(
-    keys: Vec<&PublicSubkey>,
-    input: String,
+    keys: Vec<PublicSubkey>,
+    input: &str,
 ) -> Result<String, Box<dyn Error>> {
     log::trace!("encrypt_string_to_string");
-    let bytes = pgp::bytes::Bytes::from(input);
+    let bytes = pgp::bytes::Bytes::from(input.to_string());
     encrypt_to_string(keys, bytes)
 }
 
 fn encrypt_to_string(
-    keys: Vec<&PublicSubkey>,
+    keys: Vec<PublicSubkey>,
     input: impl Into<pgp::bytes::Bytes>,
 ) -> Result<String, Box<dyn Error>> {
     log::trace!("encrypt_to_string");
@@ -45,16 +48,33 @@ fn encrypt_to_string(
     Ok(armored)
 }
 
-fn decrypt(
-    key: &SignedSecretKey,
-    password: &str,
-    input: Vec<u8>,
-) -> Result<Vec<u8>, Box<dyn Error>> {
-    log::trace!("decrypt");
-    let buf = Cursor::new(input);
-    let message = Message::from_bytes(buf)?;
-    let mut decrypted = message.decrypt(&password.into(), key)?;
-    Ok(decrypted.as_data_vec()?)
+pub fn encrypt_string_to_file(
+    keys: Vec<PublicSubkey>,
+    input: &str,
+    target_path: &str,
+) -> Result<(), Box<dyn Error>> {
+    log::trace!("encrypt_string_to_file");
+    let bytes = pgp::bytes::Bytes::from(input.to_string());
+    let data = encrypt(keys, bytes)?;
+    let mut file = File::create(target_path)?;
+    file.write_all(&data)?;
+    Ok(())
+}
+
+pub fn encrypt_file_to_file(
+    keys: Vec<PublicSubkey>,
+    source_path: &str,
+    target_path: &str,
+) -> Result<(), Box<dyn Error>> {
+    log::trace!("encrypt_file_to_file");
+    let source_file = File::open(source_path)?;
+    let mut buf = Vec::new();
+    let mut reader = BufReader::new(source_file);
+    reader.read_to_end(&mut buf)?;
+    let data = encrypt(keys, buf)?;
+    let mut target_file = File::create(target_path)?;
+    target_file.write_all(&data)?;
+    Ok(())
 }
 
 fn decrypt_armored(
@@ -72,14 +92,53 @@ fn decrypt_armored(
     Ok(decrypted.as_data_vec()?)
 }
 
+pub fn decrypt_file_to_string<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    path: &str,
+) -> Result<String, Box<dyn Error>> {
+    log::trace!("decrypt_file_to_string: {}", path);
+    let key = state::get_my_key(app)?;
+    let passphrase = state::get_pgp_passphrase(app);
+    let source_file = File::open(path)?;
+    let mut data = Vec::new();
+    let mut reader = BufReader::new(source_file);
+    reader.read_to_end(&mut data)?;
+    let buf = Cursor::new(data);
+    let message = Message::from_bytes(buf)?;
+    let mut decrypted = message.decrypt(&passphrase.into(), &key)?;
+    let mut plaintext = String::new();
+    decrypted.read_to_string(&mut plaintext)?;
+    Ok(plaintext)
+}
+
+pub fn decrypt_file_to_file<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    path: &str,
+) -> Result<String, Box<dyn Error>> {
+    log::trace!("decrypt_file_to_file: {}", path);
+    let key = state::get_my_key(app)?;
+    let passphrase = state::get_pgp_passphrase(app);
+    let source_file = File::open(path)?;
+    let mut data = Vec::new();
+    let mut reader = BufReader::new(source_file);
+    reader.read_to_end(&mut data)?;
+    let buf = Cursor::new(data);
+    let message = Message::from_bytes(buf)?;
+    let mut decrypted = message.decrypt(&passphrase.into(), &key)?;
+    let target_path = &path[..path.len() - 4];
+    let mut file = File::create(target_path)?;
+    file.write_all(&decrypted.as_data_vec()?)?;
+    Ok(target_path.to_string())
+}
+
 pub fn decrypt_string_to_string<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
-    armored_input: String,
+    armored_input: &str,
 ) -> Result<String, Box<dyn Error>> {
     log::trace!("decrypt_string_to_string");
-    let key = get_my_key(app)?;
+    let key = state::get_my_key(app)?;
     let passphrase = state::get_pgp_passphrase(app);
-    let data = decrypt_armored(&key, &passphrase, armored_input.into_bytes())?;
+    let data = decrypt_armored(&key, &passphrase, armored_input.to_string().into_bytes())?;
     Ok(String::from_utf8(data)?)
 }
 
@@ -143,12 +202,6 @@ pub fn get_armored_public_key(secret_key: &SignedSecretKey) -> Result<String, Bo
     Ok(key)
 }
 
-pub fn load_secret_key(armored: &str) -> Result<SignedSecretKey, Box<dyn Error>> {
-    log::trace!("load_secret_key");
-    let key = SignedSecretKey::from_string(armored)?.0;
-    Ok(key)
-}
-
 pub fn load_public_key(armored: &str) -> Result<SignedPublicKey, Box<dyn Error>> {
     log::trace!("load_public_key");
     let key = SignedPublicKey::from_string(armored)?.0;
@@ -192,13 +245,50 @@ pub fn import_secret_key_to_store<R: tauri::Runtime>(
     Ok(fingerprint)
 }
 
-pub fn get_my_key<R: tauri::Runtime>(
+pub fn load_my_key<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
 ) -> Result<SignedSecretKey, Box<dyn Error>> {
-    log::trace!("get_my_key");
+    log::trace!("load_my_key");
     let armored = store::get_secret_key(app);
     let key = SignedSecretKey::from_string(&armored)?.0;
     Ok(key)
+}
+
+pub fn get_chat_key_path<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    chat_id: i64,
+) -> Result<String, Box<dyn Error>> {
+    let app_folder = store::get_application_folder(&app);
+    let mut target_key_file = PathBuf::from(app_folder);
+    target_key_file.push("keys");
+    fs::create_dir_all(target_key_file.clone())?;
+    target_key_file.push(format!("{}.asc", chat_id));
+    Ok(target_key_file.to_string_lossy().to_string())
+}
+
+pub fn get_pgp_file_path<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    suffix: &str,
+) -> Result<String, Box<dyn Error>> {
+    let mut path = PathBuf::from(store::get_application_folder(app));
+    path.push("pgp");
+    path.push("messages");
+    fs::create_dir_all(path.clone())?;
+    path.push(format!(
+        "ombra-chat-{}{}",
+        utils::generate_random_string(10),
+        suffix
+    ));
+    Ok(path.to_string_lossy().to_string())
+}
+
+pub fn get_chat_encryption_keys<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    chat_id: i64,
+) -> Result<Vec<PublicSubkey>, Box<dyn Error>> {
+    let my_key = state::get_my_encryption_key(app)?;
+    let other_key = state::get_chat_encryption_key(app, chat_id)?;
+    Ok(vec![my_key, other_key])
 }
 
 #[cfg(test)]
@@ -220,8 +310,7 @@ mod tests {
         let enc_key1 = get_encryption_key_from_secret_key(&sec_key1).unwrap();
         let enc_key2 = get_encryption_key_from_public_key(&pub_key2).unwrap();
 
-        let encrypted =
-            encrypt_string_to_string(vec![&enc_key1, &enc_key2], String::from(message)).unwrap();
+        let encrypted = encrypt_string_to_string(vec![enc_key1, enc_key2], message).unwrap();
 
         let decrypted1 =
             decrypt_armored(&sec_key1, passphrase1, encrypted.clone().into_bytes()).unwrap();

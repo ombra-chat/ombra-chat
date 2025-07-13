@@ -1,8 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { File, InputThumbnail } from '../model';
 
-export function getFileName(path: string) {
-  return path.split('/').pop()?.split('\\').pop();
+export function getFileName(path: string): string {
+  return path.split('/').pop()?.split('\\').pop()!;
 }
 
 export async function downloadFile(fileId: number): Promise<File | null> {

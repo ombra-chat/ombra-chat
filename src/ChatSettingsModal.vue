@@ -3,7 +3,7 @@ import { store } from './store';
 import { computed, ref, watch } from 'vue';
 import { open } from '@tauri-apps/plugin-dialog';
 import { PublicKeyFingerprints } from './model';
-import { loadPublicKey, removeChatKey, saveChatKey } from './services/keys';
+import { loadPublicKey, removeChatKey, saveChatKey } from './services/pgp';
 import Dropdown from './components/Dropdown.vue';
 
 function closeModal() {

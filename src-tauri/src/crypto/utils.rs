@@ -3,11 +3,15 @@ use std::error::Error;
 
 const RANDOM_PASSWORD_LENGTH: usize = 25;
 
-pub fn generate_random_password() -> String {
+pub fn generate_random_string(length: usize) -> String {
     let mut rng = thread_rng();
     std::iter::repeat_with(|| rng.sample(Alphanumeric) as char)
-        .take(RANDOM_PASSWORD_LENGTH)
+        .take(length)
         .collect()
+}
+
+pub fn generate_random_password() -> String {
+    generate_random_string(RANDOM_PASSWORD_LENGTH)
 }
 
 pub fn generate_random_salt() -> String {
