@@ -11,6 +11,7 @@ const props = defineProps<{
 const downloading = ref(false);
 const decrypting = ref(false);
 const textContent = ref('');
+const decryptionError = ref(false);
 
 async function download() {
   downloading.value = true;
@@ -23,8 +24,14 @@ async function download() {
 
 async function decrypt(path: string) {
   decrypting.value = true;
-  textContent.value = await decryptFileToString(path);
-  decrypting.value = false;
+  try {
+    textContent.value = await decryptFileToString(path);
+  } catch (err) {
+    console.error(err);
+    decryptionError.value = true;
+  } finally {
+    decrypting.value = false;
+  }
 }
 
 watch(
@@ -42,5 +49,10 @@ watch(
 
 <template>
   <div v-if="downloading || decrypting">...</div>
+  <div v-else-if="decryptionError" class="message is-danger">
+    <div class="message-body">
+      Unable to decrypt message
+    </div>
+  </div>
   <p v-else>{{ textContent }}</p>
 </template>

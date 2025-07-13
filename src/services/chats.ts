@@ -136,6 +136,9 @@ async function getLastMessage(): Promise<Message | null> {
 
 export async function loadPreviousMessages(fromMessage: Message | undefined = undefined) {
   if (!fromMessage) {
+    if (store.currentMessages.length === 0) {
+      return;
+    }
     fromMessage = store.currentMessages[0];
   }
   const { messages } = await invoke<Messages>('get_chat_history', {

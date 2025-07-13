@@ -22,17 +22,23 @@ const isMyMessage = computed(() => {
 });
 
 const isPgpMessage = computed(() => {
+  if (store.selectedChatKey === '') {
+    return false;
+  }
   const { content } = props.message;
   return content['@type'] === 'messageDocument'
     && content.document.file_name.startsWith('ombra-chat-')
-    && content.document.file_name.endsWith('.pgp')
+    && content.document.file_name.endsWith('.pgp');
 });
 
 const isPgpTextMessage = computed(() => {
+  if (store.selectedChatKey === '') {
+    return false;
+  }
   const { content } = props.message;
   return content['@type'] === 'messageDocument'
     && content.document.file_name.startsWith('ombra-chat-')
-    && content.document.file_name.endsWith('.txt.pgp')
+    && content.document.file_name.endsWith('.txt.pgp');
 });
 
 const senderTitle = computed(() => {
