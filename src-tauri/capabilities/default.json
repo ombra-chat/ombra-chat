@@ -9,6 +9,8 @@
     "core:default",
     "store:default",
     "dialog:default",
+    "core:window:allow-set-title",
+    "core:window:allow-set-icon",
     {
       "identifier": "opener:allow-open-path",
       "allow": [

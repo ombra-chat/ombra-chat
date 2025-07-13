@@ -41,13 +41,20 @@ export type UpdateNewChat = {
   chat: Chat
 }
 
+export type ChatNotificationSettings = {
+  mute_for: number;
+}
+
 export type Chat = {
   id: number;
   type: { '@type': ChatType; user_id: number };
   title: string;
   photo: any;
   permissions: ChatPermission;
+  last_message: Message;
+  positions: ChatPosition[];
   unread_count: number;
+  notification_settings: ChatNotificationSettings;
   last_read_inbox_message_id: number;
   last_read_outbox_message_id: number;
   unread_mention_count: number;
@@ -55,11 +62,22 @@ export type Chat = {
   available_reactions: { '@type': AvailableReactionsType; max_reaction_count: number };
 }
 
+export type ChatListMain = {
+  '@type': 'chatListMain';
+}
+export type ChatListFolder = {
+  '@type': 'chatListFolder';
+  chat_folder_id: number;
+}
+export type ChatListArchive = {
+  '@type': 'chatListArchive';
+}
+
+export type ChatList = ChatListMain | ChatListFolder | ChatListArchive;
+
 export type UpdateChatAddedToList = {
   chat_id: number;
-  chat_list: { '@type': 'chatListMain'; }
-  | { '@type': 'chatListFolder'; chat_folder_id: number }
-  | { '@type': 'chatListArchive' };
+  chat_list: ChatList;
 }
 
 export type FormattedText = {
@@ -312,4 +330,32 @@ export type User = {
 
 export type UpdateUser = {
   user: User;
+}
+
+export type ChatPosition = {
+  list: ChatList;
+  order: number;
+  is_pinned: boolean;
+}
+
+export type UpdateChatPosition = {
+  chat_id: number;
+  position: ChatPosition;
+}
+
+export type UpdateChatLastMessage = {
+  chat_id: number;
+  positions: ChatPosition[];
+  last_message: Message;
+}
+
+export type UpdateChatReadInbox = {
+  chat_id: number;
+  last_read_inbox_message_id: number;
+  unread_count: number;
+}
+
+export type UpdateUnreadChatCount = {
+  chat_list: ChatList;
+  unread_unmuted_count: number;
 }

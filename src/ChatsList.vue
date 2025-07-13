@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { store } from './store';
-import { selectChat } from './services/chats';
+import { getChatPosition, selectChat } from './services/chats';
 
 const chats = computed(() => {
   const list = store.chatFoldersMap[store.selectedChatFolderId] || [];
-  return list.map(id => store.chatsMap[id]).filter(c => c !== undefined);
+  return list
+    .map(id => store.chatsMap[id]).filter(c => c !== undefined)
+    .sort((c1, c2) => getChatPosition(c1) < getChatPosition(c2) ? -1 : 1);
 });
 </script>
 
@@ -15,9 +17,45 @@ const chats = computed(() => {
       <li v-for="chat in chats" class="chat-row nowrap">
         <a href="#" :class="{ 'is-active': store.selectedChat?.id === chat.id }" class="nowrap"
           @click="() => selectChat(chat.id)">
-          {{ chat.title }}
+          <span class="chat-title">
+            {{ chat.title }}
+          </span>
+          <span class="unread-count" v-if="chat.unread_count > 0"
+            :class="{ 'muted': chat.notification_settings.mute_for > 0 }">
+            {{ chat.unread_count }}
+          </span>
         </a>
       </li>
     </ul>
   </div>
 </template>
+
+<style>
+.chat-row a {
+  display: flex;
+  flex-direction: row;
+}
+
+.chat-title {
+  display: block;
+  flex-grow: 1;
+  margin: auto 0;
+}
+
+.unread-count {
+  color: #fff;
+  display: block;
+  border-radius: 20px;
+  padding: 2px;
+  min-width: 24px;
+  height: 24px;
+  line-height: 24px;
+  text-align: center;
+  background-color: rgb(0, 204, 255);
+  margin-right: -5px;
+}
+
+.unread-count.muted {
+  background-color: rgb(187, 187, 187);
+}
+</style>

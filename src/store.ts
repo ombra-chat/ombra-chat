@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import type { Chat, ChatFolder, Message, File, User } from './model';
+import type { Chat, ChatFolder, Message, File, User, ChatPosition } from './model';
 
 export const store = reactive({
   sidebarExpanded: false,
@@ -39,6 +39,14 @@ export const store = reactive({
       chats.push(chat_id);
     }
     this.chatFoldersMap[folder_id] = chats;
+  },
+  removeChatFromFolder(folder_id: number, chat_id: number) {
+    const chatFoldersMap = this.chatFoldersMap as { [id: number]: number[] };
+    if (!(folder_id in chatFoldersMap)) {
+      return;
+    }
+    const chats = chatFoldersMap[folder_id];
+    chatFoldersMap[folder_id] = chats.filter(id => id !== chat_id);
   },
   selectedChat: null as Chat | null,
   selectChat(id: number | null) {
@@ -102,5 +110,44 @@ export const store = reactive({
   },
   updateUser(user: User) {
     this.usersMap[user.id] = user;
+  },
+  updateChatPosition(chatId: number, newPosition: ChatPosition) {
+    if (newPosition.list['@type'] !== 'chatListMain') {
+      return;
+    }
+
+    const chatsMap = this.chatsMap as { [id: number]: Chat };
+    const chat = chatsMap[chatId];
+    if (!chat) {
+      return;
+    }
+
+    let newPositions: ChatPosition[] = [];
+    let found = false;
+    for (const pos of chat.positions) {
+      if (pos.list['@type'] === newPosition.list['@type']) {
+        newPositions.push(newPosition);
+        found = true;
+      } else {
+        newPositions.push(pos);
+      }
+    }
+
+    if (!found) {
+      newPositions = [...chat.positions, newPosition];
+    }
+
+    chatsMap[chatId] = {
+      ...chat,
+      positions: newPositions
+    }
+  },
+  updateChat(chatId: number, chatUpdate: Partial<Chat>) {
+    const chatsMap = this.chatsMap as { [id: number]: Chat };
+    const chat = chatsMap[chatId];
+    if (!chat) {
+      return;
+    }
+    chatsMap[chatId] = { ...chat, ...chatUpdate };
   }
 });

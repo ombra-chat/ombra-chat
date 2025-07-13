@@ -1,6 +1,7 @@
 import { listen } from '@tauri-apps/api/event'
+import { Window } from "@tauri-apps/api/window"
 import { store } from '../store'
-import { InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateDeleteMessages, UpdateFile, UpdateNewChat, UpdateNewMessage } from '../model';
+import { Chat, InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateNewChat, UpdateNewMessage, UpdateUnreadChatCount } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
@@ -48,6 +49,35 @@ export async function handleChatsUpdates() {
       const { message_ids, chat_id } = event.payload;
       if (store.selectedChat?.id === chat_id) {
         store.deleteMessages(message_ids);
+      }
+    }),
+    await listen<UpdateChatPosition>('update-chat-position', (event) => {
+      const update = event.payload;
+      if (update.position.list['@type'] === 'chatListFolder') {
+        if (update.position.order === 0) {
+          store.removeChatFromFolder(update.position.list.chat_folder_id, update.chat_id);
+          return;
+        }
+      }
+      store.updateChatPosition(update.chat_id, update.position);
+    }),
+    await listen<UpdateChatLastMessage>('update-chat-last-message', (event) => {
+      const update = event.payload;
+      store.updateChat(update.chat_id, { positions: update.positions, last_message: update.last_message });
+    }),
+    await listen<UpdateChatReadInbox>('update-chat-read-inbox', (event) => {
+      const update = event.payload;
+      store.updateChat(update.chat_id, {
+        last_read_inbox_message_id: update.last_read_inbox_message_id,
+        unread_count: update.unread_count
+      });
+    }),
+    await listen<UpdateUnreadChatCount>('update-unread-chat-count', async (event) => {
+      const update = event.payload;
+      if (update.chat_list['@type'] === 'chatListMain') {
+        const unreadChats = update.unread_unmuted_count > 0;
+        const mainWindow = new Window('main');
+        await mainWindow.setTitle(unreadChats ? '★ OmbraChat' : 'OmbraChat');
       }
     }),
   ]
@@ -167,4 +197,13 @@ export async function deleteMessage(chatId: number, messageId: number) {
   } catch (err) {
     console.error(err);
   }
+}
+
+export async function getChatPosition(chat: Chat) {
+  for (const pos of chat.positions) {
+    if (pos.list['@type'] === 'chatListMain') {
+      return pos.order;
+    }
+  }
+  return 0;
 }
