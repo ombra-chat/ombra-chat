@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPaperPlane, faGear, faPaperclip, faX, faKey } from '@fortawesome/free-solid-svg-icons';
 import { createThumbnail, getFileName, getImageSize, removeThumbnail } from './services/files';
 import ChatSettingsModal from './ChatSettingsModal.vue';
+import MessageModal from './MessageModal.vue';
 import { createPgpFile, createPgpTextFile, encryptNameAndCaption } from './services/pgp';
 
 type SimpleFile = { path: string };
@@ -261,6 +262,7 @@ onDeactivated(() => {
     </div>
   </div>
   <ChatSettingsModal />
+  <MessageModal />
 </template>
 
 <style>

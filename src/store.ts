@@ -9,11 +9,15 @@ export const store = reactive({
   myId: 0,
   settingsModalActive: false,
   chatSettingsModalActive: false,
+  messageModalActive: false,
   toggleSettingsModal() {
     this.settingsModalActive = !this.settingsModalActive;
   },
   toggleChatSettingsModal() {
     this.chatSettingsModalActive = !this.chatSettingsModalActive;
+  },
+  toggleMessageModal() {
+    this.messageModalActive = !this.messageModalActive;
   },
   chatFolders: [] as ChatFolder[],
   chatsMap: {} as { [id: number]: Chat },
@@ -42,6 +46,7 @@ export const store = reactive({
     }
   },
   selectedChatKey: '',
+  selectedMessage: null as Message | null,
   lastMessageId: 0,
   currentMessages: [] as Message[],
   addMessages(newMessages: Message[]) {
@@ -64,6 +69,10 @@ export const store = reactive({
   clearMessages() {
     const messages = this.currentMessages as Message[];
     messages.splice(0, messages.length);
+  },
+  deleteMessages(messageIds: number[]) {
+    const messages = this.currentMessages as Message[];
+    this.currentMessages = messages.filter(m => !messageIds.includes(m.id));
   },
   updateFile(file: File) {
     const messages = this.currentMessages as Message[];

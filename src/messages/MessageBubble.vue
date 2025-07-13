@@ -5,6 +5,8 @@ import TextMessage from './TextMessage.vue';
 import PgpTextMessage from './PgpTextMessage.vue';
 import PgpDocumentMessage from './PgpDocumentMessage.vue';
 import NotSupportedMessage from './NotSupportedMessage.vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faGear } from '@fortawesome/free-solid-svg-icons';
 import { store } from '../store';
 import { computed } from 'vue';
 import DocumentMessage from './DocumentMessage.vue';
@@ -31,11 +33,25 @@ const isPgpTextMessage = computed(() => {
     && content.document.file_name.startsWith('ombra-chat-')
     && content.document.file_name.endsWith('.txt.pgp')
 });
+
+async function openMessageModal(message: Message) {
+  store.selectedMessage = message;
+  store.toggleMessageModal();
+}
 </script>
 
 <template>
   <div class="card m-2 message-bubble" :class="{ 'has-background-success-light': isMyMessage, 'is-pgp': isPgpMessage }">
     <div class="card-content p-3">
+      <div class="message-header">
+        <div class="message-sender">
+        </div>
+        <div class="message-actions">
+          <a href="#" @click="() => openMessageModal(props.message)">
+            <FontAwesomeIcon :icon="faGear" />
+          </a>
+        </div>
+      </div>
       <PgpTextMessage v-if="props.message.content['@type'] === 'messageDocument' && isPgpTextMessage"
         :content="props.message.content" />
       <PgpDocumentMessage v-else-if="props.message.content['@type'] === 'messageDocument' && isPgpMessage"
@@ -56,5 +72,14 @@ const isPgpTextMessage = computed(() => {
 
 .message-bubble {
   overflow-wrap: break-word;
+}
+
+.message-header {
+  display: flex;
+  flex-direction: row;
+}
+
+.message-sender {
+  flex-grow: 1;
 }
 </style>

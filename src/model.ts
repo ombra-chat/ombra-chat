@@ -233,3 +233,8 @@ export type PublicKeyFingerprints = {
   primary: string;
   encryption_keys: string[];
 }
+
+export type UpdateDeleteMessages = {
+  message_ids: number[];
+  chat_id: number;
+}

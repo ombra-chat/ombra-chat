@@ -1,6 +1,6 @@
 import { listen } from '@tauri-apps/api/event'
 import { store } from '../store'
-import { InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateFile, UpdateNewChat, UpdateNewMessage } from '../model';
+import { InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateDeleteMessages, UpdateFile, UpdateNewChat, UpdateNewMessage } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
@@ -43,6 +43,12 @@ export async function handleChatsUpdates() {
     await listen<UpdateFile>('update-file', (event) => {
       const { file } = event.payload;
       store.updateFile(file);
+    }),
+    await listen<UpdateDeleteMessages>('delete-messages', (event) => {
+      const { message_ids, chat_id } = event.payload;
+      if (store.selectedChat?.id === chat_id) {
+        store.deleteMessages(message_ids);
+      }
     }),
   ]
 }
@@ -150,4 +156,12 @@ export async function sendMessage(chatId: number, replyTo: InputMessageReplyTo |
     replyMarkup: null,
     inputMessageContent: content
   });
+}
+
+export async function deleteMessage(chatId: number, messageId: number) {
+  try {
+    await invoke('delete_message', { chatId, messageId, revoke: true });
+  } catch (err) {
+    console.error(err);
+  }
 }
