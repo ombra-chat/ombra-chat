@@ -106,12 +106,14 @@ export async function selectChat(id: number) {
     store.clearMessages();
     store.lastMessageId = 0;
     store.selectChat(id);
+    store.selectedChatKey = await getChatKey(id);
+    store.loadingNewMessages = true;
     const lastMessage = await getLastMessage();
     if (lastMessage) {
+      store.scrollTargetMessageId = lastMessage.id;
       store.addMessages([lastMessage]);
       await loadPreviousMessages(lastMessage);
     }
-    store.selectedChatKey = await getChatKey(id);
   } catch (err) {
     console.error(err);
   }
@@ -180,6 +182,21 @@ export async function loadPreviousMessages(fromMessage: Message | undefined = un
   store.addMessages(messages);
 }
 
+export async function loadNewMessages() {
+  const chat = store.selectedChat;
+  if (!chat || chat.unread_count === 0) {
+    return;
+  }
+  const fromMessageId = store.lastMessageId;
+  const { messages } = await invoke<Messages>('get_chat_history', {
+    chatId: chat.id,
+    fromMessageId,
+    offset: -5,
+    limit: 5
+  });
+  store.addMessages(messages);
+}
+
 export async function sendMessage(chatId: number, replyTo: InputMessageReplyTo | null, content: InputMessageContent): Promise<Message> {
   return await invoke<Message>('send_message', {
     chatId,
@@ -206,4 +223,8 @@ export async function getChatPosition(chat: Chat) {
     }
   }
   return 0;
+}
+
+export async function viewMessage(chatId: number, messageId: number) {
+  return await invoke('view_message', { chatId, messageId });
 }

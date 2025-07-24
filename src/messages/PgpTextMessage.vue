@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { MessageDocument } from '../model';
+import { nextTick, ref, watch } from 'vue';
+import { MessageDocument, MessageWithStatus } from '../model';
 import { decryptFileToString } from '../services/pgp';
 import { downloadFile } from '../services/files';
+import { store } from '../store';
 
 const props = defineProps<{
+  message: MessageWithStatus,
   content: MessageDocument
 }>();
 
@@ -18,7 +20,7 @@ async function download() {
   const file = await downloadFile(props.content.document.document.id);
   if (file?.local.is_downloading_completed) {
     downloading.value = false;
-    decrypt(file.local.path);
+    await decrypt(file.local.path);
   }
 }
 
@@ -31,6 +33,9 @@ async function decrypt(path: string) {
     decryptionError.value = true;
   } finally {
     decrypting.value = false;
+    await nextTick(() => {
+      store.messageLoaded(props.message.id);
+    });
   }
 }
 

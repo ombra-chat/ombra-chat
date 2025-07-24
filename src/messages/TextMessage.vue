@@ -1,9 +1,19 @@
 <script setup lang="ts">
-import { MessageText } from '../model';
+import { nextTick, onMounted } from 'vue';
+import { MessageText, MessageWithStatus } from '../model';
+import { store } from '../store';
 
 const props = defineProps<{
+  message: MessageWithStatus,
   content: MessageText
 }>();
+
+onMounted(async () => {
+  await nextTick(() => {
+    store.messageLoaded(props.message.id);
+  });
+});
+
 </script>
 
 <template>

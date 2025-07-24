@@ -359,3 +359,7 @@ export type UpdateUnreadChatCount = {
   chat_list: ChatList;
   unread_unmuted_count: number;
 }
+
+export type MessageWithStatus = Message & {
+  read: boolean;
+}

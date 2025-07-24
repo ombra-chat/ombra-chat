@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { MessageDocument } from '../model';
+import { computed, nextTick, ref, watch } from 'vue';
+import { MessageDocument, MessageWithStatus } from '../model';
 import { decryptFile, decryptNameAndCaption } from '../services/pgp';
 import { downloadFile, saveFile } from '../services/files';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { save } from '@tauri-apps/plugin-dialog';
+import { store } from '../store';
 
 const props = defineProps<{
+  message: MessageWithStatus,
   content: MessageDocument
 }>();
 
@@ -89,6 +91,9 @@ watch(
     if (newContent.document.document.local.is_downloading_completed) {
       await decrypt(newContent.document.document.local.path);
     }
+    await nextTick(() => {
+      store.messageLoaded(props.message.id);
+    });
   },
   { immediate: true }
 );

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Message } from '../model';
+import { Message, MessageWithStatus, MessageDocument } from '../model';
 import PhotoMessage from './PhotoMessage.vue';
 import TextMessage from './TextMessage.vue';
 import PgpTextMessage from './PgpTextMessage.vue';
@@ -13,7 +13,7 @@ import DocumentMessage from './DocumentMessage.vue';
 import { getUserDisplayText } from '../services/users';
 
 const props = defineProps<{
-  message: Message
+  message: MessageWithStatus
 }>();
 
 const isMyMessage = computed(() => {
@@ -61,7 +61,9 @@ async function openMessageModal(message: Message) {
 </script>
 
 <template>
-  <div class="card m-2 message-bubble" :class="{ 'has-background-success-light': isMyMessage, 'is-pgp': isPgpMessage }">
+  <div class="card m-2 message-bubble"
+    :class="{ 'has-background-success-light': isMyMessage, 'is-pgp': isPgpMessage, 'unread': !props.message.read }"
+    :data-message-id="message.id">
     <div class="card-content p-3">
       <div class="message-header">
         <div class="message-sender">
@@ -76,14 +78,16 @@ async function openMessageModal(message: Message) {
         </div>
       </div>
       <PgpTextMessage v-if="props.message.content['@type'] === 'messageDocument' && isPgpTextMessage"
-        :content="props.message.content" />
+        :message="props.message" :content="props.message.content" />
       <PgpDocumentMessage v-else-if="props.message.content['@type'] === 'messageDocument' && isPgpMessage"
+        :message="props.message" :content="props.message.content" />
+      <TextMessage v-else-if="props.message.content['@type'] === 'messageText'" :message="props.message"
         :content="props.message.content" />
-      <TextMessage v-else-if="props.message.content['@type'] === 'messageText'" :content="props.message.content" />
-      <PhotoMessage v-else-if="props.message.content['@type'] === 'messagePhoto'" :content="props.message.content" />
-      <DocumentMessage v-else-if="props.message.content['@type'] === 'messageDocument'"
+      <PhotoMessage v-else-if="props.message.content['@type'] === 'messagePhoto'" :message="props.message"
         :content="props.message.content" />
-      <NotSupportedMessage v-else :content="props.message.content" />
+      <DocumentMessage v-else-if="props.message.content['@type'] === 'messageDocument'" :message="props.message"
+        :content="props.message.content" />
+      <NotSupportedMessage v-else :message="props.message" />
     </div>
   </div>
 </template>
@@ -91,6 +95,14 @@ async function openMessageModal(message: Message) {
 <style>
 .is-pgp {
   border: 2px blue dashed;
+}
+
+.is-pgp.unread {
+  border: 2px blueviolet dashed;
+}
+
+.unread {
+  border: 2px blueviolet solid;
 }
 
 .message-bubble {

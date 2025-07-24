@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { MessagePhoto, File, PhotoSize } from '../model';
+import { computed, nextTick, ref, watch } from 'vue';
+import { MessagePhoto, File, PhotoSize, MessageWithStatus } from '../model';
 import { downloadFile, getPhoto } from '../services/files';
 import { openPath } from '@tauri-apps/plugin-opener';
+import { store } from '../store';
 
 const props = defineProps<{
+  message: MessageWithStatus,
   content: MessagePhoto
 }>();
 
@@ -50,6 +52,12 @@ async function setPhoto(content: MessagePhoto, photo: File, size: PhotoSize) {
   }
 }
 
+async function photoLoaded() {
+  await nextTick(() => {
+    store.messageLoaded(props.message.id);
+  });
+}
+
 async function openPhoto() {
   const sizes = getUsablePhotoSize(props.content);
   if (sizes.length === 0) {
@@ -82,7 +90,7 @@ watch(
 <template>
   <figure class="image msg-photo mb-2" :class="{ 'is-skeleton': !photoSrc }">
     <img alt="" :src="photoSrc" v-if="photoSrc" :width="size.width" :height="size.height"
-      :style="{ 'max-width': size.width }" @click="openPhoto" />
+      :style="{ 'max-width': size.width }" @click="openPhoto" @load="photoLoaded" />
   </figure>
   <p>{{ props.content.caption.text }}</p>
 </template>

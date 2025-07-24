@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
-import type { Chat, ChatFolder, Message, File, User, ChatPosition } from './model';
+import type { Chat, ChatFolder, Message, File, User, ChatPosition, MessageWithStatus } from './model';
+import { viewMessage } from './services/chats';
 
 export const store = reactive({
   sidebarExpanded: false,
@@ -58,36 +59,49 @@ export const store = reactive({
     }
   },
   selectedChatKey: '',
+  loadingNewMessages: false,
+  messagesToLoad: [] as number[],
+  scrollTargetMessageId: 0,
   selectedMessage: null as Message | null,
   lastMessageId: 0,
-  currentMessages: [] as Message[],
+  currentMessages: [] as MessageWithStatus[],
+  messageLoaded(messageId: number) {
+    const messages = this.messagesToLoad as number[];
+    this.messagesToLoad = messages.filter(m => m !== messageId);
+  },
   addMessages(newMessages: Message[]) {
     const chat = this.selectedChat as null | Chat;
     if (chat === null) {
       return;
     }
-    const messages = this.currentMessages as Message[];
+    const messages = this.currentMessages as MessageWithStatus[];
     for (const message of newMessages) {
       if (message.chat_id !== chat.id) {
         return;
       }
       if (!messages.find(m => m.id === message.id)) {
-        messages.push(message);
+        this.messagesToLoad.push(message.id);
+        messages.push({
+          ...message,
+          read: message.id <= chat.last_read_inbox_message_id
+        });
       }
     }
     messages.sort((m1: Message, m2: Message) => m1.id < m2.id ? -1 : 1);
-    this.lastMessageId = messages[messages.length - 1];
+    this.lastMessageId = messages[messages.length - 1].id;
   },
   clearMessages() {
-    const messages = this.currentMessages as Message[];
-    messages.splice(0, messages.length);
+    this.currentMessages = [];
+    this.messagesToLoad = [];
   },
   deleteMessages(messageIds: number[]) {
-    const messages = this.currentMessages as Message[];
+    const messages = this.currentMessages as MessageWithStatus[];
+    const messagesToLoad = this.messagesToLoad as number[];
     this.currentMessages = messages.filter(m => !messageIds.includes(m.id));
+    this.messagesToLoad = messagesToLoad.filter(id => !messageIds.includes(id));
   },
   updateFile(file: File) {
-    const messages = this.currentMessages as Message[];
+    const messages = this.currentMessages as MessageWithStatus[];
     this.currentMessages = messages.map(m => {
       if (m.content['@type'] === 'messageDocument') {
         if (m.content.document.document.id === file.id) {
@@ -149,5 +163,17 @@ export const store = reactive({
       return;
     }
     chatsMap[chatId] = { ...chat, ...chatUpdate };
+  },
+  async markMessageAsRead(messageId: number) {
+    const messages = this.currentMessages as MessageWithStatus[];
+    for (const message of messages) {
+      if (message.id === messageId) {
+        if (!message.read) {
+          await viewMessage(message.chat_id, message.id);
+          message.read = true;
+          return;
+        }
+      }
+    }
   }
 });

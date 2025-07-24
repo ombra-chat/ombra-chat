@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onDeactivated, onMounted, ref } from 'vue';
+import { nextTick, onDeactivated, onMounted, ref, watch } from 'vue';
 import MessageBubble from './messages/MessageBubble.vue';
-import { loadPreviousMessages, sendMessage } from './services/chats';
+import { loadNewMessages, loadPreviousMessages, sendMessage } from './services/chats';
 import { store } from './store';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
@@ -23,8 +23,34 @@ const dragging = ref(false);
 
 async function chatContentScrolled(event: Event) {
   const element = event.target as HTMLElement;
-  if (element.scrollHeight - element.getBoundingClientRect().height + element.scrollTop === 0) {
+  if (element.scrollTop === 0) {
+    await newMessages();
+  } else if (element.scrollHeight - element.getBoundingClientRect().height + element.scrollTop === 0) {
     await loadPreviousMessages();
+    return;
+  }
+  await markVisibleMessagesAsRead();
+}
+
+async function markVisibleMessagesAsRead() {
+  const container = document.getElementById('chat-content')!;
+  const containerRect = container.getBoundingClientRect();
+  const bubbles = document.querySelectorAll('.message-bubble');
+  for (const bubble of bubbles) {
+    const bubbleRect = bubble.getBoundingClientRect();
+    if (bubbleRect.bottom >= containerRect.top && bubbleRect.bottom <= containerRect.bottom) {
+      const dataId = bubble.getAttribute('data-message-id');
+      if (dataId) {
+        store.markMessageAsRead(parseInt(dataId));
+      }
+    }
+  }
+}
+
+function scrollToMessage(messageId: number) {
+  const element = document.querySelector(`[data-message-id="${messageId}"]`);
+  if (element) {
+    element.scrollIntoView({ behavior: 'instant', block: 'end' });
   }
 }
 
@@ -197,6 +223,18 @@ async function removeFile(index: number) {
   selectedFiles.value = selectedFiles.value.filter((_, i) => i !== index);
 }
 
+async function newMessages() {
+  if (store.loadingNewMessages) {
+    return;
+  }
+  const lastMessageId = store.lastMessageId;
+  store.scrollTargetMessageId = lastMessageId;
+  store.loadingNewMessages = true;
+  await nextTick(async () => {
+    await loadNewMessages();
+  });
+}
+
 let unlistener: UnlistenFn | undefined = undefined;
 
 onMounted(async () => {
@@ -211,6 +249,18 @@ onDeactivated(() => {
     unlistener();
   }
 });
+
+watch(
+  () => store.messagesToLoad.length,
+  async (loadingMessages: number) => {
+    if (loadingMessages === 0 && store.loadingNewMessages) {
+      await nextTick(() => {
+        scrollToMessage(store.scrollTargetMessageId);
+        store.loadingNewMessages = false;
+      });
+    }
+  }
+);
 </script>
 
 <template>
@@ -233,7 +283,7 @@ onDeactivated(() => {
       </div>
     </div>
     <div id="chat-content" class="p-1 has-background-link-light" @scroll="chatContentScrolled">
-      <MessageBubble :message="message" v-for="message in store.currentMessages" />
+      <MessageBubble :message="message" v-for="message in store.currentMessages" :key="message.id" />
     </div>
     <div id="files-box" class="p-1" v-if="selectedFiles.length > 0">
       <div v-for="(file, index) in selectedFiles" class="file-box">
@@ -250,6 +300,10 @@ onDeactivated(() => {
           </a>
         </div>
       </div>
+    </div>
+    <div id="new-messages-box" class="has-background-info p-2" v-if="store.selectedChat.unread_count > 0"
+      @click="newMessages">
+      new messages
     </div>
     <div id="send-message-box">
       <input type="text" class="input" id="new-message-text" v-model="newMessageText" @keyup.enter="send" />
@@ -298,6 +352,7 @@ onDeactivated(() => {
   flex-direction: column;
   overflow-x: hidden;
   overflow-y: auto;
+  overflow-anchor: none;
 }
 
 #send-message-box {
@@ -325,5 +380,10 @@ onDeactivated(() => {
 
 .dragging {
   border: 3px rgb(71, 172, 255) dashed;
+}
+
+#new-messages-box {
+  cursor: pointer;
+  text-align: center;
 }
 </style>

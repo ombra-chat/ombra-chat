@@ -1,11 +1,19 @@
 <script setup lang="ts">
-import { MessageContent } from '../model';
+import { nextTick, onMounted } from 'vue';
+import { MessageWithStatus } from '../model';
+import { store } from '../store';
 
 const props = defineProps<{
-  content: MessageContent
+  message: MessageWithStatus
 }>();
+
+onMounted(async () => {
+  await nextTick(() => {
+    store.messageLoaded(props.message.id);
+  });
+});
 </script>
 
 <template>
-  Type <code>{{ props.content['@type'] }}</code> not supported yet.
+  Type <code>{{ props.message.content['@type'] }}</code> not supported yet.
 </template>

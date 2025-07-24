@@ -83,3 +83,20 @@ pub async fn delete_message<R: tauri::Runtime>(
     .await
     .map_err(|e| e.message)
 }
+
+#[tauri::command]
+pub async fn view_message<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    chat_id: i64,
+    message_id: i64
+) -> Result<(), String> {
+    tdlib::functions::view_messages(
+        chat_id,
+        vec![message_id],
+        None,
+        false,
+        state::get_client_id(&app),
+    )
+    .await
+    .map_err(|e| e.message)
+}

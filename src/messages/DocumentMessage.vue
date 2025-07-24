@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { MessageDocument } from '../model';
+import { computed, nextTick, onMounted, ref } from 'vue';
+import { MessageDocument, MessageWithStatus } from '../model';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { downloadFile, saveFile } from '../services/files';
 import { save } from '@tauri-apps/plugin-dialog';
+import { store } from '../store';
 
 const props = defineProps<{
+  message: MessageWithStatus,
   content: MessageDocument
 }>();
 
@@ -39,6 +41,12 @@ async function openSaveDialog() {
 }
 
 const downloaded = computed(() => props.content.document.document.local.is_downloading_completed);
+
+onMounted(async () => {
+  await nextTick(() => {
+    store.messageLoaded(props.message.id);
+  });
+});
 </script>
 
 <template>
@@ -57,7 +65,7 @@ const downloaded = computed(() => props.content.document.document.local.is_downl
     </button>
   </div>
 
-  <p v-if="props.content.caption">
-    {{ props.content.caption.text }}
+  <p v-if="content.caption">
+    {{ content.caption.text }}
   </p>
 </template>
