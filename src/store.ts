@@ -83,7 +83,8 @@ export const store = reactive({
         this.messagesToLoad.push(message.id);
         messages.push({
           ...message,
-          read: message.id <= chat.last_read_inbox_message_id
+          read: message.id <= chat.last_read_inbox_message_id ||
+            (message.sender_id['@type'] === 'messageSenderUser' && message.sender_id.user_id === this.myId)
         });
       }
     }

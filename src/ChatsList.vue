@@ -14,7 +14,7 @@ const chats = computed(() => {
 <template>
   <div class="menu">
     <ul class="menu-list">
-      <li v-for="chat in chats" class="chat-row nowrap">
+      <li v-for="chat in chats" class="chat-row nowrap" :key="chat.id">
         <a href="#" :class="{ 'is-active': store.selectedChat?.id === chat.id }" class="nowrap"
           @click="() => selectChat(chat.id)">
           <span class="chat-title">

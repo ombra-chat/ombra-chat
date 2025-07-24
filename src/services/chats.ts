@@ -228,3 +228,13 @@ export async function getChatPosition(chat: Chat) {
 export async function viewMessage(chatId: number, messageId: number) {
   return await invoke('view_message', { chatId, messageId });
 }
+
+export async function forwardMessage(message: Message, chatId: number, sendCopy: boolean) {
+  await invoke<Messages>('forward_message', {
+    chatId,
+    messageThreadId: 0,
+    fromChatId: message.chat_id,
+    messageId: message.id,
+    sendCopy
+  });
+}

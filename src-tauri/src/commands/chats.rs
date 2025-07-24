@@ -88,12 +88,35 @@ pub async fn delete_message<R: tauri::Runtime>(
 pub async fn view_message<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     chat_id: i64,
-    message_id: i64
+    message_id: i64,
 ) -> Result<(), String> {
     tdlib::functions::view_messages(
         chat_id,
         vec![message_id],
         None,
+        false,
+        state::get_client_id(&app),
+    )
+    .await
+    .map_err(|e| e.message)
+}
+
+#[tauri::command]
+pub async fn forward_message<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    chat_id: i64,
+    message_thread_id: i64,
+    from_chat_id: i64,
+    message_id: i64,
+    send_copy: bool,
+) -> Result<tdlib::enums::Messages, String> {
+    tdlib::functions::forward_messages(
+        chat_id,
+        message_thread_id,
+        from_chat_id,
+        vec![message_id],
+        None,
+        send_copy,
         false,
         state::get_client_id(&app),
     )
