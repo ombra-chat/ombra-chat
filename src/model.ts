@@ -363,3 +363,8 @@ export type UpdateUnreadChatCount = {
 export type MessageWithStatus = Message & {
   read: boolean;
 }
+
+export type UpdateMessageSendSucceeded = {
+  message: Message;
+  old_message_id: number;
+}

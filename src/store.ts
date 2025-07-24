@@ -176,5 +176,10 @@ export const store = reactive({
         }
       }
     }
+  },
+  updateMessage(oldMessageId: number, message: Message) {
+    const messages = this.currentMessages as MessageWithStatus[];
+    this.currentMessages = messages.map(m => m.id === oldMessageId ? message : m);
+    this.messageLoaded(oldMessageId);
   }
 });

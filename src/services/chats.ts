@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event'
 import { Window } from "@tauri-apps/api/window"
 import { store } from '../store'
-import { Chat, InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateNewChat, UpdateNewMessage, UpdateUnreadChatCount } from '../model';
+import { Chat, InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateUnreadChatCount } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
@@ -79,6 +79,10 @@ export async function handleChatsUpdates() {
         const mainWindow = new Window('main');
         await mainWindow.setTitle(unreadChats ? '★ OmbraChat' : 'OmbraChat');
       }
+    }),
+    await listen<UpdateMessageSendSucceeded>('message-send-succeeded', async (event) => {
+      const update = event.payload;
+      store.updateMessage(update.old_message_id, update.message);
     }),
   ]
 }
