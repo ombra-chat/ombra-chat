@@ -5,12 +5,14 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { PublicKeyFingerprints } from './model';
 import { loadPublicKey, removeChatKey, saveChatKey } from './services/pgp';
 import Dropdown from './components/Dropdown.vue';
+import { createNewSecretChat, deleteChat, selectChat } from './services/chats';
 
 function closeModal() {
   pgpError.value = '';
   loadedKey.value = null
   selectedEncryptionSubkey.value = '';
   selectedKeyFile.value = '';
+  enableDangerZone.value = false;
   store.toggleChatSettingsModal();
 }
 
@@ -19,6 +21,7 @@ const pgpError = ref('');
 const selectedKeyFile = ref('');
 const loadedKey = ref(null as PublicKeyFingerprints | null);
 const selectedEncryptionSubkey = ref('');
+const enableDangerZone = ref(false);
 
 async function openSelectKeyDialog() {
   const file = await open({ multiple: false, directory: false, });
@@ -67,6 +70,37 @@ function selectSubkey(index: number) {
   selectedEncryptionSubkey.value = loadedKey.value.encryption_keys[index];
 }
 
+async function startSecretChat() {
+  if (store.selectedChat === null) {
+    return;
+  }
+  const newChat = await createNewSecretChat(store.selectedChat.id)
+  closeModal();
+  selectChat(newChat.id);
+}
+
+async function deleteCurrentChat() {
+  if (store.selectedChat === null) {
+    return;
+  }
+  await deleteChat(store.selectedChat.id);
+  closeModal();
+  store.selectChat(null);
+}
+
+const showPgpSettings = computed(() => {
+  if (store.selectedChat === null) {
+    return false;
+  }
+  const chatType = store.selectedChat.type['@type'];
+  return chatType === 'chatTypePrivate' || chatType === 'chatTypeSecret';
+})
+
+const showSecretChatButton = computed(() => {
+  return store.selectedChat?.type['@type'] === 'chatTypePrivate'
+    && store.selectedChat.type.user_id !== store.myId;
+})
+
 watch(
   () => store.chatSettingsModalActive,
   async (active) => {
@@ -86,29 +120,50 @@ watch(
         <button class="delete" aria-label="close" @click="closeModal"></button>
       </header>
       <section class="modal-card-body p-3">
-        <div class="mt-2">
-          <label class="checkbox">
-            <input type="checkbox" v-model="enablePgp" />
-            Enable PGP
-          </label>
-        </div>
-        <button class="button is-primary mt-2 mb-2" v-if="enablePgp" @click="openSelectKeyDialog">Select key</button>
-        <div v-if="enablePgp && store.selectedChatKey">
-          <p>Encryption subkey: <code>{{ store.selectedChatKey }}</code></p>
-        </div>
-        <div v-if="loadedKey !== null">
-          <p>Master key: <code>{{ loadedKey.primary }}</code></p>
-          <p v-if="loadedKey.encryption_keys.length === 1">
-            Encryption subkey: <code>{{ loadedKey.encryption_keys[0] }}</code>
-          </p>
-          <div v-else>
-            <p>Select encryption subkey:</p>
-            <Dropdown :values="selectableEncryptionKeys" :default-value="0" @change="selectSubkey" />
+        <div v-if="showPgpSettings">
+          <div class="mt-2">
+            <label class="checkbox">
+              <input type="checkbox" v-model="enablePgp" />
+              Enable PGP
+            </label>
+          </div>
+          <button class="button is-primary mt-2 mb-2" v-if="enablePgp" @click="openSelectKeyDialog">Select key</button>
+          <div v-if="enablePgp && store.selectedChatKey">
+            <p>Encryption subkey: <code>{{ store.selectedChatKey }}</code></p>
+          </div>
+          <div v-if="loadedKey !== null">
+            <p>Master key: <code>{{ loadedKey.primary }}</code></p>
+            <p v-if="loadedKey.encryption_keys.length === 1">
+              Encryption subkey: <code>{{ loadedKey.encryption_keys[0] }}</code>
+            </p>
+            <div v-else>
+              <p>Select encryption subkey:</p>
+              <Dropdown :values="selectableEncryptionKeys" :default-value="0" @change="selectSubkey" />
+            </div>
+          </div>
+          <div class="message is-danger mt-2" v-if="pgpError">
+            <div class="message-body">
+              {{ pgpError }}
+            </div>
           </div>
         </div>
-        <div class="message is-danger mt-2" v-if="pgpError">
-          <div class="message-body">
-            {{ pgpError }}
+        <div v-if="showSecretChatButton">
+          <button class="button is-link mt-3" type="button" @click="startSecretChat">
+            Start secret chat
+          </button>
+        </div>
+        <div v-if="store.selectedChat?.can_be_deleted_for_all_users" class="mt-3">
+          <hr class="mb-2" />
+          <div>
+            <label class="checkbox">
+              <input type="checkbox" v-model="enableDangerZone" />
+              Show dangerous actions
+            </label>
+          </div>
+          <div>
+            <button class="button is-danger mt-3" type="button" @click="deleteCurrentChat" v-if="enableDangerZone">
+              Delete chat
+            </button>
           </div>
         </div>
       </section>

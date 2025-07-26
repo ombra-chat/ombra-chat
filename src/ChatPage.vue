@@ -7,7 +7,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { FormattedText, InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageReplyTo, InputMessageText, InputTextQuote } from './model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faPaperPlane, faGear, faPaperclip, faX, faKey } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faGear, faPaperclip, faX, faKey, faLock } from '@fortawesome/free-solid-svg-icons';
 import { createThumbnail, getFileName, getImageSize, removeThumbnail } from './services/files';
 import ChatSettingsModal from './ChatSettingsModal.vue';
 import MessageModal from './MessageModal.vue';
@@ -307,6 +307,9 @@ watch(() => store.selectedChat?.id, () => clear());
       <div id="chat-title" class="mt-1">
         <div class="has-text-link has-text-weight-bold" :class="{ 'pb-2': store.selectedChatKey === '' }">
           {{ store.selectedChat.title }}
+          <span class="ml-1" v-if="store.selectedChat.type['@type'] === 'chatTypeSecret'">
+            <FontAwesomeIcon :icon="faLock" />
+          </span>
         </div>
         <div v-if="store.selectedChatKey !== ''" class="ml-2 mt-1 nowrap">
           <FontAwesomeIcon :icon="faKey" />

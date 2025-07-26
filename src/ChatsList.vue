@@ -2,6 +2,8 @@
 import { computed } from 'vue';
 import { store } from './store';
 import { getChatPosition, selectChat } from './services/chats';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faLock } from '@fortawesome/free-solid-svg-icons';
 
 const chats = computed(() => {
   const list = store.chatFoldersMap[store.selectedChatFolderId] || [];
@@ -18,6 +20,9 @@ const chats = computed(() => {
         <a href="#" :class="{ 'is-active': store.selectedChat?.id === chat.id }" class="nowrap"
           @click="() => selectChat(chat.id)">
           <span class="chat-title">
+            <span class="mr-1" v-if="chat.type['@type'] === 'chatTypeSecret'">
+              <FontAwesomeIcon :icon="faLock" />
+            </span>
             {{ chat.title }}
           </span>
           <span class="unread-count" v-if="chat.unread_count > 0"

@@ -32,6 +32,7 @@ type Store = {
   toggleChatSettingsModal: () => void;
   toggleMessageModal: () => void;
   addChat: (chat: Chat) => void;
+  deleteChat: (chatId: number) => void;
   addChatToFolder: (folder_id: number, chat_id: number) => void;
   removeChatFromFolder: (folder_id: number, chat_id: number) => void;
   selectChat: (id: number | null) => void;
@@ -80,6 +81,9 @@ export const store = reactive<Store>({
   },
   addChat(chat: Chat) {
     (this as Store).chatsMap[chat.id] = chat;
+  },
+  deleteChat(chatId: number) {
+    delete (this as Store).chatsMap[chatId];
   },
   addChatToFolder(folder_id: number, chat_id: number) {
     const store = this as Store;

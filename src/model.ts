@@ -16,8 +16,6 @@ export type ChatFolder = {
   name: string;
 }
 
-export type ChatType = 'chatTypePrivate';
-
 export type AvailableReactionsType = 'chatAvailableReactionsAll';
 
 export type ChatPermission = {
@@ -45,9 +43,33 @@ export type ChatNotificationSettings = {
   mute_for: number;
 }
 
+export type ChatTypePrivate = {
+  '@type': 'chatTypePrivate';
+  user_id: number;
+}
+
+export type ChatTypeSecret = {
+  '@type': 'chatTypeSecret';
+  secret_chat_id: number;
+  user_id: number;
+}
+
+export type ChatTypeBasicGroup = {
+  '@type': 'chatTypeBasicGroup';
+  basic_group_id: number;
+}
+
+export type ChatTypeSupergroup = {
+  '@type': 'chatTypeSupergroup';
+  supergroup_id: number;
+  is_channel: boolean;
+}
+
+export type ChatType = ChatTypePrivate | ChatTypeSecret | ChatTypeBasicGroup | ChatTypeSupergroup;
+
 export type Chat = {
   id: number;
-  type: { '@type': ChatType; user_id: number };
+  type: ChatType;
   title: string;
   photo: any;
   permissions: ChatPermission;
@@ -402,4 +424,9 @@ export type MessageWithStatus = Message & {
 export type UpdateMessageSendSucceeded = {
   message: Message;
   old_message_id: number;
+}
+
+export type UpdateChatRemovedFromList = {
+  chat_id: number;
+  chat_list: ChatList;
 }

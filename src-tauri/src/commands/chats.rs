@@ -134,3 +134,23 @@ pub async fn get_replied_message<R: tauri::Runtime>(
         .await
         .map_err(|e| e.message)
 }
+
+#[tauri::command]
+pub async fn create_new_secret_chat<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    user_id: i64,
+) -> Result<tdlib::enums::Chat, String> {
+    tdlib::functions::create_new_secret_chat(user_id, state::get_client_id(&app))
+        .await
+        .map_err(|e| e.message)
+}
+
+#[tauri::command]
+pub async fn delete_chat<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    chat_id: i64,
+) -> Result<(), String> {
+    tdlib::functions::delete_chat(chat_id, state::get_client_id(&app))
+        .await
+        .map_err(|e| e.message)
+}

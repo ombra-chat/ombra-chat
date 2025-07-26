@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event'
 import { Window } from "@tauri-apps/api/window"
 import { store } from '../store'
-import { Chat, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateUnreadChatCount } from '../model';
+import { Chat, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateChatRemovedFromList, UpdateDeleteMessages, UpdateFile, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateUnreadChatCount } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
@@ -85,6 +85,15 @@ export async function handleChatsUpdates() {
       const update = event.payload;
       store.updateMessage(update.old_message_id, update.message);
     }),
+    await listen<UpdateChatRemovedFromList>('update-chat-removed-from-list', async (event) => {
+      const update = event.payload;
+      if (update.chat_list['@type'] === 'chatListMain') {
+        store.removeChatFromFolder(0, update.chat_id);
+        store.deleteChat(update.chat_id);
+      } else if (update.chat_list['@type'] === 'chatListFolder') {
+        store.removeChatFromFolder(update.chat_list.chat_folder_id, update.chat_id);
+      }
+    }),
   ]
 }
 
@@ -144,7 +153,6 @@ async function getLastMessage(): Promise<Message | null> {
   });
 
   if (result.messages.length !== 1) {
-    console.warn('Loaded an unexpected number of messages: {}', result.messages.length);
     return null;
   }
 
@@ -243,7 +251,6 @@ export async function forwardMessage(message: Message, chatId: number, sendCopy:
     sendCopy
   });
 }
-
 export function getSenderTitle(sender: MessageSender): string {
   if (sender['@type'] === 'messageSenderUser') {
     return getUserDisplayText(sender.user_id);
@@ -261,6 +268,17 @@ export async function getRepliedMessage(chatId: number, messageId: number) {
     chatId,
     messageId
   });
+}
+
+export async function createNewSecretChat(userId: number) {
+  const chat = await invoke<Chat>('create_new_secret_chat', { userId });
+  store.addChat(chat);
+  return chat;
+}
+
+export async function deleteChat(chatId: number) {
+  await invoke('delete_chat', { chatId });
+  store.deleteChat(chatId);
 }
 
 export function getMessageTextContent(content: MessageContent): string | null {
