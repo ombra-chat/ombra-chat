@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Message, MessageWithStatus, MessageDocument } from '../model';
+import { Message, MessageReplyToMessage, MessageWithStatus } from '../model';
 import PhotoMessage from './PhotoMessage.vue';
 import TextMessage from './TextMessage.vue';
 import PgpTextMessage from './PgpTextMessage.vue';
@@ -8,9 +8,9 @@ import NotSupportedMessage from './NotSupportedMessage.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faGear } from '@fortawesome/free-solid-svg-icons';
 import { store } from '../store';
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import DocumentMessage from './DocumentMessage.vue';
-import { getUserDisplayText } from '../services/users';
+import { getMessageTextContent, getRepliedMessage, getSenderTitle } from '../services/chats';
 
 const props = defineProps<{
   message: MessageWithStatus
@@ -41,28 +41,50 @@ const isPgpTextMessage = computed(() => {
     && content.document.file_name.endsWith('.txt.pgp');
 });
 
-const senderTitle = computed(() => {
-  const senderId = props.message.sender_id;
-  if (senderId['@type'] === 'messageSenderUser') {
-    return getUserDisplayText(senderId.user_id);
-  } else if (senderId['@type'] === 'messageSenderChat') {
-    const chat = store.getChat(senderId.chat_id);
-    if (chat) {
-      return chat.title;
-    }
-  }
-  return '';
-})
+const senderTitle = computed(() => getSenderTitle(props.message.sender_id));
 
 async function openMessageModal(message: Message) {
   store.selectedMessage = message;
   store.toggleMessageModal();
 }
+
+const replyToSenderTitle = ref<string | null>(null);
+const replyToContent = ref<string | null>(null);
+
+async function loadReplyToMessage() {
+  const replyTo = props.message.reply_to;
+  if (replyTo === null) {
+    return null;
+  }
+  if (replyTo['@type'] !== 'messageReplyToMessage') {
+    return null;
+  }
+  const message = await getRepliedMessage(props.message.chat_id, props.message.id);
+  replyToSenderTitle.value = getSenderTitle(message.sender_id);
+  if (replyTo.quote !== null) {
+    replyToContent.value = truncateReplyContent(replyTo.quote.text.text);
+  } else {
+    replyToContent.value = truncateReplyContent(getMessageTextContent(message.content) || '');
+  }
+}
+
+function truncateReplyContent(text: string) {
+  const maxLength = 100;
+  if (text.length > maxLength) {
+    return text.substring(0, maxLength - 3) + '...';
+  }
+  return text;
+}
+
+onMounted(async () => {
+  await loadReplyToMessage();
+  store.messageBubbleLoaded(props.message.id);
+});
 </script>
 
 <template>
   <div class="card m-2 message-bubble"
-    :class="{ 'has-background-success-light': isMyMessage, 'is-pgp': isPgpMessage, 'unread': !props.message.read }"
+    :class="{ 'has-background-success-light': isMyMessage, 'is-pgp': isPgpMessage, 'unread': !message.read }"
     :data-message-id="message.id">
     <div class="card-content p-3">
       <div class="message-header">
@@ -72,22 +94,26 @@ async function openMessageModal(message: Message) {
           </p>
         </div>
         <div class="message-actions">
-          <a href="#" @click="() => openMessageModal(props.message)">
+          <a href="#" @click="() => openMessageModal(message)">
             <FontAwesomeIcon :icon="faGear" />
           </a>
         </div>
       </div>
-      <PgpTextMessage v-if="props.message.content['@type'] === 'messageDocument' && isPgpTextMessage"
-        :message="props.message" :content="props.message.content" />
-      <PgpDocumentMessage v-else-if="props.message.content['@type'] === 'messageDocument' && isPgpMessage"
-        :message="props.message" :content="props.message.content" />
-      <TextMessage v-else-if="props.message.content['@type'] === 'messageText'" :message="props.message"
-        :content="props.message.content" />
-      <PhotoMessage v-else-if="props.message.content['@type'] === 'messagePhoto'" :message="props.message"
-        :content="props.message.content" />
-      <DocumentMessage v-else-if="props.message.content['@type'] === 'messageDocument'" :message="props.message"
-        :content="props.message.content" />
-      <NotSupportedMessage v-else :message="props.message" />
+      <div class="message-reply-to p-2 mb-2 has-background-primary-light" v-if="replyToSenderTitle !== null">
+        <strong class="mr-2">{{ replyToSenderTitle }}</strong>
+        <span>{{ replyToContent }}</span>
+      </div>
+      <PgpTextMessage v-if="message.content['@type'] === 'messageDocument' && isPgpTextMessage" :message="message"
+        :content="message.content" />
+      <PgpDocumentMessage v-else-if="message.content['@type'] === 'messageDocument' && isPgpMessage" :message="message"
+        :content="message.content" />
+      <TextMessage v-else-if="message.content['@type'] === 'messageText'" :message="message"
+        :content="message.content" />
+      <PhotoMessage v-else-if="message.content['@type'] === 'messagePhoto'" :message="message"
+        :content="message.content" />
+      <DocumentMessage v-else-if="message.content['@type'] === 'messageDocument'" :message="message"
+        :content="message.content" />
+      <NotSupportedMessage v-else :message="message" />
     </div>
   </div>
 </template>
@@ -116,5 +142,9 @@ async function openMessageModal(message: Message) {
 
 .message-sender {
   flex-grow: 1;
+}
+
+.message-reply-to {
+  border-radius: 6px;
 }
 </style>

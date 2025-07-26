@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { nextTick, onDeactivated, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onDeactivated, onMounted, ref, watch } from 'vue';
 import MessageBubble from './messages/MessageBubble.vue';
-import { loadNewMessages, loadPreviousMessages, sendMessage } from './services/chats';
+import { getSenderTitle, loadNewMessages, loadPreviousMessages, sendMessage } from './services/chats';
 import { store } from './store';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
-import { FormattedText, InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageText } from './model';
+import { FormattedText, InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageReplyTo, InputMessageText, InputTextQuote } from './model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPaperPlane, faGear, faPaperclip, faX, faKey } from '@fortawesome/free-solid-svg-icons';
 import { createThumbnail, getFileName, getImageSize, removeThumbnail } from './services/files';
@@ -61,7 +61,7 @@ async function send() {
     return;
   }
   for (const content of contents) {
-    await sendMessage(chat.id, null, content);
+    await sendMessage(chat.id, getInputMessageReplyTo(), content);
     if (content['@type'] === 'inputMessagePhoto') {
       await removeThumbnail(content.photo.path);
     }
@@ -70,8 +70,35 @@ async function send() {
       chatContent.scrollTo(0, chatContent.scrollHeight);
     }
   }
+  clear();
+}
+
+function clear() {
   newMessageText.value = '';
   selectedFiles.value = [];
+  store.replyToMessage = null;
+  store.replyToQuote = null;
+}
+
+function getInputMessageReplyTo(): InputMessageReplyTo | null {
+  if (store.replyToMessage === null) {
+    return null;
+  }
+  let quote: InputTextQuote | null = null;
+  if (store.replyToQuote !== null) {
+    quote = {
+      text: {
+        text: store.replyToQuote,
+        entities: []
+      },
+      position: 0
+    }
+  }
+  return {
+    '@type': 'inputMessageReplyToMessage',
+    message_id: store.replyToMessage.id,
+    quote
+  };
 }
 
 async function getInputMessageContents(): Promise<InputMessageContent[]> {
@@ -235,6 +262,13 @@ async function newMessages() {
   });
 }
 
+const replyToTitle = computed(() => {
+  if (store.replyToMessage === null) {
+    return '';
+  }
+  return getSenderTitle(store.replyToMessage.sender_id);
+});
+
 let unlistener: UnlistenFn | undefined = undefined;
 
 onMounted(async () => {
@@ -251,7 +285,7 @@ onDeactivated(() => {
 });
 
 watch(
-  () => store.messagesToLoad.length,
+  () => store.messagesToLoad.length + store.messagesBubblesToLoad.length,
   async (loadingMessages: number) => {
     if (loadingMessages === 0 && store.loadingNewMessages) {
       await nextTick(() => {
@@ -261,6 +295,9 @@ watch(
     }
   }
 );
+
+// clear current message on chat change
+watch(() => store.selectedChat?.id, () => clear());
 </script>
 
 <template>
@@ -285,6 +322,10 @@ watch(
     <div id="chat-content" class="p-1 has-background-link-light" @scroll="chatContentScrolled">
       <MessageBubble :message="message" v-for="message in store.currentMessages" :key="message.id" />
     </div>
+    <div id="new-messages-box" class="has-background-info p-2" v-if="store.selectedChat.unread_count > 0"
+      @click="newMessages">
+      new messages
+    </div>
     <div id="files-box" class="p-1" v-if="selectedFiles.length > 0">
       <div v-for="(file, index) in selectedFiles" class="file-box">
         <div class="selected-file-name ml-1 nowrap">{{ getFileName(file.path) }}</div>
@@ -301,9 +342,15 @@ watch(
         </div>
       </div>
     </div>
-    <div id="new-messages-box" class="has-background-info p-2" v-if="store.selectedChat.unread_count > 0"
-      @click="newMessages">
-      new messages
+    <div id="reply-to-box" class="pl-1 pt-1 has-background-primary-light" v-if="store.replyToMessage !== null">
+      <div class="nowrap" id="reply-to-sender-title">
+        Reply to <strong>{{ replyToTitle }}</strong>
+      </div>
+      <div>
+        <a href="#" class="has-text-danger mr-3" @click="() => (store.replyToMessage = null)">
+          <FontAwesomeIcon :icon="faX" />
+        </a>
+      </div>
     </div>
     <div id="send-message-box">
       <input type="text" class="input" id="new-message-text" v-model="newMessageText" @keyup.enter="send" />
@@ -385,5 +432,14 @@ watch(
 #new-messages-box {
   cursor: pointer;
   text-align: center;
+}
+
+#reply-to-box {
+  display: flex;
+  flex-direction: row;
+}
+
+#reply-to-sender-title {
+  flex-grow: 1;
 }
 </style>

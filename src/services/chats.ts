@@ -1,10 +1,11 @@
 import { listen } from '@tauri-apps/api/event'
 import { Window } from "@tauri-apps/api/window"
 import { store } from '../store'
-import { Chat, InputMessageContent, InputMessageReplyTo, Message, Messages, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateUnreadChatCount } from '../model';
+import { Chat, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateUnreadChatCount } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
+import { getUserDisplayText } from './users';
 
 export async function handleChatsUpdates() {
   return [
@@ -241,4 +242,48 @@ export async function forwardMessage(message: Message, chatId: number, sendCopy:
     messageId: message.id,
     sendCopy
   });
+}
+
+export function getSenderTitle(sender: MessageSender): string {
+  if (sender['@type'] === 'messageSenderUser') {
+    return getUserDisplayText(sender.user_id);
+  } else if (sender['@type'] === 'messageSenderChat') {
+    const chat = store.getChat(sender.chat_id);
+    if (chat) {
+      return chat.title;
+    }
+  }
+  return '';
+}
+
+export async function getRepliedMessage(chatId: number, messageId: number) {
+  return await invoke<Message>('get_replied_message', {
+    chatId,
+    messageId
+  });
+}
+
+export function getMessageTextContent(content: MessageContent): string | null {
+  if (content['@type'] === 'messageText') {
+    return content.text.text;
+  }
+  if (content['@type'] === 'messagePhoto') {
+    if (content.caption != null) {
+      return content.caption.text;
+    }
+    return null;
+  }
+  if (content['@type'] === 'messageDocument') {
+    if (content.caption != null) {
+      return content.caption.text;
+    }
+    return null;
+  }
+  if (content['@type'] === 'messageVideo') {
+    if (content.caption != null) {
+      return content.caption.text;
+    }
+    return null;
+  }
+  return null;
 }

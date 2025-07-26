@@ -37,6 +37,7 @@ pub fn run() {
             commands::chats::delete_message,
             commands::chats::view_message,
             commands::chats::forward_message,
+            commands::chats::get_replied_message,
             commands::files::download_file,
             commands::files::get_photo,
             commands::files::get_image_size,

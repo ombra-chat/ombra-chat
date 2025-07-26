@@ -2,108 +2,170 @@ import { reactive } from 'vue'
 import type { Chat, ChatFolder, Message, File, User, ChatPosition, MessageWithStatus } from './model';
 import { viewMessage } from './services/chats';
 
-export const store = reactive({
+type Store = {
+  sidebarExpanded: boolean;
+  myId: number;
+  settingsModalActive: boolean;
+  chatSettingsModalActive: boolean;
+  messageModalActive: boolean;
+  chatFolders: ChatFolder[];
+  chatsMap: Record<number, Chat>;
+  // key are folders id, values are id of chats in each folder
+  chatFoldersMap: Record<number, number[]>;
+  usersMap: Record<number, User>;
+  selectedChatFolderId: number;
+  selectedChat: Chat | null;
+  selectedChatKey: string;
+  loadingNewMessages: boolean;
+  messagesToLoad: number[];
+  messagesBubblesToLoad: number[];
+  scrollTargetMessageId: number;
+  selectedMessage: Message | null;
+  lastMessageId: number;
+  currentMessages: MessageWithStatus[];
+  replyToMessage: Message | null;
+  replyToQuote: string | null;
+  getChat: (chatId: number) => Chat | undefined;
+  getUser: (userId: number) => User | undefined;
+  toggleSidebar: () => void;
+  toggleSettingsModal: () => void;
+  toggleChatSettingsModal: () => void;
+  toggleMessageModal: () => void;
+  addChat: (chat: Chat) => void;
+  addChatToFolder: (folder_id: number, chat_id: number) => void;
+  removeChatFromFolder: (folder_id: number, chat_id: number) => void;
+  selectChat: (id: number | null) => void;
+  messageLoaded: (messageId: number) => void;
+  messageBubbleLoaded: (messageId: number) => void;
+  addMessages: (newMessages: Message[]) => void;
+  clearMessages: () => void;
+  deleteMessages: (messageIds: number[]) => void;
+  updateFile: (file: File) => void;
+  updateUser: (user: User) => void;
+  updateChatPosition: (chatId: number, newPosition: ChatPosition) => void;
+  updateChat: (chatId: number, chatUpdate: Partial<Chat>) => void;
+  markMessageAsRead: (messageId: number) => Promise<void>;
+  updateMessage: (oldMessageId: number, message: Message) => void;
+}
+
+export const store = reactive<Store>({
   sidebarExpanded: false,
   toggleSidebar() {
-    this.sidebarExpanded = !this.sidebarExpanded;
+    const store = this as Store;
+    store.sidebarExpanded = !store.sidebarExpanded;
   },
   myId: 0,
   settingsModalActive: false,
   chatSettingsModalActive: false,
   messageModalActive: false,
   toggleSettingsModal() {
-    this.settingsModalActive = !this.settingsModalActive;
+    const store = this as Store;
+    store.settingsModalActive = !store.settingsModalActive;
   },
   toggleChatSettingsModal() {
-    this.chatSettingsModalActive = !this.chatSettingsModalActive;
+    const store = this as Store;
+    store.chatSettingsModalActive = !store.chatSettingsModalActive;
   },
   toggleMessageModal() {
-    this.messageModalActive = !this.messageModalActive;
+    const store = this as Store;
+    store.messageModalActive = !store.messageModalActive;
   },
-  chatFolders: [] as ChatFolder[],
-  chatsMap: {} as { [id: number]: Chat },
-  // key are folders id, values are id of chats in each folder
-  chatFoldersMap: {} as { [id: number]: number[] },
-  usersMap: {} as { [id: number]: User },
+  chatFolders: [],
+  chatsMap: {},
+  chatFoldersMap: {},
+  usersMap: {},
   selectedChatFolderId: 0,
   getChat(chatId: number): Chat | undefined {
-    return this.chatsMap[chatId];
+    return (this as Store).chatsMap[chatId];
   },
   addChat(chat: Chat) {
-    this.chatsMap[chat.id] = chat;
+    (this as Store).chatsMap[chat.id] = chat;
   },
   addChatToFolder(folder_id: number, chat_id: number) {
-    let chats = this.chatFoldersMap[folder_id];
+    const store = this as Store;
+    let chats = store.chatFoldersMap[folder_id];
     if (chats === undefined) {
       chats = [chat_id];
     } else {
       chats.push(chat_id);
     }
-    this.chatFoldersMap[folder_id] = chats;
+    store.chatFoldersMap[folder_id] = chats;
   },
   removeChatFromFolder(folder_id: number, chat_id: number) {
-    const chatFoldersMap = this.chatFoldersMap as { [id: number]: number[] };
+    const chatFoldersMap = (this as Store).chatFoldersMap;
     if (!(folder_id in chatFoldersMap)) {
       return;
     }
     const chats = chatFoldersMap[folder_id];
     chatFoldersMap[folder_id] = chats.filter(id => id !== chat_id);
   },
-  selectedChat: null as Chat | null,
+  selectedChat: null,
   selectChat(id: number | null) {
+    const store = this as Store;
     if (id === null) {
-      this.selectedChat = null;
+      store.selectedChat = null;
     } else {
-      const chat = (this.chatsMap as { [id: number]: Chat })[id];
-      this.selectedChat = chat || null;
+      const chat = store.chatsMap[id];
+      store.selectedChat = chat || null;
     }
   },
   selectedChatKey: '',
   loadingNewMessages: false,
-  messagesToLoad: [] as number[],
+  messagesToLoad: [],
+  messagesBubblesToLoad: [],
   scrollTargetMessageId: 0,
-  selectedMessage: null as Message | null,
+  selectedMessage: null,
   lastMessageId: 0,
-  currentMessages: [] as MessageWithStatus[],
+  currentMessages: [],
+  replyToMessage: null,
+  replyToQuote: null,
   messageLoaded(messageId: number) {
-    const messages = this.messagesToLoad as number[];
-    this.messagesToLoad = messages.filter(m => m !== messageId);
+    const store = this as Store;
+    store.messagesToLoad = store.messagesToLoad.filter(m => m !== messageId);
+  },
+  messageBubbleLoaded(messageId: number) {
+    const store = this as Store;
+    store.messagesBubblesToLoad = store.messagesBubblesToLoad.filter(m => m !== messageId);
   },
   addMessages(newMessages: Message[]) {
-    const chat = this.selectedChat as null | Chat;
+    const store = this as Store;
+    const chat = store.selectedChat;
     if (chat === null) {
       return;
     }
-    const messages = this.currentMessages as MessageWithStatus[];
+    const messages = store.currentMessages;
     for (const message of newMessages) {
       if (message.chat_id !== chat.id) {
         return;
       }
       if (!messages.find(m => m.id === message.id)) {
-        this.messagesToLoad.push(message.id);
+        store.messagesToLoad.push(message.id);
+        store.messagesBubblesToLoad.push(message.id);
         messages.push({
           ...message,
           read: message.id <= chat.last_read_inbox_message_id ||
-            (message.sender_id['@type'] === 'messageSenderUser' && message.sender_id.user_id === this.myId)
+            (message.sender_id['@type'] === 'messageSenderUser' && message.sender_id.user_id === store.myId)
         });
       }
     }
-    messages.sort((m1: Message, m2: Message) => m1.id < m2.id ? -1 : 1);
-    this.lastMessageId = messages[messages.length - 1].id;
+    messages.sort((m1: MessageWithStatus, m2: MessageWithStatus) => m1.id < m2.id ? -1 : 1);
+    store.lastMessageId = messages[messages.length - 1].id;
   },
   clearMessages() {
-    this.currentMessages = [];
-    this.messagesToLoad = [];
+    const store = this as Store;
+    store.currentMessages = [];
+    store.messagesToLoad = [];
+    store.messagesBubblesToLoad = [];
   },
   deleteMessages(messageIds: number[]) {
-    const messages = this.currentMessages as MessageWithStatus[];
-    const messagesToLoad = this.messagesToLoad as number[];
-    this.currentMessages = messages.filter(m => !messageIds.includes(m.id));
-    this.messagesToLoad = messagesToLoad.filter(id => !messageIds.includes(id));
+    const store = this as Store;
+    store.currentMessages = store.currentMessages.filter(m => !messageIds.includes(m.id));
+    store.messagesToLoad = store.messagesToLoad.filter(id => !messageIds.includes(id));
+    store.messagesBubblesToLoad = store.messagesBubblesToLoad.filter(id => !messageIds.includes(id));
   },
   updateFile(file: File) {
-    const messages = this.currentMessages as MessageWithStatus[];
-    this.currentMessages = messages.map(m => {
+    const store = this as Store;
+    store.currentMessages = store.currentMessages.map(m => {
       if (m.content['@type'] === 'messageDocument') {
         if (m.content.document.document.id === file.id) {
           m.content.document.document = file;
@@ -120,18 +182,18 @@ export const store = reactive({
     });
   },
   getUser(userId: number): User | undefined {
-    const usersMap = this.usersMap as { [id: number]: User };
+    const usersMap = (this as Store).usersMap;
     return usersMap[userId];
   },
   updateUser(user: User) {
-    this.usersMap[user.id] = user;
+    (this as Store).usersMap[user.id] = user;
   },
   updateChatPosition(chatId: number, newPosition: ChatPosition) {
     if (newPosition.list['@type'] !== 'chatListMain') {
       return;
     }
 
-    const chatsMap = this.chatsMap as { [id: number]: Chat };
+    const chatsMap = (this as Store).chatsMap;
     const chat = chatsMap[chatId];
     if (!chat) {
       return;
@@ -158,7 +220,7 @@ export const store = reactive({
     }
   },
   updateChat(chatId: number, chatUpdate: Partial<Chat>) {
-    const chatsMap = this.chatsMap as { [id: number]: Chat };
+    const chatsMap = (this as Store).chatsMap;
     const chat = chatsMap[chatId];
     if (!chat) {
       return;
@@ -166,7 +228,7 @@ export const store = reactive({
     chatsMap[chatId] = { ...chat, ...chatUpdate };
   },
   async markMessageAsRead(messageId: number) {
-    const messages = this.currentMessages as MessageWithStatus[];
+    const messages = (this as Store).currentMessages;
     for (const message of messages) {
       if (message.id === messageId) {
         if (!message.read) {
@@ -178,8 +240,9 @@ export const store = reactive({
     }
   },
   updateMessage(oldMessageId: number, message: Message) {
-    const messages = this.currentMessages as MessageWithStatus[];
-    this.currentMessages = messages.map(m => m.id === oldMessageId ? message : m);
-    this.messageLoaded(oldMessageId);
+    const store = this as Store;
+    store.currentMessages = store.currentMessages.map(m => m.id === oldMessageId ? { ...message, read: m.read } : m);
+    store.messageLoaded(oldMessageId);
+    store.messageBubbleLoaded(oldMessageId);
   }
 });

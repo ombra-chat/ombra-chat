@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core';
-import { ref } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 
 const passphrase = ref('');
 const error = ref('');
@@ -22,6 +22,13 @@ async function next() {
     }
   }
 }
+
+onMounted(async () => {
+  await nextTick(() => {
+    const passphraseInput = document.getElementById('passphrase');
+    passphraseInput?.focus();
+  });
+});
 </script>
 
 <template>

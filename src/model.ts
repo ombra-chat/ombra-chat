@@ -60,6 +60,8 @@ export type Chat = {
   unread_mention_count: number;
   unread_reaction_count: number;
   available_reactions: { '@type': AvailableReactionsType; max_reaction_count: number };
+  can_be_deleted_for_all_users: boolean;
+  can_be_deleted_only_for_self: boolean;
 }
 
 export type ChatListMain = {
@@ -142,7 +144,12 @@ export type MessagePhoto = {
   caption: FormattedText;
 }
 
-export type MessageContent = MessageText | MessagePhoto | MessageDocument;
+export type MessageVideo = {
+  '@type': 'messageVideo';
+  caption: FormattedText;
+}
+
+export type MessageContent = MessageText | MessagePhoto | MessageDocument | MessageVideo;
 
 export type MessageSenderUser = {
   '@type': 'messageSenderUser';
@@ -160,6 +167,25 @@ export type UpdateNewMessage = {
 
 export type MessageSender = MessageSenderUser | MessageSenderChat;
 
+export type MessageOriginUser = {
+  '@type': 'messageOriginUser';
+  sender_user_id: number;
+}
+
+export type MessageOrigin = MessageOriginUser;
+
+export type MessageReplyToMessage = {
+  '@type': 'messageReplyToMessage';
+  chat_id: number;
+  message_id: number;
+  quote: TextQuote;
+  origin: MessageOrigin | null;
+  origin_send_date: number;
+  content: MessageContent;
+}
+
+export type MessageReplyTo = MessageReplyToMessage;
+
 export type Message = {
   id: number;
   sender_id: MessageSender;
@@ -170,7 +196,7 @@ export type Message = {
   edit_date: number;
   interaction_info: any;
   unread_reactions: any[];
-  reply_to: any;
+  reply_to: MessageReplyTo;
   has_sensitive_content: boolean;
   content: MessageContent;
 }
@@ -180,15 +206,24 @@ export type Messages = {
   messages: Message[];
 }
 
+export type TextQuote = {
+  text: FormattedText;
+  position: number;
+  is_manual: boolean;
+}
+
 export type InputTextQuote = {
   text: FormattedText;
   position: number;
 }
 
-export type InputMessageReplyTo = {
+export type InputMessageReplyToMessage = {
+  '@type': 'inputMessageReplyToMessage';
   message_id: number;
-  quote: InputTextQuote;
+  quote: InputTextQuote | null;
 }
+
+export type InputMessageReplyTo = InputMessageReplyToMessage;
 
 export type InputMessageText = {
   '@type': 'inputMessageText',

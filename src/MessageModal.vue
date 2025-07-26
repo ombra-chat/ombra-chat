@@ -48,6 +48,28 @@ async function deleteMsg() {
   closeModal();
 }
 
+function getMessageSelectedText(): string | null {
+  const element = document.querySelector(`[data-message-id="${store.selectedMessage?.id}"]`);
+  if (!element) {
+    return null;
+  }
+  const selection = window.getSelection();
+  if (selection === null || selection.rangeCount === 0) {
+    return null;
+  }
+  const range = selection.getRangeAt(0);
+  if (!element.contains(range.commonAncestorContainer)) {
+    return null;
+  }
+  return range.toString();
+}
+
+function setReplyToMessage() {
+  store.replyToMessage = store.selectedMessage;
+  store.replyToQuote = getMessageSelectedText();
+  closeModal();
+}
+
 const chats = computed(() => {
   if (!selectingChat) {
     return [];
@@ -55,8 +77,25 @@ const chats = computed(() => {
   const list = store.chatFoldersMap[forwardingFilter.value.trim() === '' ? store.selectedChatFolderId : 0] || [];
   return list
     .map(id => store.chatsMap[id]).filter(c => c !== undefined)
+    .filter(c => c.permissions.can_send_basic_messages)
     .filter(c => forwardingFilter.value.trim() === '' ? true : c.title.toLowerCase().includes(forwardingFilter.value.trim()))
     .sort((c1, c2) => getChatPosition(c1) < getChatPosition(c2) ? -1 : 1);
+});
+
+const deleteEnabled = computed(() => {
+  const chat = store.selectedChat;
+  if (chat === null) {
+    return false;
+  }
+  return chat.can_be_deleted_for_all_users || chat.can_be_deleted_only_for_self;
+});
+
+const replyToEnabled = computed(() => {
+  const chat = store.selectedChat;
+  if (chat === null) {
+    return false;
+  }
+  return chat.permissions.can_send_basic_messages;
 });
 </script>
 
@@ -90,7 +129,12 @@ const chats = computed(() => {
       </section>
       <section class="modal-card-body p-3" v-else>
         <button class="button is-link mb-3" @click="openChatSelection">Forward message</button><br />
-        <button class="button is-danger" @click="deleteMsg">Delete message</button>
+        <button class="button is-link mb-3" @click="setReplyToMessage" v-if="replyToEnabled">
+          Reply to message
+        </button><br />
+        <button class="button is-danger" @click="deleteMsg" v-if="deleteEnabled">
+          Delete message
+        </button>
       </section>
       <footer class="modal-card-foot p-2">
       </footer>
