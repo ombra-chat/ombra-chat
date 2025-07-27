@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event'
 import { Window } from "@tauri-apps/api/window"
 import { store } from '../store'
-import { Chat, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateChatRemovedFromList, UpdateDeleteMessages, UpdateFile, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateUnreadChatCount } from '../model';
+import { Chat, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateChatRemovedFromList, UpdateDeleteMessages, UpdateFile, UpdateMessageInteractionInfo, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateUnreadChatCount } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
@@ -46,7 +46,7 @@ export async function handleChatsUpdates() {
       const { file } = event.payload;
       store.updateFile(file);
     }),
-    await listen<UpdateDeleteMessages>('delete-messages', (event) => {
+    await listen<UpdateDeleteMessages>('update-delete-messages', (event) => {
       const { message_ids, chat_id } = event.payload;
       if (store.selectedChat?.id === chat_id) {
         store.deleteMessages(message_ids);
@@ -81,7 +81,7 @@ export async function handleChatsUpdates() {
         await mainWindow.setTitle(unreadChats ? '★ OmbraChat' : 'OmbraChat');
       }
     }),
-    await listen<UpdateMessageSendSucceeded>('message-send-succeeded', async (event) => {
+    await listen<UpdateMessageSendSucceeded>('update-message-send-succeeded', async (event) => {
       const update = event.payload;
       store.updateMessage(update.old_message_id, update.message);
     }),
@@ -92,6 +92,12 @@ export async function handleChatsUpdates() {
         store.deleteChat(update.chat_id);
       } else if (update.chat_list['@type'] === 'chatListFolder') {
         store.removeChatFromFolder(update.chat_list.chat_folder_id, update.chat_id);
+      }
+    }),
+    await listen<UpdateMessageInteractionInfo>('update-message-interaction-info', async (event) => {
+      const update = event.payload;
+      if (store.selectedChat?.id === update.chat_id) {
+        store.updateMessageInteractionInfo(update.message_id, update.interaction_info);
       }
     }),
   ]

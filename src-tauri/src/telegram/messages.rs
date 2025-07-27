@@ -16,15 +16,15 @@ pub async fn handle_messages_update<R: tauri::Runtime>(
             return true;
         }
         Update::DeleteMessages(value) => {
-            emit(app, "delete-messages", value);
+            emit(app, "update-delete-messages", value);
             return true;
         }
         Update::MessageSendSucceeded(value) => {
-            emit(app, "message-send-succeeded", value);
+            emit(app, "update-message-send-succeeded", value);
             return true;
         }
         Update::MessageInteractionInfo(value) => {
-            emit(app, "message-interaction-info", value);
+            emit(app, "update-message-interaction-info", value);
             return true;
         }
         _ => {

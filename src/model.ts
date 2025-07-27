@@ -16,7 +16,18 @@ export type ChatFolder = {
   name: string;
 }
 
-export type AvailableReactionsType = 'chatAvailableReactionsAll';
+export type ChatAvailableReactionsAll = {
+  '@type': 'chatAvailableReactionsAll';
+  max_reaction_count: number;
+}
+
+export type ChatAvailableReactionsSome = {
+  '@type': 'chatAvailableReactionsSome';
+  reactions: ReactionType[];
+  max_reaction_count: number;
+}
+
+export type ChatAvailableReactions = ChatAvailableReactionsAll | ChatAvailableReactionsSome;
 
 export type ChatPermission = {
   can_send_basic_messages: boolean;
@@ -81,7 +92,7 @@ export type Chat = {
   last_read_outbox_message_id: number;
   unread_mention_count: number;
   unread_reaction_count: number;
-  available_reactions: { '@type': AvailableReactionsType; max_reaction_count: number };
+  available_reactions: ChatAvailableReactions;
   can_be_deleted_for_all_users: boolean;
   can_be_deleted_only_for_self: boolean;
 }
@@ -216,8 +227,8 @@ export type Message = {
   contains_unread_mention: boolean;
   date: number;
   edit_date: number;
-  interaction_info: any;
-  unread_reactions: any[];
+  interaction_info: MessageInteractionInfo | null;
+  unread_reactions: UnreadReaction[];
   reply_to: MessageReplyTo;
   has_sensitive_content: boolean;
   content: MessageContent;
@@ -429,4 +440,82 @@ export type UpdateMessageSendSucceeded = {
 export type UpdateChatRemovedFromList = {
   chat_id: number;
   chat_list: ChatList;
+}
+
+export type UpdateAvailableMessageEffects = {
+  reaction_effect_ids: number[];
+  sticker_effect_ids: number[];
+}
+
+export type Sticker = {
+  id: number;
+  set_id: number;
+  width: number;
+  height: number;
+  emoji: string;
+  sticker: File;
+}
+
+export type MessageEffectTypeEmojiReaction = {
+  '@type': 'messageEffectTypeEmojiReaction';
+}
+
+export type MessageEffectTypePremiumSticker = {
+  '@type': 'messageEffectTypePremiumSticker';
+}
+
+export type MessageEffectType = MessageEffectTypeEmojiReaction | MessageEffectTypePremiumSticker;
+
+export type MessageEffect = {
+  id: number;
+  static_icon: Sticker | null;
+  emoji: string;
+  is_premium: boolean;
+  type: MessageEffectType;
+}
+
+export type MessageReplyInfo = {
+  replyCount: number;
+  recent_replier_ids: MessageSender[];
+  last_read_inbox_message_id: number;
+  last_read_outbox_message_id: number;
+  last_message_id: number;
+}
+
+export type ReactionTypeEmoji = {
+  '@type': 'reactionTypeEmoji';
+  emoji: string;
+}
+
+export type ReactionType = ReactionTypeEmoji;
+
+export type MessageReaction = {
+  type: ReactionType;
+  totalCount: number;
+  is_chosen: boolean;
+  used_sender_id: MessageSender | null;
+  recent_sender_ids: MessageSender[];
+}
+
+export type MessageReactions = {
+  reactions: MessageReaction[];
+}
+
+export type MessageInteractionInfo = {
+  view_count: number;
+  forward_count: number;
+  reply_info: MessageReplyInfo | null;
+  reactions: MessageReactions | null;
+}
+
+export type UpdateMessageInteractionInfo = {
+  chat_id: number;
+  message_id: number;
+  interaction_info: MessageInteractionInfo;
+}
+
+export type UnreadReaction = {
+  type: ReactionType;
+  sender_id: MessageSender;
+  is_big: boolean;
 }

@@ -15,6 +15,7 @@ import { handleChatsUpdates } from './services/chats';
 import { invoke } from '@tauri-apps/api/core';
 import { store } from './store';
 import { handleUsersUpdates } from './services/users';
+import { handleEffectsUpdates } from './services/effects';
 
 enum MainWindowState {
   LOADING,
@@ -51,7 +52,8 @@ onBeforeMount(async () => {
       store.myId = event.payload;
     }),
     ...await handleChatsUpdates(),
-    ...await handleUsersUpdates()
+    ...await handleUsersUpdates(),
+    ...await handleEffectsUpdates()
   ];
 });
 

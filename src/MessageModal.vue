@@ -2,17 +2,22 @@
 import { computed, nextTick, ref } from 'vue';
 import { deleteMessage, forwardMessage, getChatPosition, selectChat } from './services/chats';
 import { store } from './store';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faAngleDown, faAngleUp } from '@fortawesome/free-solid-svg-icons';
+import { addMessageReaction } from './services/effects';
 
 const selectingChat = ref(false);
 const forwarding = ref(false);
 const forwardingFilter = ref('');
 const sendCopy = ref(false);
+const reactionCardCollapsed = ref(true);
 
 function closeModal() {
   selectingChat.value = false;
   forwardingFilter.value = '';
   forwarding.value = false;
   sendCopy.value = false;
+  reactionCardCollapsed.value = true;
   store.selectedMessage = null;
   store.toggleMessageModal();
 }
@@ -70,6 +75,11 @@ function setReplyToMessage() {
   closeModal();
 }
 
+async function addReaction(emoji: string) {
+  await addMessageReaction(store.selectedMessage!, emoji);
+  closeModal();
+}
+
 const chats = computed(() => {
   if (!selectingChat) {
     return [];
@@ -97,6 +107,22 @@ const replyToEnabled = computed(() => {
   }
   return chat.permissions.can_send_basic_messages;
 });
+
+const reactions = computed<Record<string, string>>(() => {
+  if (!store.selectedChat) {
+    return {};
+  }
+  const availableReactions = store.selectedChat.available_reactions;
+  if (availableReactions['@type'] === 'chatAvailableReactionsAll') {
+    return store.allReactions;
+  } else if (availableReactions['@type'] === 'chatAvailableReactionsSome') {
+    const availableEmojis = availableReactions.reactions.map(r => r.emoji);
+    return Object.fromEntries(Object.entries(store.allReactions).filter(([e, _]) =>
+      availableEmojis.includes(e)
+    ));
+  }
+  return {};
+})
 </script>
 
 <template>
@@ -129,9 +155,33 @@ const replyToEnabled = computed(() => {
       </section>
       <section class="modal-card-body p-3" v-else>
         <button class="button is-link mb-3" @click="openChatSelection">Forward message</button><br />
+
         <button class="button is-link mb-3" @click="setReplyToMessage" v-if="replyToEnabled">
           Reply to message
         </button><br />
+
+        <div class="card" v-if="Object.entries(reactions).length > 0">
+          <header class="card-header" @click="() => (reactionCardCollapsed = !reactionCardCollapsed)"
+            id="reactions-card-header">
+            <p class="card-header-title">Add reaction</p>
+            <span class="card-header-icon">
+              <span class="icon">
+                <FontAwesomeIcon :icon="faAngleDown" v-if="reactionCardCollapsed" />
+                <FontAwesomeIcon :icon="faAngleUp" v-else />
+              </span>
+            </span>
+          </header>
+          <div class="card-content p-3" v-if="!reactionCardCollapsed">
+            <div class="content">
+              <button class="button" type="button" v-for="[emoji, image] in Object.entries(reactions)"
+                @click="() => addReaction(emoji)">
+                <img :src="image" width="20" height="20" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <hr v-if="deleteEnabled" />
         <button class="button is-danger" @click="deleteMsg" v-if="deleteEnabled">
           Delete message
         </button>
@@ -156,5 +206,9 @@ const replyToEnabled = computed(() => {
 
 #send-copy-wrapper {
   border-top: 1px #eee solid;
+}
+
+#reactions-card-header {
+  cursor: pointer;
 }
 </style>

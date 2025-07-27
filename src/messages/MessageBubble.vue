@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Message, MessageReplyToMessage, MessageWithStatus } from '../model';
+import { Message, MessageReaction, MessageWithStatus } from '../model';
 import PhotoMessage from './PhotoMessage.vue';
 import TextMessage from './TextMessage.vue';
 import PgpTextMessage from './PgpTextMessage.vue';
@@ -11,6 +11,7 @@ import { store } from '../store';
 import { computed, onMounted, ref } from 'vue';
 import DocumentMessage from './DocumentMessage.vue';
 import { getMessageTextContent, getRepliedMessage, getSenderTitle } from '../services/chats';
+import { removeMessageReaction } from '../services/effects';
 
 const props = defineProps<{
   message: MessageWithStatus
@@ -76,6 +77,29 @@ function truncateReplyContent(text: string) {
   return text;
 }
 
+function formatDate(message: Message) {
+  const date = new Date(message.date * 1000);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+}
+
+async function removeReaction(reaction: MessageReaction) {
+  if (reaction.type['@type'] !== 'reactionTypeEmoji') {
+    return;
+  }
+  if (reaction.used_sender_id && reaction.used_sender_id['@type'] === 'messageSenderUser' && reaction.used_sender_id.user_id === store.myId) {
+    await removeMessageReaction(props.message, reaction.type.emoji);
+  }
+}
+
+const reactions = computed(() => {
+  return props.message.interaction_info?.reactions?.reactions.filter(r => r.type['@type'] === 'reactionTypeEmoji') || [];
+});
+
 onMounted(async () => {
   await loadReplyToMessage();
   store.messageBubbleLoaded(props.message.id);
@@ -114,6 +138,19 @@ onMounted(async () => {
       <DocumentMessage v-else-if="message.content['@type'] === 'messageDocument'" :message="message"
         :content="message.content" />
       <NotSupportedMessage v-else :message="message" />
+      <div class="message-footer mt-2">
+        <div class="message-reactions">
+          <div v-for="reaction in reactions" class="mr-2">
+            <img :src="store.allReactions[reaction.type.emoji]" v-if="store.allReactions[reaction.type.emoji]"
+              width="20" height="20"
+              :class="{ 'my-reaction': reaction.used_sender_id && reaction.used_sender_id['@type'] === 'messageSenderUser' && reaction.used_sender_id.user_id === store.myId }"
+              @click="() => removeReaction(reaction)" />
+          </div>
+        </div>
+        <div class="message-date has-text-link">
+          {{ formatDate(message) }}
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -146,5 +183,29 @@ onMounted(async () => {
 
 .message-reply-to {
   border-radius: 6px;
+}
+
+.message-footer {
+  height: 20px;
+  display: flex;
+  flex-direction: row;
+}
+
+.message-reactions {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: row;
+}
+
+.message-date {
+  text-align: right;
+  font-size: small;
+  font-style: italic;
+}
+
+.my-reaction:hover {
+  cursor: pointer;
+  -webkit-filter: drop-shadow(0 0 3px #333);
+  filter: drop-shadow(0 0 3px #333);
 }
 </style>

@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import type { Chat, ChatFolder, Message, File, User, ChatPosition, MessageWithStatus } from './model';
+import type { Chat, ChatFolder, Message, File, User, ChatPosition, MessageWithStatus, MessageInteractionInfo } from './model';
 import { viewMessage } from './services/chats';
 
 type Store = {
@@ -25,6 +25,7 @@ type Store = {
   currentMessages: MessageWithStatus[];
   replyToMessage: Message | null;
   replyToQuote: string | null;
+  allReactions: Record<string, string>;
   getChat: (chatId: number) => Chat | undefined;
   getUser: (userId: number) => User | undefined;
   toggleSidebar: () => void;
@@ -47,6 +48,7 @@ type Store = {
   updateChat: (chatId: number, chatUpdate: Partial<Chat>) => void;
   markMessageAsRead: (messageId: number) => Promise<void>;
   updateMessage: (oldMessageId: number, message: Message) => void;
+  updateMessageInteractionInfo: (message_id: number, info: MessageInteractionInfo) => void;
 }
 
 export const store = reactive<Store>({
@@ -248,5 +250,9 @@ export const store = reactive<Store>({
     store.currentMessages = store.currentMessages.map(m => m.id === oldMessageId ? { ...message, read: m.read } : m);
     store.messageLoaded(oldMessageId);
     store.messageBubbleLoaded(oldMessageId);
+  },
+  allReactions: {},
+  updateMessageInteractionInfo(message_id: number, info: MessageInteractionInfo) {
+    store.currentMessages = store.currentMessages.map(m => m.id === message_id ? { ...m, interaction_info: info } : m);
   }
 });
