@@ -25,7 +25,7 @@ onMounted(async () => {
       </a>
       <ChatFolders />
     </div>
-    <div id="main-container">
+    <div id="main-container" :class="{ 'chat-selected': !!store.selectedChat }">
       <div id="chat-lists-container">
         <ChatsList />
       </div>
@@ -85,6 +85,15 @@ onMounted(async () => {
 
   #current-chat-container {
     display: none;
+  }
+
+  #main-container.chat-selected #chat-lists-container {
+    display: none;
+  }
+
+  #main-container.chat-selected #current-chat-container {
+    display: block;
+    width: 100%;
   }
 }
 

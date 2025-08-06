@@ -139,6 +139,18 @@ export async function selectChat(id: number) {
   }
 }
 
+export async function closeCurrentChat() {
+  try {
+    if (store.selectedChat === null) {
+      return;
+    }
+    await invoke('close_chat', { id: store.selectedChat.id })
+    store.selectChat(null);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 /**
  * Retrieve only the last message; this is done because in some cases tdlib sends only
  * one message in any case at the first load, so it is better to always expect to receive

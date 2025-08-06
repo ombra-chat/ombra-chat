@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onDeactivated, onMounted, ref, watch } from 'vue';
 import MessageBubble from './messages/MessageBubble.vue';
-import { getSenderTitle, loadNewMessages, loadPreviousMessages, sendMessage } from './services/chats';
+import { getSenderTitle, loadNewMessages, loadPreviousMessages, sendMessage, closeCurrentChat } from './services/chats';
 import { store } from './store';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { FormattedText, InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageReplyTo, InputMessageText, InputTextQuote } from './model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faPaperPlane, faGear, faPaperclip, faX, faKey, faLock } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faGear, faPaperclip, faX, faKey, faLock, faChevronLeft } from '@fortawesome/free-solid-svg-icons';
 import { createThumbnail, getFileName, getImageSize, removeThumbnail } from './services/files';
 import ChatSettingsModal from './ChatSettingsModal.vue';
 import MessageModal from './MessageModal.vue';
@@ -304,12 +304,20 @@ watch(() => store.selectedChat?.id, () => clear());
   <div v-if="store.selectedChat !== null" id="chat-page" :class="{ 'dragging': dragging }"
     @dragover.prevent="() => (dragging = true)" @dragleave="() => (dragging = false)">
     <div id="chat-header" class="pb-1">
-      <div id="chat-title" class="mt-1">
-        <div class="has-text-link has-text-weight-bold" :class="{ 'pb-2': store.selectedChatKey === '' }">
-          {{ store.selectedChat.title }}
-          <span class="ml-1" v-if="store.selectedChat.type['@type'] === 'chatTypeSecret'">
-            <FontAwesomeIcon :icon="faLock" />
-          </span>
+      <div id="chat-title">
+        <div class="has-text-link has-text-weight-bold is-flex is-flex-direction-row"
+          :class="{ 'pb-2': store.selectedChatKey === '' }">
+          <div id="close-chat-button-wrapper">
+            <button type="button" class="button is-text has-text-link" @click="() => closeCurrentChat()">
+              <FontAwesomeIcon :icon="faChevronLeft" />
+            </button>
+          </div>
+          <div class="is-flex-grow-1 has-text-centered is-align-self-center">
+            {{ store.selectedChat.title }}
+            <span class="ml-1" v-if="store.selectedChat.type['@type'] === 'chatTypeSecret'">
+              <FontAwesomeIcon :icon="faLock" />
+            </span>
+          </div>
         </div>
         <div v-if="store.selectedChatKey !== ''" class="ml-2 mt-1 nowrap">
           <FontAwesomeIcon :icon="faKey" />
@@ -355,7 +363,7 @@ watch(() => store.selectedChat?.id, () => clear());
         </a>
       </div>
     </div>
-    <div id="send-message-box">
+    <div id="send-message-box" v-if="store.selectedChat.permissions.can_send_basic_messages">
       <input type="text" class="input" id="new-message-text" v-model="newMessageText" @keyup.enter="send" />
       <button type="button" class="button is-primary" @click="selectFiles" aria-label="Attach file">
         <FontAwesomeIcon :icon="faPaperclip" />
@@ -444,5 +452,15 @@ watch(() => store.selectedChat?.id, () => clear());
 
 #reply-to-sender-title {
   flex-grow: 1;
+}
+
+#close-chat-button-wrapper {
+  display: none;
+}
+
+@media screen and (max-width: 400px) {
+  #close-chat-button-wrapper {
+    display: block;
+  }
 }
 </style>
