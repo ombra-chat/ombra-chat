@@ -5,7 +5,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { PublicKeyFingerprints } from './model';
 import { loadPublicKey, removeChatKey, saveChatKey } from './services/pgp';
 import Dropdown from './components/Dropdown.vue';
-import { createNewSecretChat, deleteChat, selectChat } from './services/chats';
+import { createNewSecretChat, deleteChat, selectChat, sharePublicKeyTo } from './services/chats';
 
 function closeModal() {
   pgpError.value = '';
@@ -88,6 +88,14 @@ async function deleteCurrentChat() {
   store.selectChat(null);
 }
 
+async function sharePublicKey() {
+  if (store.selectedChat === null) {
+    return;
+  }
+  await sharePublicKeyTo(store.selectedChat.id);
+  closeModal();
+}
+
 const showPgpSettings = computed(() => {
   if (store.selectedChat === null) {
     return false;
@@ -146,6 +154,9 @@ watch(
               {{ pgpError }}
             </div>
           </div>
+          <button class="button is-link mt-3" type="button" @click="sharePublicKey">
+            Share public key
+          </button>
         </div>
         <div v-if="showSecretChatButton">
           <button class="button is-link mt-3" type="button" @click="startSecretChat">

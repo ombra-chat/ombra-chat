@@ -43,6 +43,7 @@ pub fn run() {
             commands::chats::get_message_effect,
             commands::chats::add_message_reaction,
             commands::chats::remove_message_reaction,
+            commands::chats::share_public_key,
             commands::files::download_file,
             commands::files::get_photo,
             commands::files::get_image_size,

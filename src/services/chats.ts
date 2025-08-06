@@ -323,3 +323,7 @@ export function getMessageTextContent(content: MessageContent): string | null {
   }
   return null;
 }
+
+export async function sharePublicKeyTo(chatId: number) {
+  return await invoke<Message>('share_public_key', { chatId });
+}

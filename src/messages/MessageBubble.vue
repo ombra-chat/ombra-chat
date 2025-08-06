@@ -4,6 +4,7 @@ import PhotoMessage from './PhotoMessage.vue';
 import TextMessage from './TextMessage.vue';
 import PgpTextMessage from './PgpTextMessage.vue';
 import PgpDocumentMessage from './PgpDocumentMessage.vue';
+import PgpKeyMessage from './PgpKeyMessage.vue';
 import NotSupportedMessage from './NotSupportedMessage.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faGear } from '@fortawesome/free-solid-svg-icons';
@@ -40,6 +41,13 @@ const isPgpTextMessage = computed(() => {
   return content['@type'] === 'messageDocument'
     && content.document.file_name.startsWith('ombra-chat-')
     && content.document.file_name.endsWith('.txt.pgp');
+});
+
+const isPgpKeyMessage = computed(() => {
+  const { content } = props.message;
+  return content['@type'] === 'messageDocument'
+    && content.document.file_name.startsWith('ombra-chat-')
+    && content.document.file_name.endsWith('.key');
 });
 
 const senderTitle = computed(() => getSenderTitle(props.message.sender_id));
@@ -130,6 +138,8 @@ onMounted(async () => {
       <PgpTextMessage v-if="message.content['@type'] === 'messageDocument' && isPgpTextMessage" :message="message"
         :content="message.content" />
       <PgpDocumentMessage v-else-if="message.content['@type'] === 'messageDocument' && isPgpMessage" :message="message"
+        :content="message.content" />
+      <PgpKeyMessage v-else-if="message.content['@type'] === 'messageDocument' && isPgpKeyMessage" :message="message"
         :content="message.content" />
       <TextMessage v-else-if="message.content['@type'] === 'messageText'" :message="message"
         :content="message.content" />

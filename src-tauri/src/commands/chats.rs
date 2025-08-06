@@ -201,3 +201,35 @@ pub async fn remove_message_reaction<R: tauri::Runtime>(
     .await
     .map_err(|e| e.message)
 }
+
+#[tauri::command]
+pub async fn share_public_key<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    chat_id: i64,
+) -> Result<tdlib::enums::Message, String> {
+    let public_key_path =
+        crate::crypto::pgp::get_my_public_key_tmp_file(&app).map_err(|e| e.to_string())?;
+
+    let document = tdlib::types::InputMessageDocument {
+        document: tdlib::enums::InputFile::Local(tdlib::types::InputFileLocal {
+            path: public_key_path.to_string(),
+        }),
+        caption: None,
+        thumbnail: None,
+        disable_content_type_detection: true,
+    };
+
+    let input_message_content = tdlib::enums::InputMessageContent::InputMessageDocument(document);
+
+    tdlib::functions::send_message(
+        chat_id,
+        0,
+        None,
+        None,
+        None,
+        input_message_content,
+        state::get_client_id(&app),
+    )
+    .await
+    .map_err(|e| e.message)
+}
