@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { store } from './store';
 import Dropdown from './components/Dropdown.vue';
-import { onMounted, ref } from 'vue';
-import { getDefaultChatFolder, setDefaultChatFolder } from './settings/settings';
+import { onMounted, ref, watch } from 'vue';
+import { getDefaultChatFolder, setDefaultChatFolder, setTheme } from './settings/settings';
 import { exportPublicKey, exportSecretKey, getMyKeyFingerprint } from './services/pgp';
 import { save } from '@tauri-apps/plugin-dialog';
+import { getCurrentWindow, Theme } from '@tauri-apps/api/window';
+
+const selectedId = ref(0);
+const myKeyFingerprint = ref('');
+const theme = ref<Theme>('light');
 
 function closeModal() {
   store.toggleSettingsModal();
 }
-
-const selectedId = ref(0);
-const myKeyFingerprint = ref('');
 
 function selectFolder(id: number) {
   selectedId.value = id;
@@ -20,10 +22,12 @@ function selectFolder(id: number) {
 onMounted(async () => {
   selectedId.value = await getDefaultChatFolder();
   myKeyFingerprint.value = await getMyKeyFingerprint();
+  theme.value = await getCurrentWindow().theme() || 'light';
 });
 
 async function saveSettings() {
   await setDefaultChatFolder(selectedId.value);
+  await setTheme(theme.value);
   closeModal();
 }
 
@@ -42,6 +46,13 @@ async function openSavePublicKeyDialog() {
   }
   await exportPublicKey(targetPath);
 }
+
+watch(
+  () => theme.value,
+  async (newValue) => {
+    await getCurrentWindow().setTheme(newValue);
+  }
+);
 </script>
 
 <template>
@@ -61,6 +72,18 @@ async function openSavePublicKeyDialog() {
         <p v-if="myKeyFingerprint !== ''" class="mt-1 mb-2"><code>{{ myKeyFingerprint }}</code></p>
         <button class="button is-link" @click="openSaveSecretKeyDialog">Export secret key</button>
         <button class="button is-primary ml-2" @click="openSavePublicKeyDialog">Export public key</button>
+
+        <p class="menu-label mt-4">Theme</p>
+        <div class="control">
+          <label class="radio mr-2">
+            <input type="radio" value="light" v-model="theme" name="theme-selector" />
+            Light
+          </label>
+          <label class="radio">
+            <input type="radio" value="dark" v-model="theme" name="theme-selector" />
+            Dark
+          </label>
+        </div>
       </section>
       <footer class="modal-card-foot p-2">
         <div class="buttons">

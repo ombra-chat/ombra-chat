@@ -116,13 +116,13 @@ onMounted(async () => {
 
 <template>
   <div class="card m-2 message-bubble"
-    :class="{ 'has-background-success-light': isMyMessage, 'is-pgp': isPgpMessage, 'unread': !message.read }"
+    :class="{ 'has-background-success-soft': isMyMessage, 'is-pgp': isPgpMessage, 'unread': !message.read }"
     :data-message-id="message.id">
     <div class="card-content p-3">
       <div class="message-header">
         <div class="message-sender">
           <p v-if="senderTitle" class="mb-2 wrap">
-            <strong class="has-text-link">{{ senderTitle }}</strong>
+            <strong class="has-text-link-on-scheme">{{ senderTitle }}</strong>
           </p>
         </div>
         <div class="message-actions">
@@ -131,7 +131,7 @@ onMounted(async () => {
           </a>
         </div>
       </div>
-      <div class="message-reply-to p-2 mb-2 has-background-primary-light" v-if="replyToSenderTitle !== null">
+      <div class="message-reply-to p-2 mb-2 has-background-primary-soft" v-if="replyToSenderTitle !== null">
         <strong class="mr-2">{{ replyToSenderTitle }}</strong>
         <span>{{ replyToContent }}</span>
       </div>
@@ -157,7 +157,7 @@ onMounted(async () => {
               @click="() => removeReaction(reaction)" />
           </div>
         </div>
-        <div class="message-date has-text-link">
+        <div class="message-date has-text-link-on-scheme">
           {{ formatDate(message) }}
         </div>
       </div>
@@ -217,5 +217,24 @@ onMounted(async () => {
   cursor: pointer;
   -webkit-filter: drop-shadow(0 0 3px #333);
   filter: drop-shadow(0 0 3px #333);
+}
+
+@media (prefers-color-scheme: dark) {
+  .is-pgp {
+    border: 2px rgb(23, 220, 255) dashed;
+  }
+
+  .is-pgp.unread {
+    border: 2px rgb(223, 188, 255) dashed;
+  }
+
+  .unread {
+    border: 2px rgb(223, 188, 255) solid;
+  }
+
+  .my-reaction:hover {
+    -webkit-filter: drop-shadow(0 0 3px #eee);
+    filter: drop-shadow(0 0 3px #eee);
+  }
 }
 </style>

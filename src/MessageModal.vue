@@ -205,7 +205,7 @@ const reactions = computed<Record<string, string>>(() => {
 }
 
 #send-copy-wrapper {
-  border-top: 1px #eee solid;
+  border-top: 1px var(--bulma-border-weak) solid;
 }
 
 #reactions-card-header {

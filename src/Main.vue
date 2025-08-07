@@ -39,7 +39,7 @@ onMounted(async () => {
 
 <style>
 #top-bar {
-  border-bottom: 1px #eee solid;
+  border-bottom: 1px var(--bulma-border-weak) solid;
 }
 
 #main-wrapper {
@@ -65,7 +65,7 @@ onMounted(async () => {
   top: 0;
   bottom: 0;
   left: 0;
-  border-right: 1px #eee solid;
+  border-right: 1px var(--bulma-border-weak) solid;
   overflow-y: auto;
   overflow-x: hidden;
 }

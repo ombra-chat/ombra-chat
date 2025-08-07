@@ -17,7 +17,7 @@ function openSettingsModal() {
 </script>
 
 <template>
-  <aside class="menu has-background-light" id="sidebar" :class="{ expanded: store.sidebarExpanded }">
+  <aside class="menu has-background" id="sidebar" :class="{ expanded: store.sidebarExpanded }">
     <div class="is-clearfix">
       <a class="navbar-burger is-active is-pulled-right mr-0" role="button" aria-label="menu" aria-expanded="false"
         @click="store.toggleSidebar">

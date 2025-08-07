@@ -330,7 +330,7 @@ watch(() => store.selectedChat?.id, () => clear());
         </button>
       </div>
     </div>
-    <div id="chat-content" class="p-1 has-background-link-light" @scroll="chatContentScrolled">
+    <div id="chat-content" class="p-1 has-background-link-soft" @scroll="chatContentScrolled">
       <MessageBubble :message="message" v-for="message in store.currentMessages" :key="message.id" />
     </div>
     <div id="new-messages-box" class="has-background-info p-2" v-if="store.selectedChat.unread_count > 0"
@@ -353,7 +353,7 @@ watch(() => store.selectedChat?.id, () => clear());
         </div>
       </div>
     </div>
-    <div id="reply-to-box" class="pl-1 pt-1 has-background-primary-light" v-if="store.replyToMessage !== null">
+    <div id="reply-to-box" class="pl-1 pt-1 has-background-primary-soft" v-if="store.replyToMessage !== null">
       <div class="nowrap" id="reply-to-sender-title">
         Reply to <strong>{{ replyToTitle }}</strong>
       </div>
@@ -387,7 +387,7 @@ watch(() => store.selectedChat?.id, () => clear());
 #chat-header {
   display: flex;
   flex-direction: row;
-  border-bottom: 1px #eee solid;
+  border-bottom: 1px var(--bulma-border-weak) solid;
 }
 
 #chat-title {

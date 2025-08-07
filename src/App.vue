@@ -4,7 +4,7 @@ import 'bulma';
 
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { ref, onBeforeMount, onDeactivated } from "vue";
-import { isInitialConfigDone } from "./settings/settings";
+import { getTheme, isInitialConfigDone } from "./settings/settings";
 import InitialConfiguration from "./settings/InitialConfiguration.vue";
 import EncryptionPassword from './EncryptionPassword.vue';
 import PhoneNumber from './login/PhoneNumber.vue';
@@ -16,6 +16,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { store } from './store';
 import { handleUsersUpdates } from './services/users';
 import { handleEffectsUpdates } from './services/effects';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 enum MainWindowState {
   LOADING,
@@ -32,6 +33,8 @@ const state = ref(MainWindowState.LOADING);
 let unlisteners: UnlistenFn[] = [];
 
 onBeforeMount(async () => {
+
+  await initTheme();
 
   state.value = await getInitialState();
 
@@ -56,6 +59,13 @@ onBeforeMount(async () => {
     ...await handleEffectsUpdates()
   ];
 });
+
+async function initTheme() {
+  const theme = await getTheme();
+  if (theme) {
+    await getCurrentWindow().setTheme(theme);
+  }
+}
 
 async function getInitialState() {
   if (await isInitialConfigDone()) {

@@ -161,7 +161,7 @@ function validateFields() {
                 Encrypt Telegram database
             </label>
         </div>
-        <p class="has-text-primary-10"><i>A random password encrypted with your PGP key will be used</i></p>
+        <p class="has-text-primary"><i>A random password encrypted with your PGP key will be used</i></p>
         <div class="message is-danger mt-3" v-if="initError">
             <div class="message-body">
                 {{ initError }}

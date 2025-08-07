@@ -54,7 +54,7 @@ onMounted(async () => {
 
 <template>
 
-  <div class="notification is-warning is-light is-outlined p-2 mb-0">
+  <div class="notification has-background-warning-soft is-outlined p-2 mb-0">
     <p class="mb-2">Public PGP key</p>
     <p class="mb-2">
       <FontAwesomeIcon :icon="faKey" /><code class="ml-2">{{ keyFingerprint }}</code>

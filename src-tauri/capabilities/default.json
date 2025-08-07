@@ -11,6 +11,7 @@
     "dialog:default",
     "core:window:allow-set-title",
     "core:window:allow-set-icon",
+    "core:window:allow-set-theme",
     {
       "identifier": "opener:allow-open-path",
       "allow": [
