@@ -25,7 +25,7 @@ impl Client {
         state::set_client_id(app, client_id);
 
         let close_clone = close.clone();
-        thread::spawn(move || {
+        let receive_handler = thread::spawn(move || {
             while !close_clone.load(Ordering::Relaxed) {
                 if let Some((update, _client_id)) = tdlib::receive() {
                     if let Err(e) = tx.send(update) {
@@ -46,6 +46,12 @@ impl Client {
         }
         log::trace!("rx.recv loop ended");
         close.store(true, Ordering::SeqCst);
+
+        receive_handler.join().unwrap_or_else(|_| {
+            log::error!("Unable to join receive handler");
+        });
+        log::trace!("exit(0)");
+        app.exit(0);
     }
 
     async fn handle_update<R: tauri::Runtime>(
@@ -93,8 +99,6 @@ impl Client {
                 }
                 AuthorizationState::Closed => {
                     state::request_close(app);
-                    log::trace!("exit(0)");
-                    app.exit(0);
                 }
                 _ => {
                     log::warn!("Unsupported authorization state {:?}", state);

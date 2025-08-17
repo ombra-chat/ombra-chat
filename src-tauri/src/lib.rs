@@ -69,10 +69,21 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| match event {
-            tauri::WindowEvent::CloseRequested { .. } => {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
                 log::trace!("CloseRequested {}", window.label());
                 if window.label() == "main" {
-                    state::request_close(window.app_handle());
+                    let client_id = state::get_client_id(window.app_handle());
+                    if client_id != 0 {
+                        state::request_close(window.app_handle());
+                        trpl::run(async {
+                            tdlib::functions::close(client_id)
+                                .await
+                                .unwrap_or_else(|err| {
+                                    log::error!("Error closing client: {}", err.message);
+                                });
+                        });
+                        api.prevent_close();
+                    }
                 }
             }
             _ => {}
