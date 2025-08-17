@@ -18,6 +18,8 @@ async function download() {
   const file = await downloadFile(props.content.document.document.id);
   if (file?.local.is_downloading_completed) {
     downloading.value = false;
+  } else {
+    await download();
   }
 }
 

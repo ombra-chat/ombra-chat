@@ -21,6 +21,8 @@ async function download() {
   if (file?.local.is_downloading_completed) {
     downloading.value = false;
     await decrypt(file.local.path);
+  } else {
+    await download();
   }
 }
 

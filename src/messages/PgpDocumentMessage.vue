@@ -46,7 +46,11 @@ async function download() {
   downloading.value = true;
   const file = await downloadFile(props.content.document.document.id);
   if (file?.local.is_downloading_completed) {
+    props.content.document.document = file;
     downloading.value = false;
+    await decrypt(props.content.document.document.local.path);
+  } else {
+    await download();
   }
 }
 
