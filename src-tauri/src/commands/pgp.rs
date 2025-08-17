@@ -2,7 +2,10 @@ use crate::{
     crypto, state,
     store::{self, ChatConfig},
 };
-use pgp::types::{KeyDetails, PublicKeyTrait};
+use pgp::{
+    composed::SignedPublicKey,
+    types::{KeyDetails, PublicKeyTrait},
+};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
@@ -12,9 +15,9 @@ use std::{
 #[tauri::command]
 pub fn get_my_key_fingerprint<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
-) -> Result<String, String> {
+) -> Result<PublicKeyFingerprints, String> {
     let key = state::get_my_key(&app).map_err(|e| e.to_string())?;
-    Ok(key.public_key().fingerprint().to_string())
+    get_fingerprints(&key.signed_public_key())
 }
 
 #[tauri::command]
@@ -52,6 +55,10 @@ pub struct PublicKeyFingerprints {
 #[tauri::command]
 pub fn load_public_key(path: &str) -> Result<PublicKeyFingerprints, String> {
     let key = crypto::pgp::load_public_key_from_file(path).map_err(|e| e.to_string())?;
+    get_fingerprints(&key)
+}
+
+pub fn get_fingerprints(key: &SignedPublicKey) -> Result<PublicKeyFingerprints, String> {
     let mut encryption_keys = Vec::new();
     for subkey in &key.public_subkeys {
         if subkey.is_encryption_key() {

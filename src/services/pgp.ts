@@ -1,13 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { PublicKeyFingerprints } from "../model";
 
-export async function getMyKeyFingerprint(): Promise<string> {
-  try {
-    return await invoke<string>('get_my_key_fingerprint');
-  } catch (err) {
-    console.error(err);
-    return '';
-  }
+export async function getMyKeyFingerprint(): Promise<PublicKeyFingerprints> {
+  return await invoke<PublicKeyFingerprints>('get_my_key_fingerprint');
 }
 
 export async function exportSecretKey(path: string): Promise<void> {

@@ -6,10 +6,14 @@ import { getDefaultChatFolder, setDefaultChatFolder, setTheme } from './settings
 import { exportPublicKey, exportSecretKey, getMyKeyFingerprint } from './services/pgp';
 import { save } from '@tauri-apps/plugin-dialog';
 import { getCurrentWindow, Theme } from '@tauri-apps/api/window';
+import { PublicKeyFingerprints } from './model';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faLock, faKey } from '@fortawesome/free-solid-svg-icons';
 
 const selectedId = ref(0);
-const myKeyFingerprint = ref('');
+const myKeyFingerprint = ref<PublicKeyFingerprints | null>(null);
 const theme = ref<Theme>('light');
+const keyError = ref('');
 
 function closeModal() {
   store.toggleSettingsModal();
@@ -21,7 +25,13 @@ function selectFolder(id: number) {
 
 onMounted(async () => {
   selectedId.value = await getDefaultChatFolder();
-  myKeyFingerprint.value = await getMyKeyFingerprint();
+  try {
+    myKeyFingerprint.value = await getMyKeyFingerprint();
+  } catch (err) {
+    if (err instanceof Error) {
+      keyError.value = err.message;
+    }
+  }
   theme.value = await getCurrentWindow().theme() || 'light';
 });
 
@@ -69,7 +79,20 @@ watch(
           @change="selectFolder" />
 
         <p class="menu-label mt-4">PGP Key</p>
-        <p v-if="myKeyFingerprint !== ''" class="mt-1 mb-2"><code>{{ myKeyFingerprint }}</code></p>
+        <div v-if="myKeyFingerprint" class="mb-2">
+          <div>
+            <FontAwesomeIcon :icon="faKey" class="mr-1" />Primary: <code>{{ myKeyFingerprint.primary }}</code>
+          </div>
+          <div v-for="enc_key in myKeyFingerprint.encryption_keys">
+            <FontAwesomeIcon :icon="faLock" class="mr-1" />Encryption: <code>{{ enc_key }}</code>
+          </div>
+        </div>
+        <div v-if="keyError" class="message is-danger mb-2">
+          <div class="message-body">
+            {{ keyError }}
+          </div>
+        </div>
+
         <button class="button is-link" @click="openSaveSecretKeyDialog">Export secret key</button>
         <button class="button is-primary ml-2" @click="openSavePublicKeyDialog">Export public key</button>
 
