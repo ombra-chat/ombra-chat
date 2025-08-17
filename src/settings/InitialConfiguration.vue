@@ -67,13 +67,14 @@ async function next() {
         return;
     }
     try {
-        await invoke<string>("save_initial_config", {
+        await invoke<string>('save_initial_config', {
             apiId: apiId.value,
             apiHash: apiHash.value,
             folder: applicationFolder.value,
             pgpPassphrase: pgpPassphrase.value,
             encryptDb: encryptDatabase.value,
         });
+        await invoke('start_telegram_client');
     } catch (err) {
         initError.value = err as string;
     }
@@ -130,7 +131,7 @@ function validateFields() {
         <div class="field mt-3">
             <label class="label mb-0" for="passphrase">PGP key passphrase</label>
             <div class="control">
-                <input class="input" type="passphrase" id="passphrase" v-model="pgpPassphrase" @input="resetKey"
+                <input class="input" type="password" id="passphrase" v-model="pgpPassphrase" @input="resetKey"
                     @change="resetKey">
             </div>
         </div>

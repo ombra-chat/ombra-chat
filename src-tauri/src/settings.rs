@@ -1,5 +1,6 @@
 use crate::{
-    crypto::{self, pgp}, state, store
+    crypto::{self, pgp},
+    state, store,
 };
 use std::{env, error::Error, fs, path::PathBuf};
 
@@ -55,6 +56,8 @@ pub fn save_initial_config<R: tauri::Runtime>(
         store::set_encryption_salt(app, &crypto::utils::generate_random_salt());
     }
     store::set_initial_config_done(app, true);
+
+    state::set_pgp_passphrase(app, pgp_password);
 
     Ok(())
 }
