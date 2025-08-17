@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    container: ghcr.io/ombra-chat/builder:v0.0.2
     strategy:
       matrix:
         include:
@@ -16,45 +17,22 @@ jobs:
             platform: arm64
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+        path: ombra-chat
 
-      - name: Extract tdlib version
-        run: echo "TDLIB_VERSION=`grep '>tdlib<' -A1 pom.xml | awk 'NR==2' | awk -F'[<>]' '{print $3}'`" >> $GITHUB_ENV
+      - name: Checkout tdlib-rs repo
+        uses: actions/checkout@v4
+        repository: https://github.com/ombra-chat/tdlib-rs.git
+        path: tdlib-rs
 
-      - name: Download tdlib.jar
-        run: wget https://github.com/ombra-chat/tdlib-java/releases/download/v${TDLIB_VERSION}/tdlib-v${TDLIB_VERSION}.jar
-
-      - name: Download libtdjni.so
-        run: wget https://github.com/ombra-chat/tdlib-java/releases/download/v${TDLIB_VERSION}/libtdjni-v${TDLIB_VERSION}-${{ matrix.platform }}.zip
-
-      - name: Unzip libtdjni.so
-        run: unzip libtdjni-v${TDLIB_VERSION}-${{ matrix.platform }}.zip
-
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Install tdlib to local maven repo
-        run: mvn install:install-file -Dfile=tdlib-v${TDLIB_VERSION}.jar -DgroupId=org.drinkless -DartifactId=tdlib -Dversion=${TDLIB_VERSION} -Dpackaging=jar
-
-      - run: mvn clean package
-
-      - name: workaround for missing twelvemonkeys module-info
-        run: ./lib/patch-modules.sh
-
-      - name: Create package
-        run: mvn clean javafx:jlink
-
-      - name: Copy libtdjni.so
-        run: cp libtdjni.so target/ombrachat/lib/libtdjni.so
-
-      - run: mv target/ombrachat .
-
-      - name: Zip
-        run: zip -r ombra-chat-${{ github.ref_name }}-${{ matrix.platform }}.zip ombrachat
+      - name: Build ombra-chat
+        run: cd ombra-chat && npm install && npm run tauri build
 
       - name: Release
         uses: softprops/action-gh-release@v2.2.1
         with:
-          files: ombra-chat-${{ github.ref_name }}-${{ matrix.platform }}.zip
+          files:
+            - ombra-chat/src-tauri/target/release/bundle/deb/ombra-chat*.deb
+            - ombra-chat/src-tauri/target/release/bundle/rpm/ombra-chat*.rpm
+            - ombra-chat/src-tauri/target/release/bundle/appimage/ombra-chat*.AppImage

@@ -1,8 +1,8 @@
 [package]
 name = "ombra-chat"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+version = "0.3.0"
+description = "Privacy-boosted Telegram desktop client with PGP magic"
+authors = ["Sonia Zorba"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
