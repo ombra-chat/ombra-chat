@@ -247,7 +247,7 @@ export async function deleteMessage(chatId: number, messageId: number) {
   }
 }
 
-export async function getChatPosition(chat: Chat) {
+export function getChatPosition(chat: Chat) {
   for (const pos of chat.positions) {
     if (pos.list['@type'] === 'chatListMain') {
       return pos.order;

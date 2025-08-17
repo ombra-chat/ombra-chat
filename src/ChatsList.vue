@@ -9,7 +9,7 @@ const chats = computed(() => {
   const list = store.chatFoldersMap[store.selectedChatFolderId] || [];
   return list
     .map(id => store.chatsMap[id]).filter(c => c !== undefined)
-    .sort((c1, c2) => getChatPosition(c1) < getChatPosition(c2) ? -1 : 1);
+    .sort((c1, c2) => getChatPosition(c1) < getChatPosition(c2) ? 1 : -1);
 });
 </script>
 
@@ -19,7 +19,7 @@ const chats = computed(() => {
       <li v-for="chat in chats" class="chat-row nowrap" :key="chat.id">
         <a href="#" :class="{ 'is-active': store.selectedChat?.id === chat.id }" class="nowrap"
           @click="() => selectChat(chat.id)">
-          <span class="chat-title">
+          <span class="chat-title nowrap">
             <span class="mr-1" v-if="chat.type['@type'] === 'chatTypeSecret'">
               <FontAwesomeIcon :icon="faLock" />
             </span>

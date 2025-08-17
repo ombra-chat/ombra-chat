@@ -199,8 +199,8 @@ export const store = reactive<Store>({
       return;
     }
 
-    const chatsMap = (this as Store).chatsMap;
-    const chat = chatsMap[chatId];
+    const store = this as Store;
+    const chat = store.chatsMap[chatId];
     if (!chat) {
       return;
     }
@@ -220,18 +220,22 @@ export const store = reactive<Store>({
       newPositions = [...chat.positions, newPosition];
     }
 
-    chatsMap[chatId] = {
+    store.chatsMap[chatId] = {
       ...chat,
       positions: newPositions
     }
   },
   updateChat(chatId: number, chatUpdate: Partial<Chat>) {
-    const chatsMap = (this as Store).chatsMap;
-    const chat = chatsMap[chatId];
+    const store = this as Store;
+    const chat = store.chatsMap[chatId];
     if (!chat) {
       return;
     }
-    chatsMap[chatId] = { ...chat, ...chatUpdate };
+    const updatedChat = { ...chat, ...chatUpdate };
+    store.chatsMap[chatId] = updatedChat;
+    if (updatedChat.id === store.selectedChat?.id) {
+      store.selectedChat = updatedChat;
+    }
   },
   async markMessageAsRead(messageId: number) {
     const messages = (this as Store).currentMessages;
