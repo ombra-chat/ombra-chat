@@ -32,7 +32,7 @@ Have a look at the [changelog](CHANGELOG.md) to see the implemented features.
 
 There are numerous open-source messaging applications that offer robust end-to-end encryption support. However, the existence of multiple options often leads to fragmentation, with users reluctant to create numerous accounts. Consequently, even tech-savvy individuals tend to use mostly Telegram, where encrypted chats are not created by default and not supported by the official desktop client.
 
-This alternative client allows us to continue utilizing Telegram's infrastructure while addressing its privacy limitations. While GPG may not be user-friendly and lacks features like forward secrecy, it is still better than standard unencrypted chats. On the other hand, it's nice to have direct control over your keys instead of depending on automatic mechanisms that can be somewhat unclear.
+This alternative client allows us to continue utilizing Telegram's infrastructure while addressing its privacy limitations. While PGP may not be user-friendly and lacks features like forward secrecy, it is still better than standard unencrypted chats. On the other hand, it's nice to have direct control over your keys instead of depending on automatic mechanisms that can be somewhat unclear.
 
 Moreover, switching to alternative clients with their own encryption will create resistance against the rising governmental push to invade our private conversations (yes, I'm looking at you, "Chat Control 2.0").
 
@@ -74,9 +74,19 @@ Preferences are stored in `~/.local/share/net.zonia3000.ombra-chat`.
 
 ## Developing
 
-Install [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), then install the app dependencies:
+Build tdlib using following instructions: https://tdlib.github.io/td/build.html?language=C
+
+Clone tdlib-rs in a folder at the same level of the ombra-chat repo folder:
+
+```sh
+git clone https://github.com/ombra-chat/tdlib-rs.git
+```
+
+Install [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), then clone this repo and install the app dependencies:
 
 ```bash
+git clone https://github.com/ombra-chat/ombra-chat.git
+cd ombra-chat
 npm install
 ```
 
