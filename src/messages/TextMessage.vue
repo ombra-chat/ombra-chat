@@ -13,7 +13,6 @@ onMounted(async () => {
     store.messageLoaded(props.message.id);
   });
 });
-
 </script>
 
 <template>

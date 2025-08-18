@@ -13,6 +13,7 @@ import { computed, onMounted, ref } from 'vue';
 import DocumentMessage from './DocumentMessage.vue';
 import { getMessageTextContent, getRepliedMessage, getSenderTitle } from '../services/chats';
 import { removeMessageReaction } from '../services/effects';
+import AnimatedEmojiMessage from './AnimatedEmojiMessage.vue';
 
 const props = defineProps<{
   message: MessageWithStatus
@@ -146,6 +147,8 @@ onMounted(async () => {
       <PhotoMessage v-else-if="message.content['@type'] === 'messagePhoto'" :message="message"
         :content="message.content" />
       <DocumentMessage v-else-if="message.content['@type'] === 'messageDocument'" :message="message"
+        :content="message.content" />
+      <AnimatedEmojiMessage v-else-if="message.content['@type'] === 'messageAnimatedEmoji'" :message="message"
         :content="message.content" />
       <NotSupportedMessage v-else :message="message" />
       <div class="message-footer mt-2">

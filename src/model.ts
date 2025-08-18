@@ -137,6 +137,16 @@ export type MessageDocument = {
   caption: FormattedText;
 }
 
+export type AnimatedEmoji = {
+  sticker: Sticker;
+}
+
+export type MessageAnimatedEmoji = {
+  '@type': 'messageAnimatedEmoji';
+  animated_emoji: AnimatedEmoji;
+  emoji: string;
+}
+
 export type LocalFile = {
   path: string;
   can_be_downloaded: boolean;
@@ -182,7 +192,7 @@ export type MessageVideo = {
   caption: FormattedText;
 }
 
-export type MessageContent = MessageText | MessagePhoto | MessageDocument | MessageVideo;
+export type MessageContent = MessageText | MessagePhoto | MessageDocument | MessageVideo | MessageAnimatedEmoji;
 
 export type MessageSenderUser = {
   '@type': 'messageSenderUser';
