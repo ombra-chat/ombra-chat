@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+⚠️ Breaking changes: you need to regenerate your keys. It is also better to delete the `~/.ombra-chat` folder and repeat the login.
+
+* app was completely rewritten in Tauri (Rust + Vue.js), due to JavaFX inability to handle Wayland and touch events
+* simplified key generation and key sharing
+* supported dark theme
+* supported chat deletion
+* updated tdlib to 1.8.52
+
 ## 0.2.1
 
 * fixed messages loading issue
