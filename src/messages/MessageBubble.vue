@@ -70,6 +70,9 @@ async function loadReplyToMessage() {
     return null;
   }
   const message = await getRepliedMessage(props.message.chat_id, props.message.id);
+  if (message === null) {
+    return null;
+  }
   replyToSenderTitle.value = getSenderTitle(message.sender_id);
   if (replyTo.quote !== null) {
     replyToContent.value = truncateReplyContent(replyTo.quote.text.text);

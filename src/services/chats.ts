@@ -281,11 +281,15 @@ export function getSenderTitle(sender: MessageSender): string {
   return '';
 }
 
-export async function getRepliedMessage(chatId: number, messageId: number) {
-  return await invoke<Message>('get_replied_message', {
-    chatId,
-    messageId
-  });
+export async function getRepliedMessage(chatId: number, messageId: number): Promise<Message | null> {
+  try {
+    return await invoke<Message>('get_replied_message', {
+      chatId,
+      messageId
+    });
+  } catch (_) {
+    return null;
+  }
 }
 
 export async function createNewSecretChat(userId: number) {
