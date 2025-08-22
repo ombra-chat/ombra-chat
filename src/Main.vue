@@ -7,6 +7,7 @@ import ChatsList from './ChatsList.vue';
 import SettingsModal from './SettingsModal.vue';
 import ChatPage from './ChatPage.vue';
 import { loadChats } from './services/chats';
+import AboutModal from './AboutModal.vue';
 
 onMounted(async () => {
   await loadChats();
@@ -34,6 +35,7 @@ onMounted(async () => {
       </div>
     </div>
     <SettingsModal />
+    <AboutModal />
   </div>
 </template>
 

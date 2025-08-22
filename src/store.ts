@@ -26,6 +26,7 @@ type Store = {
   replyToMessage: Message | null;
   replyToQuote: string | null;
   allReactions: Record<string, string>;
+  aboutModalActive: boolean;
   getChat: (chatId: number) => Chat | undefined;
   getUser: (userId: number) => User | undefined;
   toggleSidebar: () => void;
@@ -49,6 +50,7 @@ type Store = {
   markMessageAsRead: (messageId: number) => Promise<void>;
   updateMessage: (oldMessageId: number, message: Message) => void;
   updateMessageInteractionInfo: (message_id: number, info: MessageInteractionInfo) => void;
+  toggleAboutModal: () => void;
 }
 
 export const store = reactive<Store>({
@@ -258,5 +260,10 @@ export const store = reactive<Store>({
   allReactions: {},
   updateMessageInteractionInfo(message_id: number, info: MessageInteractionInfo) {
     store.currentMessages = store.currentMessages.map(m => m.id === message_id ? { ...m, interaction_info: info } : m);
+  },
+  aboutModalActive: false,
+  toggleAboutModal: function () {
+    const store = this as Store;
+    store.aboutModalActive = !store.aboutModalActive;
   }
 });

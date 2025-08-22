@@ -14,6 +14,11 @@ function openSettingsModal() {
   store.toggleSettingsModal();
   store.toggleSidebar();
 }
+
+function openAboutModal() {
+  store.toggleAboutModal();
+  store.toggleSidebar();
+}
 </script>
 
 <template>
@@ -30,6 +35,7 @@ function openSettingsModal() {
     <ul class="menu-list">
       <li><a href="#" @click="openSettingsModal">Settings</a></li>
       <li><a href="#" @click="logout">Logout</a></li>
+      <li><a href="#" @click="openAboutModal">About</a></li>
     </ul>
   </aside>
 </template>
