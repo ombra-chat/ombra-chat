@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1
+
+* basic support for emoji message
+* fixed bug caused by invalid "reply to" message
+* added about modal
+* added setting to display pictures using app window rather than system default app
+* updated dependencies
+
 ## 0.3.0
 
 ⚠️ Breaking changes: you need to regenerate your keys. It is also better to delete the `~/.ombra-chat` folder and repeat the login.

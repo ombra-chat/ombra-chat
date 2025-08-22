@@ -1,6 +1,6 @@
 [package]
 name = "ombra-chat"
-version = "0.3.0"
+version = "0.3.1"
 description = "Privacy-boosted Telegram desktop client with PGP magic"
 authors = ["Sonia Zorba"]
 edition = "2021"
