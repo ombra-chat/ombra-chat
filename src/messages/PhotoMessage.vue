@@ -4,6 +4,8 @@ import { MessagePhoto, File, PhotoSize, MessageWithStatus } from '../model';
 import { downloadFile, getPhoto } from '../services/files';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { store } from '../store';
+import { getAllWebviewWindows, WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { getImageViewer } from '../settings/settings';
 
 const props = defineProps<{
   message: MessageWithStatus,
@@ -59,6 +61,7 @@ async function photoLoaded() {
 }
 
 async function openPhoto() {
+  console.log('openPhoto')
   const sizes = getUsablePhotoSize(props.content);
   if (sizes.length === 0) {
     return;
@@ -69,13 +72,31 @@ async function openPhoto() {
 
 async function openPhotoInNewWindow(photo: File, largerSize: PhotoSize) {
   if (photo.local.is_downloading_completed) {
-    await openPath(`file://${photo.local.path}`);
+    const imageViewer = await getImageViewer();
+    if (imageViewer === 'system') {
+      await openPath(`file://${photo.local.path}`);
+    } else {
+      await openPhotoInTauriWindows(photo, largerSize);
+    }
   } else {
     const file = await downloadFile(photo.id);
     if (file) {
       await openPhotoInNewWindow(file, largerSize);
     }
   }
+}
+
+async function openPhotoInTauriWindows(photo: File, largerSize: PhotoSize) {
+  const windows = await getAllWebviewWindows();
+  const webview = new WebviewWindow(`picture-${windows.length}`, {
+    url: 'picture.html?path=' + encodeURIComponent(photo.local.path),
+    title: 'OmbraChat - Picture',
+    width: largerSize.width,
+    height: largerSize.height,
+  });
+  webview.once('tauri://error', function (e) {
+    console.log(e);
+  });
 }
 
 watch(

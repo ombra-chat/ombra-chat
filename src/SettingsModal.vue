@@ -2,7 +2,7 @@
 import { store } from './store';
 import Dropdown from './components/Dropdown.vue';
 import { onMounted, ref, watch } from 'vue';
-import { getDefaultChatFolder, setDefaultChatFolder, setTheme } from './settings/settings';
+import { getDefaultChatFolder, getImageViewer, setDefaultChatFolder, setImageViewer, setTheme } from './settings/settings';
 import { exportPublicKey, exportSecretKey, getMyKeyFingerprint } from './services/pgp';
 import { save } from '@tauri-apps/plugin-dialog';
 import { getCurrentWindow, Theme } from '@tauri-apps/api/window';
@@ -14,6 +14,7 @@ const selectedId = ref(0);
 const myKeyFingerprint = ref<PublicKeyFingerprints | null>(null);
 const theme = ref<Theme>('light');
 const keyError = ref('');
+const imageViewer = ref<'system' | 'app'>('system');
 
 function closeModal() {
   store.toggleSettingsModal();
@@ -33,11 +34,13 @@ onMounted(async () => {
     }
   }
   theme.value = await getCurrentWindow().theme() || 'light';
+  imageViewer.value = await getImageViewer();
 });
 
 async function saveSettings() {
   await setDefaultChatFolder(selectedId.value);
   await setTheme(theme.value);
+  await setImageViewer(imageViewer.value);
   closeModal();
 }
 
@@ -105,6 +108,18 @@ watch(
           <label class="radio">
             <input type="radio" value="dark" v-model="theme" name="theme-selector" />
             Dark
+          </label>
+        </div>
+
+        <p class="menu-label mt-4">Image viewer</p>
+        <div class="control">
+          <label class="radio mr-2">
+            <input type="radio" value="system" v-model="imageViewer" name="image-viewer-selector" />
+            System
+          </label>
+          <label class="radio">
+            <input type="radio" value="app" v-model="imageViewer" name="image-viewer-selector" />
+            App
           </label>
         </div>
       </section>

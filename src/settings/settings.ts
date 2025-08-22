@@ -24,3 +24,12 @@ export async function setTheme(theme: Theme): Promise<void> {
 export async function getTheme(): Promise<Theme | undefined> {
     return await store.get<Theme>('theme');
 }
+
+export async function getImageViewer(): Promise<'system' | 'app'> {
+    return await store.get<'system' | 'app'>('image-viewer') || 'system';
+}
+
+export async function setImageViewer(viewer: 'system' | 'app'): Promise<void> {
+    await store.set('image-viewer', viewer);
+    await store.save();
+}

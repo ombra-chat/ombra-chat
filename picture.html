@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OmbraChat - Picture</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    img {
+      max-width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <img />
+  <script>
+    const { invoke } = window.__TAURI_INTERNALS__;
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const path = urlParams.get('path');
+    if (path) {
+      invoke('get_photo', { path }).then(data => {
+        document.querySelector('img').src = data;
+      });
+    }
+  </script>
+</body>
+
+</html>
