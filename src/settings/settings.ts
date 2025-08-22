@@ -1,7 +1,7 @@
 import { Theme } from '@tauri-apps/api/window';
 import { LazyStore } from '@tauri-apps/plugin-store';
 
-const store = new LazyStore('store.json', { autoSave: false });
+const store = new LazyStore('store.json', { autoSave: false, defaults: {} });
 
 export async function isInitialConfigDone(): Promise<boolean> {
     return (await store.get<boolean>('initial-config-done')) || false;
