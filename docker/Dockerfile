@@ -1,7 +1,4 @@
-FROM ghcr.io/ombra-chat/builder:v0.0.2 AS builder-stage
-
-# TODO: move this to builder
-RUN apt install -y xdg-utils
+FROM ghcr.io/ombra-chat/builder:v0.0.3 AS builder-stage
 
 RUN git clone https://github.com/ombra-chat/tdlib-rs.git
 RUN git clone https://github.com/ombra-chat/ombra-chat.git
@@ -11,7 +8,6 @@ WORKDIR /ombra-chat
 ARG TAG=master
 RUN git checkout $TAG
 
-RUN ldconfig
 RUN bash -c "source $HOME/.nvm/nvm.sh && source $HOME/.cargo/env && npm install && npm run tauri build"
 
 FROM scratch
