@@ -1,4 +1,4 @@
-FROM ghcr.io/ombra-chat/builder:v0.0.3 AS builder-stage
+FROM ghcr.io/ombra-chat/builder:v0.0.4 AS builder-stage
 
 RUN git clone https://github.com/ombra-chat/tdlib-rs.git
 RUN git clone https://github.com/ombra-chat/ombra-chat.git
