@@ -40,6 +40,10 @@ Moreover, switching to alternative clients with their own encryption will create
 
 Check the [last release](https://github.com/ombra-chat/ombra-chat/releases) for some pre-built binaries.
 
+If you install the .deb or .rpm you will also need the libtdjson.so file. You can download it from the release page and copy it into `/usr/lib` or other proper location.
+
+If you are using Wayland, install the .deb or .rpm rather than the AppImage, since Tauri's AppImage doesn't work well with Wayland (see https://github.com/tauri-apps/tauri/issues/11790).
+
 ## Configure PGP keys
 
 ### Setup your private key
