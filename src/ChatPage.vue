@@ -97,6 +97,7 @@ function getInputMessageReplyTo(): InputMessageReplyTo | null {
   return {
     '@type': 'inputMessageReplyToMessage',
     message_id: store.replyToMessage.id,
+    checklist_task_id: 0,
     quote
   };
 }
