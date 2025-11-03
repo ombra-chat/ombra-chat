@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import type { Chat, ChatFolder, Message, File, User, ChatPosition, MessageWithStatus, MessageInteractionInfo } from './model';
+import type { Chat, ChatFolder, Message, File, User, ChatPosition, MessageWithStatus, MessageInteractionInfo, SecretChat } from './model';
 import { viewMessage } from './services/chats';
 
 type Store = {
@@ -10,6 +10,7 @@ type Store = {
   messageModalActive: boolean;
   chatFolders: ChatFolder[];
   chatsMap: Record<number, Chat>;
+  secretChatsMap: Record<number, SecretChat>;
   // key are folders id, values are id of chats in each folder
   chatFoldersMap: Record<number, number[]>;
   usersMap: Record<number, User>;
@@ -47,6 +48,7 @@ type Store = {
   updateUser: (user: User) => void;
   updateChatPosition: (chatId: number, newPosition: ChatPosition) => void;
   updateChat: (chatId: number, chatUpdate: Partial<Chat>) => void;
+  updateSecretChat: (chatId: number, chat: SecretChat) => void;
   markMessageAsRead: (messageId: number) => Promise<void>;
   updateMessage: (oldMessageId: number, message: Message) => void;
   updateMessageInteractionInfo: (message_id: number, info: MessageInteractionInfo) => void;
@@ -77,6 +79,7 @@ export const store = reactive<Store>({
   },
   chatFolders: [],
   chatsMap: {},
+  secretChatsMap: {},
   chatFoldersMap: {},
   usersMap: {},
   selectedChatFolderId: 0,
@@ -238,6 +241,10 @@ export const store = reactive<Store>({
     if (updatedChat.id === store.selectedChat?.id) {
       store.selectedChat = updatedChat;
     }
+  },
+  updateSecretChat(chatId: number, chat: SecretChat) {
+    const store = this as Store;
+    store.secretChatsMap[chatId] = chat;
   },
   async markMessageAsRead(messageId: number) {
     const messages = (this as Store).currentMessages;

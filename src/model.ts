@@ -65,6 +65,21 @@ export type ChatTypeSecret = {
   user_id: number;
 }
 
+export type SecretChat = {
+  id: number;
+  user_id: number;
+  state: {
+    '@type': 'secretChatStatePending' | 'secretChatStateReady' | 'secretChatStateClosed';
+  }
+  is_outbound: boolean;
+  key_hash: string;
+  layer: number;
+}
+
+export type UpdateSecretChat = {
+  secret_chat: SecretChat
+}
+
 export type ChatTypeBasicGroup = {
   '@type': 'chatTypeBasicGroup';
   basic_group_id: number;

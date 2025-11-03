@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event'
 import { Window } from "@tauri-apps/api/window"
 import { store } from '../store'
-import { Chat, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateChatRemovedFromList, UpdateDeleteMessages, UpdateFile, UpdateMessageInteractionInfo, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateUnreadChatCount } from '../model';
+import { Chat, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateChatRemovedFromList, UpdateDeleteMessages, UpdateFile, UpdateMessageInteractionInfo, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateSecretChat, UpdateUnreadChatCount } from '../model';
 import { getDefaultChatFolder } from '../settings/settings';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
@@ -100,6 +100,10 @@ export async function handleChatsUpdates() {
         store.updateMessageInteractionInfo(update.message_id, update.interaction_info);
       }
     }),
+    await listen<UpdateSecretChat>('update-secret-chat', async (event) => {
+      const { secret_chat } = event.payload;
+      store.updateSecretChat(secret_chat.id, secret_chat);
+    })
   ]
 }
 

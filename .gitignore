@@ -1,4 +1,5 @@
 tdlib.log*
+src-tauri/vendor/
 
 # Logs
 logs

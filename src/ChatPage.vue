@@ -270,6 +270,26 @@ const replyToTitle = computed(() => {
   return getSenderTitle(store.replyToMessage.sender_id);
 });
 
+const secretChatState = computed(() => {
+  if (!store.selectedChat) {
+    return '';
+  }
+  if (store.selectedChat.type['@type'] !== 'chatTypeSecret') {
+    return ''
+  }
+  const id = store.selectedChat.type.secret_chat_id
+  const secretChat = store.secretChatsMap[id];
+  if (!secretChat) {
+    return '';
+  }
+  return secretChat.state['@type'];
+});
+
+const canWriteMessages = computed(() => {
+  return !store.selectedChat || store.selectedChat.permissions.can_send_basic_messages
+    || (secretChatState.value !== '' && secretChatState.value !== 'secretChatStateReady')
+});
+
 let unlistener: UnlistenFn | undefined = undefined;
 
 onMounted(async () => {
@@ -289,9 +309,10 @@ watch(
   () => store.messagesToLoad.length + store.messagesBubblesToLoad.length,
   async (loadingMessages: number) => {
     if (loadingMessages === 0 && store.loadingNewMessages) {
-      await nextTick(() => {
+      await nextTick(async () => {
         scrollToMessage(store.scrollTargetMessageId);
         store.loadingNewMessages = false;
+        await markVisibleMessagesAsRead();
       });
     }
   }
@@ -333,6 +354,12 @@ watch(() => store.selectedChat?.id, () => clear());
     </div>
     <div id="chat-content" class="p-1 has-background-link-soft" @scroll="chatContentScrolled">
       <MessageBubble :message="message" v-for="message in store.currentMessages" :key="message.id" />
+      <div v-if="secretChatState === 'secretChatStatePending'" class="box m-5 has-background-warning-light">
+        Secret chat is in pending state
+      </div>
+      <div v-if="secretChatState === 'secretChatStateClosed'" class="box m-5 has-background-danger-light">
+        Secret chat is closed
+      </div>
     </div>
     <div id="new-messages-box" class="has-background-info p-2" v-if="store.selectedChat.unread_count > 0"
       @click="newMessages">
@@ -364,7 +391,7 @@ watch(() => store.selectedChat?.id, () => clear());
         </a>
       </div>
     </div>
-    <div id="send-message-box" v-if="store.selectedChat.permissions.can_send_basic_messages">
+    <div id="send-message-box" v-if="canWriteMessages">
       <input type="text" class="input" id="new-message-text" v-model="newMessageText" @keyup.enter="send" />
       <button type="button" class="button is-primary" @click="selectFiles" aria-label="Attach file">
         <FontAwesomeIcon :icon="faPaperclip" />

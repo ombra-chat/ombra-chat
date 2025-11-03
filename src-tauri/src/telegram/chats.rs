@@ -39,6 +39,10 @@ pub async fn handle_chats_update<R: tauri::Runtime>(
             emit(app, "update-chat-removed-from-list", value);
             return true;
         }
+        Update::SecretChat(value) => {
+            emit(app, "update-secret-chat", value);
+            return true;
+        }
         _ => {
             return false;
         }
