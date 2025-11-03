@@ -7,7 +7,7 @@ import PgpDocumentMessage from './PgpDocumentMessage.vue';
 import PgpKeyMessage from './PgpKeyMessage.vue';
 import NotSupportedMessage from './NotSupportedMessage.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faGear } from '@fortawesome/free-solid-svg-icons';
+import { faGear, faCheck, faCheckDouble } from '@fortawesome/free-solid-svg-icons';
 import { store } from '../store';
 import { computed, onMounted, ref } from 'vue';
 import DocumentMessage from './DocumentMessage.vue';
@@ -165,6 +165,10 @@ onMounted(async () => {
         </div>
         <div class="message-date has-text-link-on-scheme">
           {{ formatDate(message) }}
+        </div>
+        <div class="has-text-success ml-3" v-if="message.sending_state === null && isMyMessage && store.selectedChat?.last_read_inbox_message_id">
+          <FontAwesomeIcon :icon="faCheck" v-if="message.id > store.selectedChat.last_read_inbox_message_id" />
+          <FontAwesomeIcon :icon="faCheckDouble" v-if="message.id <= store.selectedChat.last_read_inbox_message_id" />
         </div>
       </div>
     </div>

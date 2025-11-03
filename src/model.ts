@@ -257,6 +257,9 @@ export type Message = {
   reply_to: MessageReplyTo;
   has_sensitive_content: boolean;
   content: MessageContent;
+  sending_state: {
+    '@type': 'messageSendingStatePending' | 'messageSendingStateFailed'
+  } | null
 }
 
 export type Messages = {
