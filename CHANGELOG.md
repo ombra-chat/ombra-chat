@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+* added double checkmarks for read messages
+* handled secret chats state
+* fixed issue with "reply to" messages
+
 ## 0.3.1
 
 * basic support for emoji message
