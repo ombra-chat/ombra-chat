@@ -17,6 +17,7 @@ import { store } from './store';
 import { handleUsersUpdates } from './services/users';
 import { handleEffectsUpdates } from './services/effects';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { handleFoldersUpdates } from './services/folders';
 
 enum MainWindowState {
   LOADING,
@@ -55,6 +56,7 @@ onBeforeMount(async () => {
       store.myId = event.payload;
     }),
     ...await handleChatsUpdates(),
+    ...await handleFoldersUpdates(),
     ...await handleUsersUpdates(),
     ...await handleEffectsUpdates()
   ];

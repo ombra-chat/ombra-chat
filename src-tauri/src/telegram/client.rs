@@ -1,4 +1,4 @@
-use crate::telegram::{chats, effects, messages, users};
+use crate::telegram::{chats, effects, folders, messages, users};
 use crate::{emit, settings, state};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -63,6 +63,9 @@ impl Client {
         use tdlib::enums::Update;
 
         if chats::handle_chats_update(app, &update).await {
+            return;
+        }
+        if folders::handle_folders_update(app, &update).await {
             return;
         }
         if messages::handle_messages_update(app, &update).await {

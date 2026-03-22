@@ -7,16 +7,8 @@ pub async fn handle_chats_update<R: tauri::Runtime>(
     update: &Update,
 ) -> bool {
     match update {
-        Update::ChatFolders(value) => {
-            emit(app, "update-chat-folders", value);
-            return true;
-        }
         Update::NewChat(value) => {
             emit(app, "update-new-chat", value);
-            return true;
-        }
-        Update::ChatAddedToList(value) => {
-            emit(app, "update-chat-added-to-list", value);
             return true;
         }
         Update::ChatReadInbox(value) => {
@@ -33,10 +25,6 @@ pub async fn handle_chats_update<R: tauri::Runtime>(
         }
         Update::ChatLastMessage(value) => {
             emit(app, "update-chat-last-message", value);
-            return true;
-        }
-        Update::ChatRemovedFromList(value) => {
-            emit(app, "update-chat-removed-from-list", value);
             return true;
         }
         Update::SecretChat(value) => {

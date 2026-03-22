@@ -8,6 +8,7 @@ type Store = {
   settingsModalActive: boolean;
   chatSettingsModalActive: boolean;
   messageModalActive: boolean;
+  foldersModalActive: boolean;
   chatFolders: ChatFolder[];
   chatsMap: Record<number, Chat>;
   secretChatsMap: Record<number, SecretChat>;
@@ -65,6 +66,7 @@ export const store = reactive<Store>({
   settingsModalActive: false,
   chatSettingsModalActive: false,
   messageModalActive: false,
+  foldersModalActive: false,
   toggleSettingsModal() {
     const store = this as Store;
     store.settingsModalActive = !store.settingsModalActive;

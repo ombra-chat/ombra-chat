@@ -8,6 +8,9 @@ import SettingsModal from './SettingsModal.vue';
 import ChatPage from './ChatPage.vue';
 import { loadChats } from './services/chats';
 import AboutModal from './AboutModal.vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import FoldersModal from './FoldersModal.vue';
 
 onMounted(async () => {
   await loadChats();
@@ -25,6 +28,10 @@ onMounted(async () => {
         <span aria-hidden="true"></span>
       </a>
       <ChatFolders />
+      <button type="button" class="edit-folders-button button px-3" @click="() => (store.foldersModalActive = true)"
+        aria-label="Edit folders">
+        <FontAwesomeIcon :icon="faEdit" />
+      </button>
     </div>
     <div id="main-container" :class="{ 'chat-selected': !!store.selectedChat }">
       <div id="chat-lists-container">
@@ -36,6 +43,7 @@ onMounted(async () => {
     </div>
     <SettingsModal />
     <AboutModal />
+    <FoldersModal />
   </div>
 </template>
 
@@ -108,5 +116,9 @@ onMounted(async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.edit-folders-button {
+  height: 100%;
 }
 </style>

@@ -1,34 +1,16 @@
 import { listen } from '@tauri-apps/api/event'
 import { Window } from "@tauri-apps/api/window"
 import { store } from '../store'
-import { Chat, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, UpdateChatAddedToList, UpdateChatFolders, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateChatRemovedFromList, UpdateDeleteMessages, UpdateFile, UpdateMessageInteractionInfo, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateSecretChat, UpdateUnreadChatCount } from '../model';
-import { getDefaultChatFolder } from '../settings/settings';
+import { Chat, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateMessageInteractionInfo, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateSecretChat, UpdateUnreadChatCount } from '../model';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
 import { getUserDisplayText } from './users';
 
 export async function handleChatsUpdates() {
   return [
-    await listen<UpdateChatFolders>('update-chat-folders', async (event) => {
-      const { chat_folders } = event.payload;
-      store.chatFolders = [
-        { id: 0, name: 'Main' },
-        ...chat_folders.map(f => ({ id: f.id, name: f.name.text.text }))
-      ];
-      const defaultChatFolder = await getDefaultChatFolder();
-      store.selectedChatFolderId = store.chatFolders.find(f => f.id === defaultChatFolder)?.id || 0;
-    }),
     await listen<UpdateNewChat>('update-new-chat', (event) => {
       const { chat } = event.payload;
       store.addChat(chat);
-    }),
-    await listen<UpdateChatAddedToList>('update-chat-added-to-list', (event) => {
-      const update = event.payload;
-      if (update.chat_list['@type'] === 'chatListMain') {
-        store.addChatToFolder(0, update.chat_id);
-      } else if (update.chat_list['@type'] === 'chatListFolder') {
-        store.addChatToFolder(update.chat_list.chat_folder_id, update.chat_id);
-      }
     }),
     await listen<UpdateNewMessage>('update-new-message', (event) => {
       const { message } = event.payload;
@@ -84,15 +66,6 @@ export async function handleChatsUpdates() {
     await listen<UpdateMessageSendSucceeded>('update-message-send-succeeded', async (event) => {
       const update = event.payload;
       store.updateMessage(update.old_message_id, update.message);
-    }),
-    await listen<UpdateChatRemovedFromList>('update-chat-removed-from-list', async (event) => {
-      const update = event.payload;
-      if (update.chat_list['@type'] === 'chatListMain') {
-        store.removeChatFromFolder(0, update.chat_id);
-        store.deleteChat(update.chat_id);
-      } else if (update.chat_list['@type'] === 'chatListFolder') {
-        store.removeChatFromFolder(update.chat_list.chat_folder_id, update.chat_id);
-      }
     }),
     await listen<UpdateMessageInteractionInfo>('update-message-interaction-info', async (event) => {
       const update = event.payload;
