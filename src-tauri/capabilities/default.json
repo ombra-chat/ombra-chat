@@ -17,10 +17,10 @@
       "identifier": "opener:allow-open-path",
       "allow": [
         {
-          "path": "**/*"
+          "path": "**/.*/tdlib/photos/*"
         },
         {
-          "path": "**/.*/tdlib/photos/*"
+          "path": "**/.*/tdlib/voice/*"
         },
         {
           "path": "**/.*/tdlib/documents/*"

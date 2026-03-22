@@ -202,12 +202,24 @@ export type MessagePhoto = {
   caption: FormattedText;
 }
 
+export type MessageVoiceNote = {
+  '@type': 'messageVoiceNote';
+  caption: FormattedText;
+  is_listened: boolean;
+  voice_note: {
+    duration: number;
+    waveform: string;
+    mime_type: string;
+    voice: File;
+  }
+}
+
 export type MessageVideo = {
   '@type': 'messageVideo';
   caption: FormattedText;
 }
 
-export type MessageContent = MessageText | MessagePhoto | MessageDocument | MessageVideo | MessageAnimatedEmoji;
+export type MessageContent = MessageText | MessagePhoto | MessageDocument | MessageVideo | MessageAnimatedEmoji | MessageVoiceNote;
 
 export type MessageSenderUser = {
   '@type': 'messageSenderUser';

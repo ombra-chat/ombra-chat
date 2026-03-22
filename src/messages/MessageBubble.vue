@@ -14,6 +14,7 @@ import DocumentMessage from './DocumentMessage.vue';
 import { getMessageTextContent, getRepliedMessage, getSenderTitle } from '../services/chats';
 import { removeMessageReaction } from '../services/effects';
 import AnimatedEmojiMessage from './AnimatedEmojiMessage.vue';
+import VoiceNoteMessage from './VoiceNoteMessage.vue';
 
 const props = defineProps<{
   message: MessageWithStatus
@@ -153,6 +154,8 @@ onMounted(async () => {
         :content="message.content" />
       <AnimatedEmojiMessage v-else-if="message.content['@type'] === 'messageAnimatedEmoji'" :message="message"
         :content="message.content" />
+      <VoiceNoteMessage v-else-if="message.content['@type'] === 'messageVoiceNote'" :message="message"
+        :content="message.content" />
       <NotSupportedMessage v-else :message="message" />
       <div class="message-footer mt-2">
         <div class="message-reactions">
@@ -166,7 +169,8 @@ onMounted(async () => {
         <div class="message-date has-text-link-on-scheme">
           {{ formatDate(message) }}
         </div>
-        <div class="has-text-success ml-3" v-if="message.sending_state === null && isMyMessage && store.selectedChat?.last_read_inbox_message_id">
+        <div class="has-text-success ml-3"
+          v-if="message.sending_state === null && isMyMessage && store.selectedChat?.last_read_inbox_message_id">
           <FontAwesomeIcon :icon="faCheck" v-if="message.id > store.selectedChat.last_read_inbox_message_id" />
           <FontAwesomeIcon :icon="faCheckDouble" v-if="message.id <= store.selectedChat.last_read_inbox_message_id" />
         </div>
