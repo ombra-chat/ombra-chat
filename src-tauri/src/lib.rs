@@ -50,7 +50,6 @@ pub fn run() {
             commands::folders::add_chat_to_folder,
             commands::folders::remove_chat_from_folder,
             commands::files::download_file,
-            commands::files::get_photo,
             commands::files::get_image_size,
             commands::files::create_thumbnail,
             commands::files::remove_thumbnail,

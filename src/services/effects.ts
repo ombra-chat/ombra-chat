@@ -1,8 +1,8 @@
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { MessageEffect, UpdateAvailableMessageEffects, File, ReactionType, Message } from "../model";
 import { listen } from "@tauri-apps/api/event";
 import { store } from "../store";
-import { downloadFile, getPhoto } from "./files";
+import { downloadFile } from "./files";
 
 export async function handleEffectsUpdates() {
   return [
@@ -27,7 +27,7 @@ async function getMessageEffect(effectId: number) {
 
 async function loadReactionImage(reaction: File): Promise<string | null> {
   if (reaction.local.is_downloading_completed) {
-    return await getPhoto(reaction.local.path);
+    return convertFileSrc(reaction.local.path);
   }
   const file = await downloadFile(reaction.id);
   if (file === null) {

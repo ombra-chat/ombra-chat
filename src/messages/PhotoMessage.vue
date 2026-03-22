@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import { MessagePhoto, File, PhotoSize, MessageWithStatus } from '../model';
-import { downloadFile, getPhoto } from '../services/files';
+import { downloadFile } from '../services/files';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { store } from '../store';
 import { getAllWebviewWindows, WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getImageViewer } from '../settings/settings';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 const props = defineProps<{
   message: MessageWithStatus,
@@ -44,7 +45,7 @@ function getUsablePhotoSize(content: MessagePhoto): PhotoSize[] {
 async function setPhoto(content: MessagePhoto, photo: File, size: PhotoSize) {
   if (photo.local.is_downloading_completed) {
     if (photo.local.path !== '') {
-      photoSrc.value = await getPhoto(photo.local.path);
+      photoSrc.value = convertFileSrc(photo.local.path);
     }
   } else {
     const file = await downloadFile(photo.id);

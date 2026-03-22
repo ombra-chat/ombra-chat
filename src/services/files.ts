@@ -14,10 +14,6 @@ export async function downloadFile(fileId: number): Promise<File | null> {
   }
 }
 
-export async function getPhoto(path: string): Promise<string> {
-  return await invoke<string>('get_photo', { path });
-}
-
 export async function createThumbnail(path: string): Promise<InputThumbnail> {
   return await invoke<InputThumbnail>('create_thumbnail', { path });
 }

@@ -3721,7 +3721,6 @@ dependencies = [
 name = "ombra-chat"
 version = "0.3.2"
 dependencies = [
- "base64 0.22.1",
  "env_logger",
  "hex",
  "image",
