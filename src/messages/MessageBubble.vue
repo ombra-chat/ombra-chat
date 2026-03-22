@@ -170,9 +170,9 @@ onMounted(async () => {
           {{ formatDate(message) }}
         </div>
         <div class="has-text-success ml-3"
-          v-if="message.sending_state === null && isMyMessage && store.selectedChat?.last_read_inbox_message_id">
-          <FontAwesomeIcon :icon="faCheck" v-if="message.id > store.selectedChat.last_read_inbox_message_id" />
-          <FontAwesomeIcon :icon="faCheckDouble" v-if="message.id <= store.selectedChat.last_read_inbox_message_id" />
+          v-if="message.sending_state === null && isMyMessage && store.selectedChat && store.selectedChat.last_read_outbox_message_id">
+          <FontAwesomeIcon :icon="faCheck" v-if="message.id > store.selectedChat.last_read_outbox_message_id" />
+          <FontAwesomeIcon :icon="faCheckDouble" v-if="message.id <= store.selectedChat.last_read_outbox_message_id" />
         </div>
       </div>
     </div>
