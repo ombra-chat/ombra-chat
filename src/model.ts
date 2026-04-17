@@ -296,6 +296,7 @@ export type InputMessageReplyToMessage = {
   quote: InputTextQuote | null;
   // Identifier of the checklist task in the original message that was replied; 0 if none
   checklist_task_id: number;
+  poll_option_id: string;
 }
 
 export type InputMessageReplyTo = InputMessageReplyToMessage;

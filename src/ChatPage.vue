@@ -98,6 +98,7 @@ function getInputMessageReplyTo(): InputMessageReplyTo | null {
     '@type': 'inputMessageReplyToMessage',
     message_id: store.replyToMessage.id,
     checklist_task_id: 0,
+    poll_option_id: '',
     quote
   };
 }

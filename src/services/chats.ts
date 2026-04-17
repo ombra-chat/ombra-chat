@@ -208,7 +208,6 @@ export async function loadNewMessages() {
 export async function sendMessage(chatId: number, replyTo: InputMessageReplyTo | null, content: InputMessageContent): Promise<Message> {
   return await invoke<Message>('send_message', {
     chatId,
-    messageThreadId: 0,
     replyTo,
     options: null,
     replyMarkup: null,
@@ -240,7 +239,6 @@ export async function viewMessage(chatId: number, messageId: number) {
 export async function forwardMessage(message: Message, chatId: number, sendCopy: boolean) {
   await invoke<Messages>('forward_message', {
     chatId,
-    messageThreadId: 0,
     fromChatId: message.chat_id,
     messageId: message.id,
     sendCopy

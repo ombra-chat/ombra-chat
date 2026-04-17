@@ -48,7 +48,6 @@ pub async fn get_chat_history<R: tauri::Runtime>(
 pub async fn send_message<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     chat_id: i64,
-    message_thread_id: i64,
     reply_to: Option<tdlib::enums::InputMessageReplyTo>,
     options: Option<tdlib::types::MessageSendOptions>,
     reply_markup: Option<tdlib::enums::ReplyMarkup>,
@@ -56,7 +55,7 @@ pub async fn send_message<R: tauri::Runtime>(
 ) -> Result<tdlib::enums::Message, String> {
     tdlib::functions::send_message(
         chat_id,
-        message_thread_id,
+        None,
         reply_to,
         options,
         reply_markup,
@@ -105,14 +104,13 @@ pub async fn view_message<R: tauri::Runtime>(
 pub async fn forward_message<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     chat_id: i64,
-    message_thread_id: i64,
     from_chat_id: i64,
     message_id: i64,
     send_copy: bool,
 ) -> Result<tdlib::enums::Messages, String> {
     tdlib::functions::forward_messages(
         chat_id,
-        message_thread_id,
+        None,
         from_chat_id,
         vec![message_id],
         None,
@@ -223,7 +221,7 @@ pub async fn share_public_key<R: tauri::Runtime>(
 
     tdlib::functions::send_message(
         chat_id,
-        0,
+        None,
         None,
         None,
         None,
