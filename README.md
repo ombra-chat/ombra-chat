@@ -16,6 +16,8 @@ In addition to supporting secret chats and encrypting Telegram's local database,
 
 * An option to define a default chat group (folder) that is automatically selected when the app starts; this can be useful if you want to hide certain chats from prying eyes when opening the client.
 
+* Deliberately avoid useless features like AI and animated stickers, as they just increase the attack surface without adding real value.
+
 Following screenshot displays how the PGP messages are seen in OmbraChat and in the standard Telegram client:
 
 ![ombra-chat vs telegram](screenshots/ombra-chat-comparison.png)

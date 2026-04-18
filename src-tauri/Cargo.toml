@@ -1,6 +1,6 @@
 [package]
 name = "ombra-chat"
-version = "0.3.2"
+version = "0.3.3"
 description = "Privacy-boosted Telegram desktop client with PGP magic"
 authors = ["Sonia Zorba"]
 edition = "2021"
@@ -18,7 +18,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.5.6", features = [] }
 
 [dependencies]
-tauri = { version = "2.10.3", features = ["protocol-asset", "devtools"] }
+tauri = { version = "2.10.3", features = ["protocol-asset"] }
 tauri-plugin-opener = "2.5.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

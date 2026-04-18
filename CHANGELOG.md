@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.3
+
+* implemented folders editing
+* basic support for voice messages
+* updated tdlib to 1.8.63
+* updated most of the dependencies, including tauri and pgp
+
 ## 0.3.2
 
 * added double checkmarks for read messages
