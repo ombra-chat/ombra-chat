@@ -1,6 +1,12 @@
 <script setup lang="ts">
 
-import 'bulma';
+import 'bulma/css/bulma.css';
+
+// Manually adding font style to avoid CSP errors
+// See https://docs-v5.fontawesome.com/web/other-topics/security
+import { config } from '@fortawesome/fontawesome-svg-core';
+config.autoAddCss = false
+import '@fortawesome/fontawesome-svg-core/styles.css';
 
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { ref, onBeforeMount, onDeactivated } from "vue";

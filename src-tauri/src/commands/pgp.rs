@@ -4,7 +4,7 @@ use crate::{
 };
 use pgp::{
     composed::SignedPublicKey,
-    types::{KeyDetails, PublicKeyTrait},
+    types::{KeyDetails},
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -17,7 +17,7 @@ pub fn get_my_key_fingerprint<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
 ) -> Result<PublicKeyFingerprints, String> {
     let key = state::get_my_key(&app).map_err(|e| e.to_string())?;
-    get_fingerprints(&key.signed_public_key())
+    get_fingerprints(&key.to_public_key())
 }
 
 #[tauri::command]
@@ -61,7 +61,7 @@ pub fn load_public_key(path: &str) -> Result<PublicKeyFingerprints, String> {
 pub fn get_fingerprints(key: &SignedPublicKey) -> Result<PublicKeyFingerprints, String> {
     let mut encryption_keys = Vec::new();
     for subkey in &key.public_subkeys {
-        if subkey.is_encryption_key() {
+        if subkey.algorithm().can_encrypt() {
             encryption_keys.push(subkey.fingerprint().to_string());
         }
     }

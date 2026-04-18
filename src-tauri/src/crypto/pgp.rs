@@ -1,11 +1,11 @@
 use crate::crypto::utils;
 use crate::{state, store};
 use pgp::composed::{
-    ArmorOptions, Deserializable, KeyType, Message, MessageBuilder, PublicSubkey,
-    SecretKeyParamsBuilder, SignedPublicKey, SignedSecretKey, SubkeyParamsBuilder,
+    ArmorOptions, Deserializable, EncryptionCaps, KeyType, Message, MessageBuilder, SecretKeyParamsBuilder, SignedPublicKey, SignedSecretKey, SubkeyParamsBuilder
 };
 use pgp::crypto::sym::SymmetricKeyAlgorithm;
-use pgp::types::{KeyDetails, PublicKeyTrait};
+use pgp::packet::PublicSubkey;
+use pgp::types::{KeyDetails};
 use rand::thread_rng;
 use std::io::{Cursor, Read, Write};
 use std::path::PathBuf;
@@ -152,15 +152,13 @@ pub fn generate_key(passphrase: &str) -> Result<SignedSecretKey, Box<dyn Error>>
         .subkey(
             SubkeyParamsBuilder::default()
                 .key_type(KeyType::X25519)
-                .can_encrypt(true)
+                .can_encrypt(EncryptionCaps::All)
                 .build()?,
         )
         .build()?;
 
     let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
-    let key = key_params
-        .generate(&mut rng)?
-        .sign(&mut rng, &passphrase.into())?;
+    let key = key_params.generate(&mut rng)?;
     Ok(key)
 }
 
@@ -169,8 +167,8 @@ pub fn get_encryption_key_from_secret_key(
 ) -> Result<PublicSubkey, Box<dyn Error>> {
     log::trace!("get_encryption_key_from_secret_key");
     for subkey in &key.secret_subkeys {
-        if subkey.public_key().is_encryption_key() {
-            return Ok(subkey.public_key());
+        if subkey.public_key().algorithm().can_encrypt() {
+            return Ok(subkey.public_key().clone());
         }
     }
     Err(format!("No encryption key found for {}", key.fingerprint()).into())
@@ -180,9 +178,10 @@ pub fn get_encryption_key_from_public_key(
     key: &SignedPublicKey,
 ) -> Result<PublicSubkey, Box<dyn Error>> {
     log::trace!("get_encryption_key_from_public_key");
+
     for subkey in &key.public_subkeys {
-        if subkey.is_encryption_key() {
-            return Ok(subkey.as_unsigned());
+        if subkey.algorithm().can_encrypt() {
+            return Ok(subkey.key.clone());
         }
     }
     Err(format!("No encryption key found for {}", key.fingerprint()).into())
@@ -197,7 +196,7 @@ pub fn get_armored_private_key(secret_key: &SignedSecretKey) -> Result<String, B
 pub fn get_armored_public_key(secret_key: &SignedSecretKey) -> Result<String, Box<dyn Error>> {
     log::trace!("get_armored_public_key");
     let key = secret_key
-        .signed_public_key()
+        .to_public_key()
         .to_armored_string(ArmorOptions::default())?;
     Ok(key)
 }

@@ -1,4 +1,4 @@
-use pgp::composed::{PublicSubkey, SignedSecretKey};
+use pgp::{composed::SignedSecretKey, packet::PublicSubkey};
 use std::{collections::HashMap, error::Error, sync::Mutex};
 use tauri::Manager;
 
