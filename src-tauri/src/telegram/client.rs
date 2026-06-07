@@ -3,8 +3,9 @@ use crate::{emit, settings, state};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::{atomic::AtomicBool, mpsc::channel};
-use std::thread;
+use std::{env, thread};
 use tdlib::enums::OptionValue;
+use tdlib::types::LogStreamFile;
 
 pub struct Client {
     client_id: i32,
@@ -157,27 +158,55 @@ impl Client {
 
 fn init(client_id: i32) {
     trpl::run(async {
-        if let Err(e) = tdlib::functions::set_log_verbosity_level(
-            if log::log_enabled!(log::Level::Trace) {
-                5
-            } else if log::log_enabled!(log::Level::Debug) {
-                4
-            } else if log::log_enabled!(log::Level::Info) {
-                3
-            } else if log::log_enabled!(log::Level::Warn) {
-                2
-            } else {
-                0
-            },
-            client_id,
-        )
-        .await
-        {
-            log::warn!("Error setting the tdlib log level: {:?}", e);
-        }
+        set_tdlib_log_verbosity_level(client_id).await;
+        set_tdlib_log_to_file(client_id).await;
 
         if let Err(e) = tdlib::functions::get_option("version".into(), client_id).await {
             log::warn!("Error retrieving the tdlib version: {:?}", e);
         }
     });
+}
+
+async fn set_tdlib_log_verbosity_level(client_id: i32) -> () {
+    let verbosity_level = match env::var("TDLIB_LOG_LEVEL") {
+        Ok(val) => match val.parse::<i32>() {
+            Ok(level) => Some(level),
+            Err(_) => {
+                log::warn!("Unexpected value in TDLIB_LOG_LEVEL: {:?}", val);
+                None
+            }
+        },
+        Err(_) => None,
+    };
+    let verbosity_level = verbosity_level.unwrap_or_else(|| {
+        // Use the main logger level as fallback
+        if log::log_enabled!(log::Level::Trace) {
+            5
+        } else if log::log_enabled!(log::Level::Debug) {
+            4
+        } else if log::log_enabled!(log::Level::Info) {
+            3
+        } else if log::log_enabled!(log::Level::Warn) {
+            2
+        } else {
+            0
+        }
+    });
+
+    if let Err(e) = tdlib::functions::set_log_verbosity_level(verbosity_level, client_id).await {
+        log::warn!("Error setting the tdlib log level: {:?}", e);
+    }
+}
+
+async fn set_tdlib_log_to_file(client_id: i32) -> () {
+    if let Ok(log_file_path) = env::var("TDLIB_LOG_FILE") {
+        let log_stream = tdlib::enums::LogStream::File(LogStreamFile {
+            path: log_file_path,
+            max_file_size: 10 * 1024 * 1024,
+            redirect_stderr: false,
+        });
+        if let Err(e) = tdlib::functions::set_log_stream(log_stream, client_id).await {
+            log::warn!("Error setting the tdlib log stream: {:?}", e);
+        }
+    }
 }

@@ -110,7 +110,21 @@ npm run tauri build
 
 ## Debug
 
-To enable the debug logging you can start the app setting the environment variable `RUST_LOG=ombra_chat_lib=trace`. Notice that this will also generate a tdlib logs, which can be very verbose and will contain sensitive data in plaintext.
+You can use the following environment variables to increase the logging. Notice that TDLib logging can be split from all the other logging, since the library can produce a very verbose output.
+
+* `RUST_LOG=ombra_chat_lib=trace`: standard Rust logging;
+* `TDLIB_LOG_LEVEL=3`: TDLib logging; values are:
+    * 0: fatal errors
+    * 1: errors
+    * 2: warnings and debug warnings
+    * 3: informational (this is usually verbose enough)
+    * 4: debug
+    * 5: trace
+* `TDLIB_LOG_FILE`: path to a file where to redirect TDLib logs (instead of using stdout)
+
+If `TDLIB_LOG_LEVEL` is not specified, it fallbacks to the `RUST_LOG` level.
+
+Be also aware that TDLib log may contain sensitive data in plaintext.
 
 ## License
 
