@@ -9,7 +9,7 @@ use pgp::types::{KeyDetails};
 use rand::thread_rng;
 use std::io::{Cursor, Read, Write};
 use std::path::PathBuf;
-use std::{env, fs};
+use std::{fs};
 use std::{error::Error, fs::File, io::BufReader};
 
 fn encrypt(
@@ -296,9 +296,11 @@ pub fn get_my_public_key_tmp_file<R: tauri::Runtime>(
     let secret_key = state::get_my_key(&app)?;
     let key_data = get_armored_public_key(&secret_key)?;
 
-    let path = env::temp_dir().clone();
     let encryption_key = get_encryption_key_from_secret_key(&secret_key)?;
-    let path = path.join(format!("ombra-chat-{}.key", encryption_key.fingerprint()));
+    let app_folder = store::get_application_folder(&app);
+    let mut path = PathBuf::from(app_folder);
+    path.push("keys");
+    path.push(format!("ombra-chat-{}.key", encryption_key.fingerprint()));
 
     let mut file = File::create(&path)?;
     file.write_all(key_data.as_bytes())?;
