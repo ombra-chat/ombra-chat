@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 import ChatFolders from './ChatFolders.vue';
 import Sidebar from './Sidebar.vue';
 import { store } from './store';
