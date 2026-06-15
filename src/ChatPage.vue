@@ -348,7 +348,7 @@ watch(() => store.selectedChat?.id, () => clear());
         </div>
       </div>
       <div id="chat-settings-btn-wrapper">
-        <button type="button" class="button ml-2" @click="store.toggleChatSettingsModal" aria-label="Settings">
+        <button type="button" class="button mx-2" @click="store.toggleChatSettingsModal" aria-label="Settings">
           <FontAwesomeIcon :icon="faGear" />
         </button>
       </div>

@@ -25,6 +25,15 @@ export async function getTheme(): Promise<Theme | undefined> {
     return await store.get<Theme>('theme');
 }
 
+export async function getHideMarginRight(): Promise<boolean> {
+    return await store.get<boolean>('hide-margin-right') ?? false;
+}
+
+export async function setHideMarginRight(hide: boolean): Promise<void> {
+    await store.set('hide-margin-right', hide);
+    await store.save();
+}
+
 export async function getImageViewer(): Promise<'system' | 'app'> {
     return await store.get<'system' | 'app'>('image-viewer') || 'system';
 }

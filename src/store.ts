@@ -4,6 +4,7 @@ import { viewMessage } from './services/chats';
 
 type Store = {
   sidebarExpanded: boolean;
+  hideMarginRight: boolean;
   myId: number;
   settingsModalActive: boolean;
   chatSettingsModalActive: boolean;
@@ -58,6 +59,7 @@ type Store = {
 
 export const store = reactive<Store>({
   sidebarExpanded: false,
+  hideMarginRight: true,
   toggleSidebar() {
     const store = this as Store;
     store.sidebarExpanded = !store.sidebarExpanded;

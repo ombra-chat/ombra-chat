@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import ChatFolders from './ChatFolders.vue';
 import Sidebar from './Sidebar.vue';
 import { store } from './store';
@@ -11,14 +11,16 @@ import AboutModal from './AboutModal.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faEdit } from '@fortawesome/free-solid-svg-icons';
 import FoldersModal from './FoldersModal.vue';
+import { getHideMarginRight } from './settings/settings.ts';
 
 onMounted(async () => {
   await loadChats();
+  store.hideMarginRight = await getHideMarginRight();
 });
 </script>
 
 <template>
-  <div id="main-wrapper">
+  <div id="main-wrapper" v-bind:class="{'margin-right-workaround': !store.hideMarginRight}">
     <Sidebar />
     <div id="top-bar" class="mb-2">
       <a class="navbar-burger" role="button" aria-label="menu" aria-expanded="false" @click="store.toggleSidebar">
@@ -55,12 +57,16 @@ onMounted(async () => {
 #main-wrapper {
   position: absolute;
   top: 0;
-  /* this ugly margin is needed to prevent WebKit scrollbar issue... */
-  right: 20px;
   left: 0;
+  right: 0;
   bottom: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* this ugly margin is needed to prevent WebKit scrollbar issue... */
+.margin-right-workaround {
+  right: 20px !important;
 }
 
 #main-container {

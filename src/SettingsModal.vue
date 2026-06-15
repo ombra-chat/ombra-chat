@@ -2,7 +2,7 @@
 import { store } from './store';
 import Dropdown from './components/Dropdown.vue';
 import { onMounted, ref, watch } from 'vue';
-import { getDefaultChatFolder, getImageViewer, setDefaultChatFolder, setImageViewer, setTheme } from './settings/settings';
+import { getDefaultChatFolder, getHideMarginRight, getImageViewer, setDefaultChatFolder, setHideMarginRight, setImageViewer, setTheme } from './settings/settings';
 import { exportPublicKey, exportSecretKey, getMyKeyFingerprint } from './services/pgp';
 import { save } from '@tauri-apps/plugin-dialog';
 import { getCurrentWindow, Theme } from '@tauri-apps/api/window';
@@ -15,6 +15,7 @@ const myKeyFingerprint = ref<PublicKeyFingerprints | null>(null);
 const theme = ref<Theme>('light');
 const keyError = ref('');
 const imageViewer = ref<'system' | 'app'>('system');
+const hideMarginRight = ref<boolean>(false);
 
 function closeModal() {
   store.toggleSettingsModal();
@@ -35,12 +36,15 @@ onMounted(async () => {
   }
   theme.value = await getCurrentWindow().theme() || 'light';
   imageViewer.value = await getImageViewer();
+  hideMarginRight.value = await getHideMarginRight();
 });
 
 async function saveSettings() {
   await setDefaultChatFolder(selectedId.value);
   await setTheme(theme.value);
   await setImageViewer(imageViewer.value);
+  await setHideMarginRight(hideMarginRight.value);
+  store.hideMarginRight = hideMarginRight.value;
   closeModal();
 }
 
@@ -122,6 +126,19 @@ watch(
             App
           </label>
         </div>
+
+        <p class="menu-label mt-4">Margin right</p>
+        <div class="control">
+          <label class="radio mr-2">
+            <input type="radio" :value="true" v-model="hideMarginRight" name="margin-right-selector" />
+            Hide
+          </label>
+          <label class="radio">
+            <input type="radio" :value="false" v-model="hideMarginRight" name="margin-right-selector" />
+            Show
+          </label>
+        </div>
+        <p><em>This is a workaround to prevent a scrollbar issue with WebKit</em></p>
       </section>
       <footer class="modal-card-foot p-2">
         <div class="buttons">
