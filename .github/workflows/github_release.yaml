@@ -29,7 +29,9 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2.2.1
         with:
+          draft: true
           files: |
             docker/build/ombra-chat*.deb
             docker/build/ombra-chat*.rpm
             docker/build/ombra-chat*.AppImage
+            docker/build/libtdjson-*.so.*
