@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.4
+
+* Used tdlib 1.8.65 (fix missing field 'media' error)
+* Fixed key not downloadable
+* Added setting to disable right margin workaround
+* Improved logging configurability
+
 ## 0.3.3
 
 * implemented folders editing
