@@ -13,7 +13,6 @@ ENV APPIMAGE_EXTRACT_AND_RUN=1
 
 RUN bash -c "source $HOME/.nvm/nvm.sh && source $HOME/.cargo/env && npm install && npm run tauri build"
 
-RUN mv /usr/lib/libtdjson.so.* /tmp
 RUN lib_name=$(ls /usr/lib/libtdjson.so.* | sed -E "s|(.*).so|\1-`uname -m`.so|") && mv /usr/lib/libtdjson.so.* "${lib_name}"
 
 FROM scratch
