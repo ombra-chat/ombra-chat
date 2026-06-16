@@ -40,7 +40,7 @@ Moreover, switching to alternative clients with their own encryption will create
 
 ## Install
 
-Check the [last release](https://github.com/ombra-chat/ombra-chat/releases) for some pre-built binaries.
+Check the [latest release](https://github.com/ombra-chat/ombra-chat/releases) for some pre-built binaries.
 
 If you install the .deb or .rpm you will also need the libtdjson.so file. You can download it from the release page and copy it into `/usr/lib` or other proper location.
 
@@ -81,6 +81,20 @@ Preferences are stored in `~/.local/share/net.zonia3000.ombra-chat`.
 ## Developing
 
 Build tdlib using following instructions: https://tdlib.github.io/td/build.html?language=C
+
+Alternatively, you can download the libtdjson.so from the [release page](https://github.com/ombra-chat/ombra-chat/releases). You may need to configure the pkg-config file, like `/usr/local/lib/pkgconfig/tdjson.pc`:
+
+```
+prefix=/usr/local
+
+Name: tdjson
+Description: Telegram Library - JSON interface (shared)
+Version: 1.8.65
+
+CFlags: -I"${prefix}/include"
+Libs: -L"${prefix}/lib" -ltdjson
+Requires.private: tdjson_private
+```
 
 Clone tdlib-rs in a folder at the same level of the ombra-chat repo folder:
 
@@ -125,6 +139,10 @@ You can use the following environment variables to increase the logging. Notice 
 If `TDLIB_LOG_LEVEL` is not specified, it fallbacks to the `RUST_LOG` level.
 
 Be also aware that TDLib log may contain sensitive data in plaintext.
+
+## AI policy
+
+LLM contributions are **not** welcome and it is forbidden to use this code to train AI models.
 
 ## License
 
