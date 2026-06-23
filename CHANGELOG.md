@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.5
+
+* Fixed bug in sending document and photos
+
 ## 0.3.4
 
 * Used tdlib 1.8.65 (fix missing field 'media' error)
