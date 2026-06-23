@@ -333,12 +333,15 @@ export type MessageSelfDestructType = MessageSelfDestructTypeTimer | MessageSelf
 
 export type InputMessagePhoto = {
   '@type': 'inputMessagePhoto';
-  photo: InputFile;
-  thumbnail: InputThumbnail;
-  width: number;
-  height: number;
+  photo: {
+    photo: InputFile;
+    thumbnail: InputThumbnail | null;
+    video: null;
+    added_sticker_file_ids: number[];
+    width: number;
+    height: number;
+  },
   caption: FormattedText | null;
-  added_sticker_file_ids: number[];
   show_caption_above_media: boolean;
   self_destruct_type: MessageSelfDestructType | null;
   has_spoiler: boolean;
@@ -346,9 +349,11 @@ export type InputMessagePhoto = {
 
 export type InputMessageDocument = {
   '@type': 'inputMessageDocument';
-  document: InputFile;
-  thumbnail: InputThumbnail | null;
-  disable_content_type_detection: boolean;
+  document: {
+    document: InputFile;
+    thumbnail: InputThumbnail | null;
+    disable_content_type_detection: boolean;
+  }
   caption: FormattedText | null;
 }
 

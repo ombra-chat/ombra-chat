@@ -63,7 +63,7 @@ async function send() {
   for (const content of contents) {
     await sendMessage(chat.id, getInputMessageReplyTo(), content);
     if (content['@type'] === 'inputMessagePhoto') {
-      await removeThumbnail(content.photo.path);
+      await removeThumbnail(content.photo.photo.path);
     }
     const chatContent = document.getElementById('chat-content');
     if (chatContent) {
@@ -175,12 +175,14 @@ function getInputMessageDocument(path: string, caption: FormattedText | null): I
   return {
     '@type': 'inputMessageDocument',
     document: {
-      '@type': 'inputFileLocal',
-      path
+      document: {
+        '@type': 'inputFileLocal',
+        path,
+      },
+      thumbnail: null,
+      disable_content_type_detection: true,
     },
     caption,
-    thumbnail: null,
-    disable_content_type_detection: true,
   };
 }
 
@@ -189,18 +191,21 @@ async function getInputMessagePhoto(file: ImageFile, caption: FormattedText | nu
     const thumbnail = await createThumbnail(file.path);
     return {
       '@type': 'inputMessagePhoto',
-      added_sticker_file_ids: [],
-      caption,
-      has_spoiler: false,
-      width: file.width,
-      height: file.height,
       photo: {
-        '@type': 'inputFileLocal',
-        path: file.path
+        photo: {
+          '@type': 'inputFileLocal',
+          path: file.path
+        },
+        thumbnail,
+        video: null,
+        added_sticker_file_ids: [],
+        width: file.width,
+        height: file.height,
       },
-      thumbnail,
+      caption,
+      show_caption_above_media: false,
       self_destruct_type: null,
-      show_caption_above_media: false
+      has_spoiler: false,
     }
   } catch (err) {
     console.error(err);
