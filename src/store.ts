@@ -3,6 +3,7 @@ import type { Chat, ChatFolder, Message, File, User, ChatPosition, MessageWithSt
 import { viewMessage } from './services/chats';
 
 type Store = {
+  initialLoading: boolean;
   sidebarExpanded: boolean;
   hideMarginRight: boolean;
   myId: number;
@@ -58,6 +59,7 @@ type Store = {
 }
 
 export const store = reactive<Store>({
+  initialLoading: true,
   sidebarExpanded: false,
   hideMarginRight: true,
   toggleSidebar() {

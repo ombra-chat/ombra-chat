@@ -54,7 +54,7 @@ pub fn check_pgp_passphrase<R: tauri::Runtime>(
 #[tauri::command]
 pub fn start_telegram_client<R: tauri::Runtime>(app: tauri::AppHandle<R>) {
     thread::spawn(move || {
-        let client = Client::new();
+        let mut client = Client::new();
         client.start(&app);
     });
 }

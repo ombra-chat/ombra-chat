@@ -46,6 +46,9 @@ onBeforeMount(async () => {
   state.value = await getInitialState();
 
   unlisteners = [
+    await listen<any>('initial-loading-done', () => {
+      store.initialLoading = false;
+    }),
     await listen<any>('ask-login-phone-number', () => {
       state.value = MainWindowState.PHONE_NUMBER;
     }),

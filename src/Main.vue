@@ -9,7 +9,7 @@ import ChatPage from './ChatPage.vue';
 import { loadChats } from './services/chats';
 import AboutModal from './AboutModal.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import { faAsterisk, faEdit } from '@fortawesome/free-solid-svg-icons';
 import FoldersModal from './FoldersModal.vue';
 import { getHideMarginRight } from './settings/settings.ts';
 
@@ -20,7 +20,13 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div id="main-wrapper" v-bind:class="{'margin-right-workaround': !store.hideMarginRight}">
+  <div v-if="store.initialLoading" id="main-loading">
+    <div>
+      <FontAwesomeIcon :icon="faAsterisk" />
+      Loading...
+    </div>
+  </div>
+  <div id="main-wrapper" v-bind:class="{ 'margin-right-workaround': !store.hideMarginRight }" v-else>
     <Sidebar />
     <div id="top-bar" class="mb-2">
       <a class="navbar-burger" role="button" aria-label="menu" aria-expanded="false" @click="store.toggleSidebar">
@@ -52,6 +58,24 @@ onMounted(async () => {
 <style>
 #top-bar {
   border-bottom: 1px var(--bulma-border-weak) solid;
+}
+
+#main-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#main-loading svg {
+  width: 18px;
+  height: 18px;
+  margin-right: 5px;
+  animation: spin 1.2s linear infinite;
 }
 
 #main-wrapper {
@@ -126,5 +150,11 @@ onMounted(async () => {
 
 .edit-folders-button {
   height: 100%;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
