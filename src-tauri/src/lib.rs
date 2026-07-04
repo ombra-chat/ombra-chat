@@ -40,7 +40,6 @@ pub fn run() {
             commands::chats::get_replied_message,
             commands::chats::create_new_secret_chat,
             commands::chats::delete_chat,
-            commands::chats::get_message_effect,
             commands::chats::add_message_reaction,
             commands::chats::remove_message_reaction,
             commands::chats::share_public_key,

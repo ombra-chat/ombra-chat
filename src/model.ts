@@ -490,11 +490,6 @@ export type UpdateChatRemovedFromList = {
   chat_list: ChatList;
 }
 
-export type UpdateAvailableMessageEffects = {
-  reaction_effect_ids: number[];
-  sticker_effect_ids: number[];
-}
-
 export type Sticker = {
   id: number;
   set_id: number;
@@ -502,24 +497,6 @@ export type Sticker = {
   height: number;
   emoji: string;
   sticker: File;
-}
-
-export type MessageEffectTypeEmojiReaction = {
-  '@type': 'messageEffectTypeEmojiReaction';
-}
-
-export type MessageEffectTypePremiumSticker = {
-  '@type': 'messageEffectTypePremiumSticker';
-}
-
-export type MessageEffectType = MessageEffectTypeEmojiReaction | MessageEffectTypePremiumSticker;
-
-export type MessageEffect = {
-  id: number;
-  static_icon: Sticker | null;
-  emoji: string;
-  is_premium: boolean;
-  type: MessageEffectType;
 }
 
 export type MessageReplyInfo = {

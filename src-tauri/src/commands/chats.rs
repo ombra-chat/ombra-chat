@@ -154,17 +154,6 @@ pub async fn delete_chat<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-pub async fn get_message_effect<R: tauri::Runtime>(
-    app: tauri::AppHandle<R>,
-    effect_id: &str,
-) -> Result<tdlib::enums::MessageEffect, String> {
-    let effect_id = effect_id.parse::<i64>().map_err(|e| e.to_string())?;
-    tdlib::functions::get_message_effect(effect_id, state::get_client_id(&app))
-        .await
-        .map_err(|e| e.message)
-}
-
-#[tauri::command]
 pub async fn add_message_reaction<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     chat_id: i64,
