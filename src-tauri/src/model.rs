@@ -166,3 +166,52 @@ impl UpdateChatReadInbox {
         }
     }
 }
+
+#[derive(serde::Serialize, Clone)]
+pub struct ChatFolder {
+    id: i32,
+    name: String,
+}
+
+impl ChatFolder {
+    pub fn new(id: i32, name: String) -> ChatFolder {
+        ChatFolder { id: id, name: name }
+    }
+
+    pub fn from(chat_folder: &tdlib::types::ChatFolderInfo) -> ChatFolder {
+        ChatFolder {
+            id: chat_folder.id,
+            name: chat_folder.name.text.text.clone(),
+        }
+    }
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct UpdateChatAddedToFolder {
+    chat_id: i64,
+    folder_id: i32,
+}
+
+impl UpdateChatAddedToFolder {
+    pub fn new(chat_id: i64, folder_id: i32) -> UpdateChatAddedToFolder {
+        UpdateChatAddedToFolder {
+            chat_id: chat_id,
+            folder_id: folder_id,
+        }
+    }
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct UpdateChatRemovedFromFolder {
+    chat_id: i64,
+    folder_id: i32,
+}
+
+impl UpdateChatRemovedFromFolder {
+    pub fn new(chat_id: i64, folder_id: i32) -> UpdateChatRemovedFromFolder {
+        UpdateChatRemovedFromFolder {
+            chat_id: chat_id,
+            folder_id: folder_id,
+        }
+    }
+}

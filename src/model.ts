@@ -32,40 +32,19 @@ export type SecretChat = {
   state: 'Pending' | 'Ready' | 'Closed'
 }
 
-export type UpdateChatFolders = {
-  chat_folders: Array<{
-    id: number;
-    name: {
-      text: {
-        text: string
-      }
-    };
-    icon: { name: string };
-    color_id: number;
-  }>
-}
-
 export type ChatFolder = {
   id: number;
   name: string;
 }
 
-export type ChatListMain = {
-  '@type': 'chatListMain';
-}
-export type ChatListFolder = {
-  '@type': 'chatListFolder';
-  chat_folder_id: number;
-}
-export type ChatListArchive = {
-  '@type': 'chatListArchive';
-}
-
-export type ChatList = ChatListMain | ChatListFolder | ChatListArchive;
-
-export type UpdateChatAddedToList = {
+export type UpdateChatAddedToFolder = {
   chat_id: number;
-  chat_list: ChatList;
+  folder_id: number;
+}
+
+export type UpdateChatRemovedFromFolder = {
+  chat_id: number;
+  folder_id: number;
 }
 
 export type FormattedText = {
@@ -399,11 +378,6 @@ export type MessageWithStatus = Message & {
 export type UpdateMessageSendSucceeded = {
   message: Message;
   old_message_id: number;
-}
-
-export type UpdateChatRemovedFromList = {
-  chat_id: number;
-  chat_list: ChatList;
 }
 
 export type Sticker = {
