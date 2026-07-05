@@ -25,7 +25,7 @@ const isMyChat = computed(() => {
   if (!chat) {
     return false;
   }
-  return chat.type['@type'] === 'chatTypePrivate' && chat.type.user_id === store.myId;
+  return chat.user_id === store.myId;
 });
 
 async function download() {

@@ -90,7 +90,7 @@ onMounted(() => {
     <button type="button" class="button mx-1 my-1 is-primary" @click.prevent="() => addChat(chat.id)"
       v-for="chat in chatsToAdd" :key="chat.id">
       {{ chat.title }}
-      <span class="ml-1" v-if="chat.type['@type'] === 'chatTypeSecret'">
+      <span class="ml-1" v-if="chat.secret">
         <FontAwesomeIcon :icon="faLock" />
       </span>
     </button>
@@ -101,7 +101,7 @@ onMounted(() => {
         <a href="#" @click.prevent="() => { }" class="is-flex is-flex-direction-row">
           <span class="is-flex-grow-1 is-align-self-center">
             {{ chat.title }}
-            <span class="ml-1" v-if="chat.type['@type'] === 'chatTypeSecret'">
+            <span class="ml-1" v-if="chat.secret">
               <FontAwesomeIcon :icon="faLock" />
             </span>
           </span>

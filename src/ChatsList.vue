@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { store } from './store';
-import { getChatPosition, selectChat } from './services/chats';
+import { selectChat } from './services/chats';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faLock } from '@fortawesome/free-solid-svg-icons';
 
@@ -9,7 +9,7 @@ const chats = computed(() => {
   const list = store.chatFoldersMap[store.selectedChatFolderId] || [];
   return list
     .map(id => store.chatsMap[id]).filter(c => c !== undefined)
-    .sort((c1, c2) => getChatPosition(c1) < getChatPosition(c2) ? 1 : -1);
+    .sort((c1, c2) => c1.pos < c2.pos ? 1 : -1);
 });
 </script>
 
@@ -20,13 +20,13 @@ const chats = computed(() => {
         <a href="#" :class="{ 'is-active': store.selectedChat?.id === chat.id }" class="nowrap"
           @click="() => selectChat(chat.id)">
           <span class="chat-title nowrap">
-            <span class="mr-1" v-if="chat.type['@type'] === 'chatTypeSecret'">
+            <span class="mr-1" v-if="chat.secret">
               <FontAwesomeIcon :icon="faLock" />
             </span>
             {{ chat.title }}
           </span>
           <span class="unread-count" v-if="chat.unread_count > 0"
-            :class="{ 'muted': chat.notification_settings.mute_for > 0 }">
+            :class="{ 'muted': chat.muted }">
             {{ chat.unread_count }}
           </span>
         </a>

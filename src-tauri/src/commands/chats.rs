@@ -1,4 +1,4 @@
-use crate::state;
+use crate::{model::Chat, state};
 
 #[tauri::command]
 pub async fn load_chats<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
@@ -137,9 +137,13 @@ pub async fn get_replied_message<R: tauri::Runtime>(
 pub async fn create_new_secret_chat<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     user_id: i64,
-) -> Result<tdlib::enums::Chat, String> {
+) -> Result<Chat, String> {
     tdlib::functions::create_new_secret_chat(user_id, state::get_client_id(&app))
         .await
+        .map(|c| {
+            let tdlib::enums::Chat::Chat(chat) = c;
+            Chat::from(&chat)
+        })
         .map_err(|e| e.message)
 }
 

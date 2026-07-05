@@ -280,20 +280,20 @@ const secretChatState = computed(() => {
   if (!store.selectedChat) {
     return '';
   }
-  if (store.selectedChat.type['@type'] !== 'chatTypeSecret') {
+  if (!store.selectedChat.secret) {
     return ''
   }
-  const id = store.selectedChat.type.secret_chat_id
+  const id = store.selectedChat.secret_chat_id as number;
   const secretChat = store.secretChatsMap[id];
   if (!secretChat) {
     return '';
   }
-  return secretChat.state['@type'];
+  return secretChat.state;
 });
 
 const canWriteMessages = computed(() => {
-  return !store.selectedChat || store.selectedChat.permissions.can_send_basic_messages
-    || (secretChatState.value !== '' && secretChatState.value !== 'secretChatStateReady')
+  return !store.selectedChat || store.selectedChat.can_send
+    || (secretChatState.value !== '' && secretChatState.value !== 'Ready')
 });
 
 let unlistener: UnlistenFn | undefined = undefined;
@@ -342,7 +342,7 @@ watch(() => store.selectedChat?.id, () => clear());
           </div>
           <div class="is-flex-grow-1 has-text-centered is-align-self-center">
             {{ store.selectedChat.title }}
-            <span class="ml-1" v-if="store.selectedChat.type['@type'] === 'chatTypeSecret'">
+            <span class="ml-1" v-if="store.selectedChat.secret">
               <FontAwesomeIcon :icon="faLock" />
             </span>
           </div>
@@ -360,10 +360,10 @@ watch(() => store.selectedChat?.id, () => clear());
     </div>
     <div id="chat-content" class="p-1 has-background-link-soft" @scroll="chatContentScrolled">
       <MessageBubble :message="message" v-for="message in store.currentMessages" :key="message.id" />
-      <div v-if="secretChatState === 'secretChatStatePending'" class="box m-5 has-background-warning-light">
+      <div v-if="secretChatState === 'Pending'" class="box m-5 has-background-warning-light">
         Secret chat is in pending state
       </div>
-      <div v-if="secretChatState === 'secretChatStateClosed'" class="box m-5 has-background-danger-light">
+      <div v-if="secretChatState === 'Closed'" class="box m-5 has-background-danger-light">
         Secret chat is closed
       </div>
     </div>

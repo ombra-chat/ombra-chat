@@ -1,3 +1,37 @@
+export type Chat = {
+  id: number;
+  secret_chat_id: number | null;
+  title: string;
+  unread_count: number;
+  muted: boolean;
+  user_id: number;
+  secret: boolean;
+  folders: number[];
+  pos: number;
+  can_send: boolean;
+  can_delete_for_all: boolean;
+  can_delete_for_self: boolean;
+  last_read_inbox_message_id: number;
+  last_read_outbox_message_id: number;
+  reactions: string[] | 'All';
+}
+
+export type ChatPosition = {
+  chat_id: number;
+  pos: number;
+}
+
+export type RemoveChatFromFolder = {
+  chat_id: number;
+  folder_id: number;
+}
+
+export type SecretChat = {
+  id: number;
+  user_id: number;
+  state: 'Pending' | 'Ready' | 'Closed'
+}
+
 export type UpdateChatFolders = {
   chat_folders: Array<{
     id: number;
@@ -14,102 +48,6 @@ export type UpdateChatFolders = {
 export type ChatFolder = {
   id: number;
   name: string;
-}
-
-export type ChatAvailableReactionsAll = {
-  '@type': 'chatAvailableReactionsAll';
-  max_reaction_count: number;
-}
-
-export type ChatAvailableReactionsSome = {
-  '@type': 'chatAvailableReactionsSome';
-  reactions: ReactionType[];
-  max_reaction_count: number;
-}
-
-export type ChatAvailableReactions = ChatAvailableReactionsAll | ChatAvailableReactionsSome;
-
-export type ChatPermission = {
-  can_send_basic_messages: boolean;
-  can_send_audios: boolean;
-  can_send_documents: boolean;
-  can_send_photos: boolean;
-  can_send_videos: boolean;
-  can_send_video_notes: boolean;
-  can_send_voice_notes: boolean;
-  can_send_polls: boolean;
-  can_send_other_messages: boolean;
-  can_add_link_previews: boolean;
-  can_change_info: boolean;
-  can_invite_users: boolean;
-  can_pin_messages: boolean;
-  can_create_topics: boolean;
-}
-
-export type UpdateNewChat = {
-  chat: Chat
-}
-
-export type ChatNotificationSettings = {
-  mute_for: number;
-}
-
-export type ChatTypePrivate = {
-  '@type': 'chatTypePrivate';
-  user_id: number;
-}
-
-export type ChatTypeSecret = {
-  '@type': 'chatTypeSecret';
-  secret_chat_id: number;
-  user_id: number;
-}
-
-export type SecretChat = {
-  id: number;
-  user_id: number;
-  state: {
-    '@type': 'secretChatStatePending' | 'secretChatStateReady' | 'secretChatStateClosed';
-  }
-  is_outbound: boolean;
-  key_hash: string;
-  layer: number;
-}
-
-export type UpdateSecretChat = {
-  secret_chat: SecretChat
-}
-
-export type ChatTypeBasicGroup = {
-  '@type': 'chatTypeBasicGroup';
-  basic_group_id: number;
-}
-
-export type ChatTypeSupergroup = {
-  '@type': 'chatTypeSupergroup';
-  supergroup_id: number;
-  is_channel: boolean;
-}
-
-export type ChatType = ChatTypePrivate | ChatTypeSecret | ChatTypeBasicGroup | ChatTypeSupergroup;
-
-export type Chat = {
-  id: number;
-  type: ChatType;
-  title: string;
-  photo: any;
-  permissions: ChatPermission;
-  last_message: Message;
-  positions: ChatPosition[];
-  unread_count: number;
-  notification_settings: ChatNotificationSettings;
-  last_read_inbox_message_id: number;
-  last_read_outbox_message_id: number;
-  unread_mention_count: number;
-  unread_reaction_count: number;
-  available_reactions: ChatAvailableReactions;
-  can_be_deleted_for_all_users: boolean;
-  can_be_deleted_only_for_self: boolean;
 }
 
 export type ChatListMain = {
@@ -448,32 +386,10 @@ export type UpdateUser = {
   user: User;
 }
 
-export type ChatPosition = {
-  list: ChatList;
-  order: number;
-  is_pinned: boolean;
-}
-
-export type UpdateChatPosition = {
-  chat_id: number;
-  position: ChatPosition;
-}
-
-export type UpdateChatLastMessage = {
-  chat_id: number;
-  positions: ChatPosition[];
-  last_message: Message;
-}
-
 export type UpdateChatReadInbox = {
   chat_id: number;
   last_read_inbox_message_id: number;
   unread_count: number;
-}
-
-export type UpdateUnreadChatCount = {
-  chat_list: ChatList;
-  unread_unmuted_count: number;
 }
 
 export type MessageWithStatus = Message & {

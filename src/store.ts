@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import type { Chat, ChatFolder, Message, File, User, ChatPosition, MessageWithStatus, MessageInteractionInfo, SecretChat } from './model';
+import type { ChatFolder, Message, File, User, MessageWithStatus, MessageInteractionInfo, Chat, SecretChat } from './model';
 import { viewMessage } from './services/chats';
 
 type Store = {
@@ -49,9 +49,8 @@ type Store = {
   deleteMessages: (messageIds: number[]) => void;
   updateFile: (file: File) => void;
   updateUser: (user: User) => void;
-  updateChatPosition: (chatId: number, newPosition: ChatPosition) => void;
-  updateChat: (chatId: number, chatUpdate: Partial<Chat>) => void;
-  updateSecretChat: (chatId: number, chat: SecretChat) => void;
+  updateChat: (chatId: number, updater: (chat: Chat) => Chat) => void;
+  updateSecretChat: (chat: SecretChat) => void;
   markMessageAsRead: (messageId: number) => Promise<void>;
   updateMessage: (oldMessageId: number, message: Message) => void;
   updateMessageInteractionInfo: (message_id: number, info: MessageInteractionInfo) => void;
@@ -205,52 +204,21 @@ export const store = reactive<Store>({
   updateUser(user: User) {
     (this as Store).usersMap[user.id] = user;
   },
-  updateChatPosition(chatId: number, newPosition: ChatPosition) {
-    if (newPosition.list['@type'] !== 'chatListMain') {
-      return;
-    }
-
+  updateChat(chatId: number, updater: (chat: Chat) => Chat) {
     const store = this as Store;
     const chat = store.chatsMap[chatId];
     if (!chat) {
       return;
     }
-
-    let newPositions: ChatPosition[] = [];
-    let found = false;
-    for (const pos of chat.positions) {
-      if (pos.list['@type'] === newPosition.list['@type']) {
-        newPositions.push(newPosition);
-        found = true;
-      } else {
-        newPositions.push(pos);
-      }
-    }
-
-    if (!found) {
-      newPositions = [...chat.positions, newPosition];
-    }
-
-    store.chatsMap[chatId] = {
-      ...chat,
-      positions: newPositions
-    }
-  },
-  updateChat(chatId: number, chatUpdate: Partial<Chat>) {
-    const store = this as Store;
-    const chat = store.chatsMap[chatId];
-    if (!chat) {
-      return;
-    }
-    const updatedChat = { ...chat, ...chatUpdate };
+    const updatedChat = updater(chat);
     store.chatsMap[chatId] = updatedChat;
     if (updatedChat.id === store.selectedChat?.id) {
       store.selectedChat = updatedChat;
     }
   },
-  updateSecretChat(chatId: number, chat: SecretChat) {
+  updateSecretChat(chat: SecretChat) {
     const store = this as Store;
-    store.secretChatsMap[chatId] = chat;
+    store.secretChatsMap[chat.id] = chat;
   },
   async markMessageAsRead(messageId: number) {
     const messages = (this as Store).currentMessages;

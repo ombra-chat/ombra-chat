@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
-import { deleteMessage, forwardMessage, getChatPosition, selectChat } from './services/chats';
+import { deleteMessage, forwardMessage, selectChat } from './services/chats';
 import { store } from './store';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faAngleDown, faAngleUp } from '@fortawesome/free-solid-svg-icons';
@@ -87,9 +87,9 @@ const chats = computed(() => {
   const list = store.chatFoldersMap[forwardingFilter.value.trim() === '' ? store.selectedChatFolderId : 0] || [];
   return list
     .map(id => store.chatsMap[id]).filter(c => c !== undefined)
-    .filter(c => c.permissions.can_send_basic_messages)
+    .filter(c => c.can_send)
     .filter(c => forwardingFilter.value.trim() === '' ? true : c.title.toLowerCase().includes(forwardingFilter.value.trim()))
-    .sort((c1, c2) => getChatPosition(c1) < getChatPosition(c2) ? -1 : 1);
+    .sort((c1, c2) => c1.pos < c2.pos ? -1 : 1);
 });
 
 const deleteEnabled = computed(() => {
@@ -97,7 +97,7 @@ const deleteEnabled = computed(() => {
   if (chat === null) {
     return false;
   }
-  return chat.can_be_deleted_for_all_users || chat.can_be_deleted_only_for_self;
+  return chat.can_delete_for_all || chat.can_delete_for_self;
 });
 
 const replyToEnabled = computed(() => {
@@ -105,23 +105,21 @@ const replyToEnabled = computed(() => {
   if (chat === null) {
     return false;
   }
-  return chat.permissions.can_send_basic_messages;
+  return chat.can_send;
 });
 
 const reactions = computed<Record<string, string>>(() => {
   if (!store.selectedChat) {
     return {};
   }
-  const availableReactions = store.selectedChat.available_reactions;
-  if (availableReactions['@type'] === 'chatAvailableReactionsAll') {
+  const availableReactions = store.selectedChat.reactions;
+  if (availableReactions === 'All') {
     return store.allReactions;
-  } else if (availableReactions['@type'] === 'chatAvailableReactionsSome') {
-    const availableEmojis = availableReactions.reactions.map(r => r.emoji);
+  } else {
     return Object.fromEntries(Object.entries(store.allReactions).filter(([e, _]) =>
-      availableEmojis.includes(e)
+      (store.selectedChat!.reactions as string[]).includes(e)
     ));
   }
-  return {};
 })
 </script>
 

@@ -56,7 +56,7 @@ function back() {
     <button type="button" class="button mx-1 my-1 is-primary" @click.prevent="() => newFolderChats.push(chat)"
       v-for="chat in selectableChats" :key="chat.id">
       {{ chat.title }}
-      <span class="ml-1" v-if="chat.type['@type'] === 'chatTypeSecret'">
+      <span class="ml-1" v-if="chat.secret">
         <FontAwesomeIcon :icon="faLock" />
       </span>
     </button>
@@ -64,7 +64,7 @@ function back() {
   <div class="box">
     <button class="button mr-2" v-for="chat in newFolderChats" :key="chat.id" @click="() => removeSelectedChat(chat)">
       {{ chat.title }}
-      <span class="ml-1" v-if="chat.type['@type'] === 'chatTypeSecret'">
+      <span class="ml-1" v-if="chat.secret">
         <FontAwesomeIcon :icon="faLock" />
       </span>
       <span class="ml-2">

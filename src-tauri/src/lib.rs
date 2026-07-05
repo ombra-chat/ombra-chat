@@ -1,3 +1,4 @@
+mod model;
 mod commands;
 mod crypto;
 mod settings;

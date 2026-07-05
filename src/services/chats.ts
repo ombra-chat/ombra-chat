@@ -1,16 +1,15 @@
 import { listen } from '@tauri-apps/api/event'
 import { Window } from "@tauri-apps/api/window"
 import { store } from '../store'
-import { Chat, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, UpdateChatLastMessage, UpdateChatPosition, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateMessageInteractionInfo, UpdateMessageSendSucceeded, UpdateNewChat, UpdateNewMessage, UpdateSecretChat, UpdateUnreadChatCount } from '../model';
+import { Chat, ChatPosition, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, RemoveChatFromFolder, SecretChat, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateMessageInteractionInfo, UpdateMessageSendSucceeded, UpdateNewMessage } from '../model';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
 import { getUserDisplayText } from './users';
 
 export async function handleChatsUpdates() {
   return [
-    await listen<UpdateNewChat>('update-new-chat', (event) => {
-      const { chat } = event.payload;
-      store.addChat(chat);
+    await listen<Chat>('update-new-chat', (event) => {
+      store.addChat(event.payload);
     }),
     await listen<UpdateNewMessage>('update-new-message', (event) => {
       const { message } = event.payload;
@@ -34,34 +33,31 @@ export async function handleChatsUpdates() {
         store.deleteMessages(message_ids);
       }
     }),
-    await listen<UpdateChatPosition>('update-chat-position', (event) => {
+    await listen<ChatPosition>('update-chat-position', (event) => {
       const update = event.payload;
-      if (update.position.list['@type'] === 'chatListFolder') {
-        if (update.position.order === 0) {
-          store.removeChatFromFolder(update.position.list.chat_folder_id, update.chat_id);
-          return;
+      store.updateChat(update.chat_id, (c: Chat) => {
+        if (update.pos !== null) {
+          c.pos = update.pos;
         }
-      }
-      store.updateChatPosition(update.chat_id, update.position);
+        return c;
+      });
     }),
-    await listen<UpdateChatLastMessage>('update-chat-last-message', (event) => {
+    await listen<RemoveChatFromFolder>('remove-chat-from-folder', (event) => {
       const update = event.payload;
-      store.updateChat(update.chat_id, { positions: update.positions, last_message: update.last_message });
+      store.removeChatFromFolder(update.folder_id, update.chat_id);
     }),
     await listen<UpdateChatReadInbox>('update-chat-read-inbox', (event) => {
       const update = event.payload;
-      store.updateChat(update.chat_id, {
-        last_read_inbox_message_id: update.last_read_inbox_message_id,
-        unread_count: update.unread_count
+      store.updateChat(update.chat_id, (c: Chat) => {
+        c.last_read_inbox_message_id = update.last_read_inbox_message_id;
+        c.unread_count = update.unread_count;
+        return c;
       });
     }),
-    await listen<UpdateUnreadChatCount>('update-unread-chat-count', async (event) => {
-      const update = event.payload;
-      if (update.chat_list['@type'] === 'chatListMain') {
-        const unreadChats = update.unread_unmuted_count > 0;
-        const mainWindow = new Window('main');
-        await mainWindow.setTitle(unreadChats ? '★ OmbraChat' : 'OmbraChat');
-      }
+    await listen<number>('update-unread-chat-count', async (event) => {
+      const count = event.payload;
+      const mainWindow = new Window('main');
+      await mainWindow.setTitle(count > 0 ? '★ OmbraChat' : 'OmbraChat');
     }),
     await listen<UpdateMessageSendSucceeded>('update-message-send-succeeded', async (event) => {
       const update = event.payload;
@@ -73,9 +69,8 @@ export async function handleChatsUpdates() {
         store.updateMessageInteractionInfo(update.message_id, update.interaction_info);
       }
     }),
-    await listen<UpdateSecretChat>('update-secret-chat', async (event) => {
-      const { secret_chat } = event.payload;
-      store.updateSecretChat(secret_chat.id, secret_chat);
+    await listen<SecretChat>('update-secret-chat', async (event) => {
+      store.updateSecretChat(event.payload);
     })
   ]
 }
@@ -221,15 +216,6 @@ export async function deleteMessage(chatId: number, messageId: number) {
   } catch (err) {
     console.error(err);
   }
-}
-
-export function getChatPosition(chat: Chat) {
-  for (const pos of chat.positions) {
-    if (pos.list['@type'] === 'chatListMain') {
-      return pos.order;
-    }
-  }
-  return 0;
 }
 
 export async function viewMessage(chatId: number, messageId: number) {

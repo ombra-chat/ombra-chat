@@ -100,13 +100,13 @@ const showPgpSettings = computed(() => {
   if (store.selectedChat === null) {
     return false;
   }
-  const chatType = store.selectedChat.type['@type'];
-  return chatType === 'chatTypePrivate' || chatType === 'chatTypeSecret';
+  return store.selectedChat.user_id !== null || store.selectedChat.secret;
 })
 
 const showSecretChatButton = computed(() => {
-  return store.selectedChat?.type['@type'] === 'chatTypePrivate'
-    && store.selectedChat.type.user_id !== store.myId;
+  return store.selectedChat
+    && store.selectedChat.user_id !== null
+    && store.selectedChat.user_id !== store.myId;
 })
 
 watch(
@@ -163,7 +163,7 @@ watch(
             Start secret chat
           </button>
         </div>
-        <div v-if="store.selectedChat?.can_be_deleted_for_all_users" class="mt-3">
+        <div v-if="store.selectedChat?.can_delete_for_all" class="mt-3">
           <hr class="mb-2" />
           <div>
             <label class="checkbox">
