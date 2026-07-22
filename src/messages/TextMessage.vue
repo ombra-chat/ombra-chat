@@ -16,5 +16,5 @@ onMounted(async () => {
 </script>
 
 <template>
-{{ props.content.text.text }}
+{{ props.content.text }}
 </template>

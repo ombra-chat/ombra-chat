@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
-import { MessageDocument, MessageWithStatus } from '../model';
-import { decryptFile, decryptNameAndCaption } from '../services/pgp';
+import { nextTick, ref, watch } from 'vue';
+import { MessagePgpFile, MessageWithStatus } from '../model';
+import { decryptFile } from '../services/pgp';
 import { downloadFile, saveFile } from '../services/files';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { save } from '@tauri-apps/plugin-dialog';
@@ -9,46 +9,24 @@ import { store } from '../store';
 
 const props = defineProps<{
   message: MessageWithStatus,
-  content: MessageDocument
+  content: MessagePgpFile
 }>();
 
-const downloading = ref(false);
-const decrypting = ref(false);
+const loading = ref(false);
 const decryptingCaption = ref(false);
 const fileName = ref('');
 const caption = ref('');
-const decryptedFilePath = ref('');
+const ciphertextPath = ref<string | null>(null);
+const plaintextPath = ref<string | null>(null);
 const decryptionError = ref(false);
 
-async function decryptCaption(ciphertext: string) {
-  if (ciphertext === '') {
-    return;
-  }
-
-  decryptingCaption.value = true;
-
-  try {
-    const plaintext = await decryptNameAndCaption(ciphertext);
-    fileName.value = plaintext.fileName;
-
-    if (plaintext.caption !== null) {
-      caption.value = plaintext.caption;
-    }
-  } catch (err) {
-    console.error(err);
-    decryptionError.value = true;
-  } finally {
-    decryptingCaption.value = false;
-  }
-}
-
 async function download() {
-  downloading.value = true;
-  const file = await downloadFile(props.content.document.document.id);
+  loading.value = true;
+  const file = await downloadFile(props.content.document_id);
   if (file?.local.is_downloading_completed) {
-    props.content.document.document = file;
-    downloading.value = false;
-    await decrypt(props.content.document.document.local.path);
+    ciphertextPath.value = file.local.path;
+    props.content.ciphertext_path = file.local.path;
+    await decrypt(file.local.path);
   } else {
     await download();
   }
@@ -58,27 +36,27 @@ async function decrypt(path: string) {
   if (path === '') {
     return;
   }
-  decrypting.value = true;
+  loading.value = true;
   try {
-    decryptedFilePath.value = await decryptFile(path);
+    plaintextPath.value = await decryptFile(path);
   } catch (err) {
     console.error(err);
     decryptionError.value = true;
   } finally {
-    decrypting.value = false;
+    loading.value = false;
   }
 }
 
 async function openFile() {
-  const path = decryptedFilePath.value;
+  const path = plaintextPath.value;
   if (path !== '') {
     await openPath(`file://${path}`);
   }
 }
 
 async function openSaveDialog() {
-  const srcPath = decryptedFilePath.value;
-  if (srcPath === '') {
+  const srcPath = plaintextPath.value;
+  if (srcPath === null) {
     return;
   }
   const targetPath = await save();
@@ -91,18 +69,16 @@ async function openSaveDialog() {
 watch(
   () => props.content,
   async (newContent) => {
-    await decryptCaption(newContent.caption.text);
-    if (newContent.document.document.local.is_downloading_completed) {
-      await decrypt(newContent.document.document.local.path);
-    }
+    fileName.value = newContent.file_name;
+    caption.value = newContent.caption || '';
+    ciphertextPath.value = newContent.ciphertext_path;
+    plaintextPath.value = newContent.plaintext_path;
     await nextTick(() => {
       store.messageLoaded(props.message.id);
     });
   },
   { immediate: true }
 );
-
-const downloaded = computed(() => props.content.document.document.local.is_downloading_completed);
 </script>
 
 <template>
@@ -116,15 +92,15 @@ const downloaded = computed(() => props.content.document.document.local.is_downl
     <p>{{ fileName }}</p>
 
     <div class="mt-1">
-      <button class="button is-link" type="button" v-if="downloaded && !decrypting" @click="openFile">
+      <button class="button is-link" type="button" v-if="plaintextPath" @click="openFile">
         Open
       </button>
-      <button class="button is-primary ml-2" type="button" v-if="downloaded && !decrypting" @click="openSaveDialog">
+      <button class="button is-primary ml-2" type="button" v-if="plaintextPath" @click="openSaveDialog">
         Save
       </button>
-      <button class="button is-link" type="button" v-else @click="download" :disabled="downloading">
+      <button class="button is-link" type="button" v-else @click="download" :disabled="loading">
         Download
-        <span class="is-loading" v-if="downloading"></span>
+        <span class="is-loading" v-if="loading"></span>
       </button>
     </div>
 

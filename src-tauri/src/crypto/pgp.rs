@@ -1,19 +1,20 @@
 use crate::crypto::utils;
 use crate::{state, store};
 use pgp::composed::{
-    ArmorOptions, Deserializable, EncryptionCaps, KeyType, Message, MessageBuilder, SecretKeyParamsBuilder, SignedPublicKey, SignedSecretKey, SubkeyParamsBuilder
+    ArmorOptions, Deserializable, EncryptionCaps, KeyType, Message, MessageBuilder,
+    SecretKeyParamsBuilder, SignedPublicKey, SignedSecretKey, SubkeyParamsBuilder,
 };
 use pgp::crypto::sym::SymmetricKeyAlgorithm;
 use pgp::packet::PublicSubkey;
-use pgp::types::{KeyDetails};
+use pgp::types::KeyDetails;
 use rand::thread_rng;
+use std::fs;
 use std::io::{Cursor, Read, Write};
 use std::path::PathBuf;
-use std::{fs};
 use std::{error::Error, fs::File, io::BufReader};
 
 fn encrypt(
-    keys: Vec<PublicSubkey>,
+    keys: &Vec<PublicSubkey>,
     bytes: impl Into<pgp::bytes::Bytes>,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
     log::trace!("encrypt");
@@ -29,7 +30,7 @@ fn encrypt(
 }
 
 pub fn encrypt_string_to_string(
-    keys: Vec<PublicSubkey>,
+    keys: &Vec<PublicSubkey>,
     input: &str,
 ) -> Result<String, Box<dyn Error>> {
     log::trace!("encrypt_string_to_string");
@@ -38,7 +39,7 @@ pub fn encrypt_string_to_string(
 }
 
 fn encrypt_to_string(
-    keys: Vec<PublicSubkey>,
+    keys: &Vec<PublicSubkey>,
     input: impl Into<pgp::bytes::Bytes>,
 ) -> Result<String, Box<dyn Error>> {
     log::trace!("encrypt_to_string");
@@ -49,7 +50,7 @@ fn encrypt_to_string(
 }
 
 pub fn encrypt_string_to_file(
-    keys: Vec<PublicSubkey>,
+    keys: &Vec<PublicSubkey>,
     input: &str,
     target_path: &str,
 ) -> Result<(), Box<dyn Error>> {
@@ -62,7 +63,7 @@ pub fn encrypt_string_to_file(
 }
 
 pub fn encrypt_file_to_file(
-    keys: Vec<PublicSubkey>,
+    keys: &Vec<PublicSubkey>,
     source_path: &str,
     target_path: &str,
 ) -> Result<(), Box<dyn Error>> {
@@ -125,10 +126,14 @@ pub fn decrypt_file_to_file<R: tauri::Runtime>(
     let buf = Cursor::new(data);
     let message = Message::from_bytes(buf)?;
     let mut decrypted = message.decrypt(&passphrase.into(), &key)?;
-    let target_path = &path[..path.len() - 4];
+    let target_path = get_plaintext_path(&path);
     let mut file = File::create(target_path)?;
     file.write_all(&decrypted.as_data_vec()?)?;
     Ok(target_path.to_string())
+}
+
+pub fn get_plaintext_path(ciphertext_path: &str) -> &str {
+    return &ciphertext_path[..ciphertext_path.len() - 4];
 }
 
 pub fn decrypt_string_to_string<R: tauri::Runtime>(
@@ -327,7 +332,7 @@ mod tests {
         let enc_key1 = get_encryption_key_from_secret_key(&sec_key1).unwrap();
         let enc_key2 = get_encryption_key_from_public_key(&pub_key2).unwrap();
 
-        let encrypted = encrypt_string_to_string(vec![enc_key1, enc_key2], message).unwrap();
+        let encrypted = encrypt_string_to_string(&vec![enc_key1, enc_key2], message).unwrap();
 
         let decrypted1 =
             decrypt_armored(&sec_key1, passphrase1, encrypted.clone().into_bytes()).unwrap();

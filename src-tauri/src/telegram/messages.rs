@@ -1,4 +1,6 @@
-use crate::emit;
+use crate::{
+    emit, messages::parser::{get_reactions_from_interaction_info, parse_message}, model::{UpdateMessageReactions, UpdateMessageSendSucceeded},
+};
 
 use tdlib::enums::Update;
 
@@ -7,8 +9,8 @@ pub async fn handle_messages_update<R: tauri::Runtime>(
     update: &Update,
 ) -> bool {
     match update {
-        Update::NewMessage(value) => {
-            emit(app, "update-new-message", value);
+        Update::NewMessage(update) => {
+            emit(app, "update-new-message", parse_message(app, &update.message));
             return true;
         }
         Update::File(value) => {
@@ -19,12 +21,27 @@ pub async fn handle_messages_update<R: tauri::Runtime>(
             emit(app, "update-delete-messages", value);
             return true;
         }
-        Update::MessageSendSucceeded(value) => {
-            emit(app, "update-message-send-succeeded", value);
+        Update::MessageSendSucceeded(update) => {
+            emit(
+                app,
+                "update-message-send-succeeded",
+                UpdateMessageSendSucceeded {
+                    message: parse_message(app, &update.message),
+                    old_message_id: update.old_message_id,
+                },
+            );
             return true;
         }
-        Update::MessageInteractionInfo(value) => {
-            emit(app, "update-message-interaction-info", value);
+        Update::MessageInteractionInfo(update) => {
+            emit(
+                app,
+                "update-message-reactions",
+                UpdateMessageReactions {
+                    message_id: update.message_id,
+                    chat_id: update.chat_id,
+                    reactions: get_reactions_from_interaction_info(&update.interaction_info),
+                },
+            );
             return true;
         }
         _ => {

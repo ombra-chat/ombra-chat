@@ -15,7 +15,7 @@ const downloading = ref(false);
 
 async function download() {
   downloading.value = true;
-  const file = await downloadFile(props.content.document.document.id);
+  const file = await downloadFile(props.content.document.id);
   if (file?.local.is_downloading_completed) {
     downloading.value = false;
   } else {
@@ -24,14 +24,14 @@ async function download() {
 }
 
 async function openFile() {
-  const path = props.content.document.document.local.path;
+  const path = props.content.document.local.path;
   if (path !== '') {
     await openPath(`file://${path}`);
   }
 }
 
 async function openSaveDialog() {
-  const srcPath = props.content.document.document.local.path;
+  const srcPath = props.content.document.local.path;
   if (srcPath === '') {
     return;
   }
@@ -42,7 +42,7 @@ async function openSaveDialog() {
   await saveFile(srcPath, targetPath);
 }
 
-const downloaded = computed(() => props.content.document.document.local.is_downloading_completed);
+const downloaded = computed(() => props.content.document.local.is_downloading_completed);
 
 onMounted(async () => {
   await nextTick(() => {
@@ -52,7 +52,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <p>{{ content.document.file_name }}</p>
+  <p>{{ content.file_name }}</p>
 
   <div class="mt-1">
     <button class="button is-link" type="button" v-if="downloaded" @click="openFile">
@@ -68,6 +68,6 @@ onMounted(async () => {
   </div>
 
   <p v-if="content.caption">
-    {{ content.caption.text }}
+    {{ content.caption }}
   </p>
 </template>

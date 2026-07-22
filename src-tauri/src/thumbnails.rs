@@ -44,13 +44,17 @@ pub fn create_thumbnail<R: tauri::Runtime>(
     ))
 }
 
-pub fn remove_thumbnail<R: tauri::Runtime>(
-    app: &tauri::AppHandle<R>,
-    path: &str,
-) -> Result<(), Box<dyn Error>> {
-    let thumb_file_path = get_thumbnail_file_name(app, path)?;
-    fs::remove_file(thumb_file_path)?;
-    Ok(())
+pub fn remove_thumbnail<R: tauri::Runtime>(app: &tauri::AppHandle<R>, path: &str) {
+    match get_thumbnail_file_name(app, path) {
+        Ok(thumb_file_path) => {
+            if let Err(e) = fs::remove_file(thumb_file_path) {
+                log::warn!("Unable to delete thumbnail file: {}", e)
+            }
+        }
+        Err(e) => {
+            log::warn!("Unable to get thumbnail file name: {}", e)
+        }
+    }
 }
 
 fn get_thumbnail_file_name<R: tauri::Runtime>(

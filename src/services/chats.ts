@@ -1,18 +1,17 @@
 import { listen } from '@tauri-apps/api/event'
 import { Window } from "@tauri-apps/api/window"
 import { store } from '../store'
-import { Chat, ChatPosition, InputMessageContent, InputMessageReplyTo, Message, MessageContent, Messages, MessageSender, RemoveChatFromFolder, SecretChat, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateMessageInteractionInfo, UpdateMessageSendSucceeded, UpdateNewMessage } from '../model';
+import { Chat, ChatPosition, InputMessageContent, InputMessageReplyTo, Message, MessageContent, RemoveChatFromFolder, SecretChat, UpdateChatReadInbox, UpdateDeleteMessages, UpdateFile, UpdateMessageReactions, UpdateMessageSendSucceeded } from '../model';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
-import { getUserDisplayText } from './users';
 
 export async function handleChatsUpdates() {
   return [
     await listen<Chat>('update-new-chat', (event) => {
       store.addChat(event.payload);
     }),
-    await listen<UpdateNewMessage>('update-new-message', (event) => {
-      const { message } = event.payload;
+    await listen<Message>('update-new-message', (event) => {
+      const message = event.payload;
       const selectedChat = store.selectedChat;
       if (!selectedChat) {
         return;
@@ -61,12 +60,17 @@ export async function handleChatsUpdates() {
     }),
     await listen<UpdateMessageSendSucceeded>('update-message-send-succeeded', async (event) => {
       const update = event.payload;
-      store.updateMessage(update.old_message_id, update.message);
+      store.updateMessage(update.old_message_id, () => {
+        return update.message;
+      });
     }),
-    await listen<UpdateMessageInteractionInfo>('update-message-interaction-info', async (event) => {
+    await listen<UpdateMessageReactions>('update-message-reactions', async (event) => {
       const update = event.payload;
       if (store.selectedChat?.id === update.chat_id) {
-        store.updateMessageInteractionInfo(update.message_id, update.interaction_info);
+        store.updateMessage(update.message_id, (m: Message) => {
+          m.reactions = update.reactions;
+          return m;
+        });
       }
     }),
     await listen<SecretChat>('update-secret-chat', async (event) => {
@@ -135,38 +139,38 @@ async function getLastMessage(): Promise<Message | null> {
     return null;
   }
 
-  let result = await invoke<Messages>('get_chat_history', {
+  let result = await invoke<Message[]>('get_chat_history', {
     chatId: chat.id,
     fromMessageId: 0,
     offset: 0,
     limit: 1
   });
 
-  if (result.messages.length !== 1) {
+  if (result.length !== 1) {
     return null;
   }
 
-  const lastMessage = result.messages[0];
+  const lastMessage = result[0];
 
   // check if the last message has been written by myself (handle edge case)
-  if (lastMessage.sender_id['@type'] === 'messageSenderUser' && lastMessage.sender_id.user_id === store.myId) {
+  if (lastMessage.sender_user_id === store.myId) {
     return lastMessage;
   }
 
   // the last read message
-  result = await invoke<Messages>('get_chat_history', {
+  result = await invoke<Message[]>('get_chat_history', {
     chatId: chat.id,
     fromMessageId: chat.last_read_inbox_message_id,
     offset: -1,
     limit: 1
   });
 
-  if (store.lastMessageId == 0 && result.messages.length == 0) {
+  if (store.lastMessageId == 0 && result.length == 0) {
     // this happens when the last read message has been deleted
     return lastMessage;
   }
 
-  return result.messages[0];
+  return result[0];
 }
 
 export async function loadPreviousMessages(fromMessage: Message | undefined = undefined) {
@@ -176,7 +180,7 @@ export async function loadPreviousMessages(fromMessage: Message | undefined = un
     }
     fromMessage = store.currentMessages[0];
   }
-  const { messages } = await invoke<Messages>('get_chat_history', {
+  const messages = await invoke<Message[]>('get_chat_history', {
     chatId: fromMessage.chat_id,
     fromMessageId: fromMessage.id,
     offset: 0,
@@ -191,7 +195,7 @@ export async function loadNewMessages() {
     return;
   }
   const fromMessageId = store.lastMessageId;
-  const { messages } = await invoke<Messages>('get_chat_history', {
+  const messages = await invoke<Message[]>('get_chat_history', {
     chatId: chat.id,
     fromMessageId,
     offset: -5,
@@ -206,7 +210,7 @@ export async function sendMessage(chatId: number, replyTo: InputMessageReplyTo |
     replyTo,
     options: null,
     replyMarkup: null,
-    inputMessageContent: content
+    content
   });
 }
 
@@ -223,18 +227,23 @@ export async function viewMessage(chatId: number, messageId: number) {
 }
 
 export async function forwardMessage(message: Message, chatId: number, sendCopy: boolean) {
-  await invoke<Messages>('forward_message', {
+  await invoke<Message>('forward_message', {
     chatId,
     fromChatId: message.chat_id,
     messageId: message.id,
     sendCopy
   });
 }
-export function getSenderTitle(sender: MessageSender): string {
-  if (sender['@type'] === 'messageSenderUser') {
-    return getUserDisplayText(sender.user_id);
-  } else if (sender['@type'] === 'messageSenderChat') {
-    const chat = store.getChat(sender.chat_id);
+
+export function getSenderTitle(message: Message): string {
+  if (message.sender_user_id !== null) {
+    const user = store.getUser(message.sender_user_id);
+    if (user) {
+      return user.display_text;
+    }
+  }
+  if (message.sender_chat_id !== null) {
+    const chat = store.getChat(message.sender_chat_id);
     if (chat) {
       return chat.title;
     }
@@ -266,25 +275,10 @@ export async function deleteChat(chatId: number) {
 
 export function getMessageTextContent(content: MessageContent): string | null {
   if (content['@type'] === 'messageText') {
-    return content.text.text;
+    return content.text;
   }
-  if (content['@type'] === 'messagePhoto') {
-    if (content.caption != null) {
-      return content.caption.text;
-    }
-    return null;
-  }
-  if (content['@type'] === 'messageDocument') {
-    if (content.caption != null) {
-      return content.caption.text;
-    }
-    return null;
-  }
-  if (content['@type'] === 'messageVideo') {
-    if (content.caption != null) {
-      return content.caption.text;
-    }
-    return null;
+  if ('caption' in content && content.caption) {
+    return content.caption;
   }
   return null;
 }

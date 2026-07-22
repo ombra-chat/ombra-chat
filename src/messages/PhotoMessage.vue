@@ -16,7 +16,7 @@ const props = defineProps<{
 const photoSrc = ref('');
 
 const size = computed(() => {
-  const sizes = props.content.photo.sizes;
+  const sizes = props.content.sizes;
   if (sizes.length > 0) {
     return { width: sizes[0].width, height: sizes[0].height };
   }
@@ -24,22 +24,11 @@ const size = computed(() => {
 })
 
 async function selectPhotoSize(content: MessagePhoto) {
-  const sizes = getUsablePhotoSize(content);
+  const sizes = content.sizes;
   if (sizes.length > 0) {
     const smallest = sizes[0];
     await setPhoto(content, smallest.photo, smallest);
   }
-}
-
-function getUsablePhotoSize(content: MessagePhoto): PhotoSize[] {
-  return content.photo.sizes.filter(s => {
-    const localFile = s.photo.local;
-    return (
-      // See https://core.telegram.org/api/files#image-thumbnail-types
-      s.type !== 't' && s.type !== 'i' && s.type !== 'j' &&
-      ((localFile.is_downloading_completed && localFile.path !== '') || localFile.can_be_downloaded)
-    )
-  })
 }
 
 async function setPhoto(content: MessagePhoto, photo: File, size: PhotoSize) {
@@ -63,7 +52,7 @@ async function photoLoaded() {
 
 async function openPhoto() {
   console.log('openPhoto')
-  const sizes = getUsablePhotoSize(props.content);
+  const sizes = props.content.sizes;
   if (sizes.length === 0) {
     return;
   }
@@ -114,7 +103,7 @@ watch(
     <img alt="" :src="photoSrc" v-if="photoSrc" :width="size.width" :height="size.height"
       :style="{ 'max-width': size.width }" @click="openPhoto" @load="photoLoaded" />
   </figure>
-  <p>{{ props.content.caption.text }}</p>
+  <p>{{ props.content.caption }}</p>
 </template>
 
 <style>

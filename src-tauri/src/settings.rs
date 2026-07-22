@@ -39,7 +39,7 @@ pub fn save_initial_config<R: tauri::Runtime>(
     if encrypt_db {
         let password = crypto::utils::generate_random_password();
         let key = pgp::get_encryption_key_from_secret_key(&key)?;
-        let password = pgp::encrypt_string_to_string(vec![key], &password)?;
+        let password = pgp::encrypt_string_to_string(&vec![key], &password)?;
         encrypted_password = Some(password.to_string());
     }
 

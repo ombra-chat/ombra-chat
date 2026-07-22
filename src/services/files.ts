@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { File, InputThumbnail } from '../model';
+import { File } from '../model';
 
 export function getFileName(path: string): string {
   return path.split('/').pop()?.split('\\').pop()!;
@@ -14,10 +14,6 @@ export async function downloadFile(fileId: number): Promise<File | null> {
   }
 }
 
-export async function createThumbnail(path: string): Promise<InputThumbnail> {
-  return await invoke<InputThumbnail>('create_thumbnail', { path });
-}
-
 export async function getImageSize(path: string): Promise<{ width: number, height: number } | null> {
   const response = await invoke<[number, number] | null>('get_image_size', { path });
   if (Array.isArray(response)) {
@@ -25,14 +21,6 @@ export async function getImageSize(path: string): Promise<{ width: number, heigh
     return { width: response[0], height: response[1] }
   } else {
     return null;
-  }
-}
-
-export async function removeThumbnail(path: string): Promise<void> {
-  try {
-    await invoke('remove_thumbnail', { path });
-  } catch (err) {
-    console.error(err);
   }
 }
 

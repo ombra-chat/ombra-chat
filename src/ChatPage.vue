@@ -5,13 +5,12 @@ import { getSenderTitle, loadNewMessages, loadPreviousMessages, sendMessage, clo
 import { store } from './store';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
-import { FormattedText, InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageReplyTo, InputMessageText, InputTextQuote } from './model';
+import { InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageReplyTo, InputTextQuote } from './model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPaperPlane, faGear, faPaperclip, faX, faKey, faLock, faChevronLeft } from '@fortawesome/free-solid-svg-icons';
-import { createThumbnail, getFileName, getImageSize, removeThumbnail } from './services/files';
+import { getFileName, getImageSize } from './services/files';
 import ChatSettingsModal from './ChatSettingsModal.vue';
 import MessageModal from './MessageModal.vue';
-import { createPgpFile, createPgpTextFile, encryptNameAndCaption } from './services/pgp';
 
 type SimpleFile = { path: string };
 type ImageFile = { path: string; image: boolean; width: number; height: number };
@@ -62,9 +61,6 @@ async function send() {
   }
   for (const content of contents) {
     await sendMessage(chat.id, getInputMessageReplyTo(), content);
-    if (content['@type'] === 'inputMessagePhoto') {
-      await removeThumbnail(content.photo.photo.path);
-    }
     const chatContent = document.getElementById('chat-content');
     if (chatContent) {
       chatContent.scrollTo(0, chatContent.scrollHeight);
@@ -105,32 +101,29 @@ function getInputMessageReplyTo(): InputMessageReplyTo | null {
 
 async function getInputMessageContents(): Promise<InputMessageContent[]> {
   if (store.selectedChatKey === '') {
-    return await getStandardInputMessageContents();
+    return getStandardInputMessageContents();
   } else {
     return await getPgpInputMessageContents();
   }
 }
 
-async function getStandardInputMessageContents(): Promise<InputMessageContent[]> {
+function getStandardInputMessageContents(): InputMessageContent[] {
   const contents: InputMessageContent[] = [];
-  let formattedText = getSimpleFormattedText(newMessageText.value);
+  let text: string | null = newMessageText.value;
   if (selectedFiles.value.length === 0) {
-    if (formattedText !== null) {
+    if (text !== null) {
       contents.push(
-        { '@type': 'inputMessageText', text: formattedText, clear_draft: true } as InputMessageText
+        { '@type': 'inputMessageText', text: text }
       )
     }
   } else {
     for (const selectedFile of selectedFiles.value) {
       if ('image' in selectedFile && selectedFile.image) {
-        const content = await getInputMessagePhoto(selectedFile, formattedText);
-        if (content !== null) {
-          contents.push(content);
-        }
+        contents.push(getInputMessagePhoto(selectedFile, text));
       } else {
-        contents.push(getInputMessageDocument(selectedFile.path, formattedText));
+        contents.push(getInputMessageDocument(selectedFile.path, text));
       }
-      formattedText = null; // set formatted text only on first file
+      text = null; // set formatted text only on first file
     }
   }
   return contents;
@@ -138,78 +131,44 @@ async function getStandardInputMessageContents(): Promise<InputMessageContent[]>
 
 async function getPgpInputMessageContents(): Promise<InputMessageContent[]> {
   const contents: InputMessageContent[] = [];
-  const chatId = store.selectedChat!.id;
   if (selectedFiles.value.length === 0) {
     if (newMessageText.value !== '') {
-      const file = await createPgpTextFile(newMessageText.value, chatId);
-      if (file !== null) {
-        contents.push(
-          getInputMessageDocument(file, null)
-        );
-      }
+      contents.push({
+        '@type': 'inputMessagePgpText',
+        text: newMessageText.value,
+      });
     }
   } else {
     let caption = newMessageText.value === '' ? null : newMessageText.value;
     for (const selectedFile of selectedFiles.value) {
-      const file = await createPgpFile(selectedFile.path, chatId);
-      if (file !== null) {
-        const ciphertext = await encryptNameAndCaption(getFileName(selectedFile.path), caption, chatId);
-        contents.push(
-          getInputMessageDocument(file, getSimpleFormattedText(ciphertext))
-        );
-        caption = null; // set caption text only on first file
-      }
+      contents.push(
+        {
+          '@type': 'inputMessagePgpFile',
+          path: selectedFile.path,
+          caption
+        }
+      );
+      caption = null; // set caption text only on first file
     }
   }
   return contents;
 }
 
-function getSimpleFormattedText(text: string | null): FormattedText | null {
-  if (text === null || text === '') {
-    return null;
-  }
-  return { text, entities: [] };
-}
-
-function getInputMessageDocument(path: string, caption: FormattedText | null): InputMessageDocument {
+function getInputMessageDocument(path: string, caption: string | null): InputMessageDocument {
   return {
     '@type': 'inputMessageDocument',
-    document: {
-      document: {
-        '@type': 'inputFileLocal',
-        path,
-      },
-      thumbnail: null,
-      disable_content_type_detection: true,
-    },
+    path,
     caption,
   };
 }
 
-async function getInputMessagePhoto(file: ImageFile, caption: FormattedText | null): Promise<InputMessagePhoto | null> {
-  try {
-    const thumbnail = await createThumbnail(file.path);
-    return {
-      '@type': 'inputMessagePhoto',
-      photo: {
-        photo: {
-          '@type': 'inputFileLocal',
-          path: file.path
-        },
-        thumbnail,
-        video: null,
-        added_sticker_file_ids: [],
-        width: file.width,
-        height: file.height,
-      },
-      caption,
-      show_caption_above_media: false,
-      self_destruct_type: null,
-      has_spoiler: false,
-    }
-  } catch (err) {
-    console.error(err);
-    return null;
+function getInputMessagePhoto(file: ImageFile, caption: string | null): InputMessagePhoto {
+  return {
+    '@type': 'inputMessagePhoto',
+    path: file.path,
+    width: file.width,
+    height: file.height,
+    caption,
   }
 }
 
@@ -273,7 +232,7 @@ const replyToTitle = computed(() => {
   if (store.replyToMessage === null) {
     return '';
   }
-  return getSenderTitle(store.replyToMessage.sender_id);
+  return getSenderTitle(store.replyToMessage);
 });
 
 const secretChatState = computed(() => {

@@ -16,8 +16,7 @@ const props = defineProps<{
 const downloading = ref(false);
 
 const isMyMessage = computed(() => {
-  const sender = props.message.sender_id;
-  return sender['@type'] === 'messageSenderUser' && sender.user_id === store.myId;
+  return props.message.sender_user_id === store.myId;
 });
 
 const isMyChat = computed(() => {
@@ -30,7 +29,7 @@ const isMyChat = computed(() => {
 
 async function download() {
   downloading.value = true;
-  const file = await downloadFile(props.content.document.document.id);
+  const file = await downloadFile(props.content.document.id);
   if (file?.local.is_downloading_completed) {
     downloading.value = false;
   } else {
@@ -39,14 +38,14 @@ async function download() {
 }
 
 async function openFile() {
-  const path = props.content.document.document.local.path;
+  const path = props.content.document.local.path;
   if (path !== '') {
     await openPath(`file://${path}`);
   }
 }
 
 async function useKey() {
-  const path = props.content.document.document.local.path;
+  const path = props.content.document.local.path;
   if (path !== '') {
     await saveChatKey(path, keyFingerprint.value, store.selectedChat!.id);
     store.selectedChatKey = keyFingerprint.value;
@@ -54,14 +53,14 @@ async function useKey() {
 }
 
 const keyFingerprint = computed(() =>
-  props.content.document.file_name.replace('ombra-chat-', '').replace('.key', '')
+  props.content.file_name.replace('ombra-chat-', '').replace('.key', '')
 )
 
 onMounted(async () => {
   await nextTick(() => {
     store.messageLoaded(props.message.id);
   });
-  if (!props.content.document.document.local.is_downloading_completed) {
+  if (!props.content.document.local.is_downloading_completed) {
     await download();
   }
 });

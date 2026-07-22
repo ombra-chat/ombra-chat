@@ -1,4 +1,5 @@
 mod model;
+mod messages;
 mod commands;
 mod crypto;
 mod settings;
@@ -51,8 +52,6 @@ pub fn run() {
             commands::folders::remove_chat_from_folder,
             commands::files::download_file,
             commands::files::get_image_size,
-            commands::files::create_thumbnail,
-            commands::files::remove_thumbnail,
             commands::files::save_file,
             commands::pgp::get_my_key_fingerprint,
             commands::pgp::export_secret_key,
@@ -61,12 +60,8 @@ pub fn run() {
             commands::pgp::save_chat_key,
             commands::pgp::remove_chat_key,
             commands::pgp::get_chat_key,
-            commands::pgp::create_pgp_text_file,
-            commands::pgp::create_pgp_file,
-            commands::pgp::decrypt_file_to_string,
             commands::pgp::decrypt_file,
-            commands::pgp::encrypt_string,
-            commands::pgp::decrypt_string,
+            commands::pgp::decrypt_pgp_text_message,
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));

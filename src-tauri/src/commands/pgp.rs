@@ -2,10 +2,7 @@ use crate::{
     crypto, state,
     store::{self, ChatConfig},
 };
-use pgp::{
-    composed::SignedPublicKey,
-    types::{KeyDetails},
-};
+use pgp::{composed::SignedPublicKey, types::KeyDetails};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
@@ -110,40 +107,6 @@ pub fn get_chat_key<R: tauri::Runtime>(app: tauri::AppHandle<R>, chat_id: i64) -
 }
 
 #[tauri::command]
-pub fn create_pgp_text_file<R: tauri::Runtime>(
-    app: tauri::AppHandle<R>,
-    text: &str,
-    chat_id: i64,
-) -> Result<String, String> {
-    let target_path =
-        crypto::pgp::get_pgp_file_path(&app, ".txt.pgp").map_err(|e| e.to_string())?;
-    let keys = crypto::pgp::get_chat_encryption_keys(&app, chat_id).map_err(|e| e.to_string())?;
-    crypto::pgp::encrypt_string_to_file(keys, text, &target_path).map_err(|e| e.to_string())?;
-    Ok(target_path)
-}
-
-#[tauri::command]
-pub fn create_pgp_file<R: tauri::Runtime>(
-    app: tauri::AppHandle<R>,
-    path: &str,
-    chat_id: i64,
-) -> Result<String, String> {
-    let target_path = crypto::pgp::get_pgp_file_path(&app, ".pgp").map_err(|e| e.to_string())?;
-    let keys = crypto::pgp::get_chat_encryption_keys(&app, chat_id).map_err(|e| e.to_string())?;
-    crypto::pgp::encrypt_file_to_file(keys, path, &target_path).map_err(|e| e.to_string())?;
-    Ok(target_path)
-}
-
-#[tauri::command]
-pub fn decrypt_file_to_string<R: tauri::Runtime>(
-    app: tauri::AppHandle<R>,
-    path: &str,
-) -> Result<String, String> {
-    let plaintext = crypto::pgp::decrypt_file_to_string(&app, path).map_err(|e| e.to_string())?;
-    Ok(plaintext)
-}
-
-#[tauri::command]
 pub fn decrypt_file<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     path: &str,
@@ -153,19 +116,18 @@ pub fn decrypt_file<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-pub fn encrypt_string<R: tauri::Runtime>(
+pub async fn decrypt_pgp_text_message<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
-    plaintext: &str,
-    chat_id: i64,
+    document_id: i32,
 ) -> Result<String, String> {
-    let keys = crypto::pgp::get_chat_encryption_keys(&app, chat_id).map_err(|e| e.to_string())?;
-    Ok(crypto::pgp::encrypt_string_to_string(keys, plaintext).map_err(|e| e.to_string())?)
-}
-
-#[tauri::command]
-pub fn decrypt_string<R: tauri::Runtime>(
-    app: tauri::AppHandle<R>,
-    ciphertext: &str,
-) -> Result<String, String> {
-    Ok(crypto::pgp::decrypt_string_to_string(&app, ciphertext).map_err(|e| e.to_string())?)
+    match tdlib::functions::download_file(document_id, 1, 0, 0, true, state::get_client_id(&app))
+        .await
+    {
+        Ok(tdlib::enums::File::File(file)) => {
+            let plaintext = crypto::pgp::decrypt_file_to_string(&app, &file.local.path)
+                .map_err(|e| e.to_string())?;
+            Ok(plaintext)
+        }
+        Err(e) => Err(e.message),
+    }
 }

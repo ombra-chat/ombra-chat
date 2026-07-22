@@ -1,16 +1,17 @@
-use crate::{state, thumbnails};
+use crate::model::File;
+use crate::state;
 use image::GenericImageView;
 use std::fs;
 use std::path::Path;
-use tdlib::enums::InputThumbnail;
 
 #[tauri::command]
 pub async fn download_file<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     file_id: i32,
-) -> Result<tdlib::enums::File, String> {
+) -> Result<File, String> {
     tdlib::functions::download_file(file_id, 1, 0, 0, false, state::get_client_id(&app))
         .await
+        .map(|tdlib::enums::File::File(f)| File::from(&f))
         .map_err(|e| e.message)
 }
 
@@ -25,22 +26,6 @@ pub fn get_image_size(path: &str) -> Option<(u32, u32)> {
             return None;
         }
     }
-}
-
-#[tauri::command]
-pub fn create_thumbnail<R: tauri::Runtime>(
-    app: tauri::AppHandle<R>,
-    path: &str,
-) -> Result<InputThumbnail, String> {
-    thumbnails::create_thumbnail(&app, path).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub fn remove_thumbnail<R: tauri::Runtime>(
-    app: tauri::AppHandle<R>,
-    path: &str,
-) -> Result<(), String> {
-    thumbnails::remove_thumbnail(&app, path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

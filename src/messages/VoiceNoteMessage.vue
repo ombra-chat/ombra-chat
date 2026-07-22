@@ -14,14 +14,14 @@ const props = defineProps<{
 
 const downloading = ref(false);
 
-const downloaded = computed(() => props.content.voice_note.voice.local.is_downloading_completed);
+const downloaded = computed(() => props.content.voice.local.is_downloading_completed);
 
 async function download() {
   downloading.value = true;
-  const file = await downloadFile(props.content.voice_note.voice.id);
+  const file = await downloadFile(props.content.voice.id);
   if (file?.local.is_downloading_completed) {
     downloading.value = false;
-    props.content.voice_note.voice = file;
+    props.content.voice = file;
   } else {
     await download();
   }
@@ -31,7 +31,7 @@ async function playAudio() {
   if (!downloaded.value) {
     await download()
   }
-  await openPath(`file://${props.content.voice_note.voice.local.path}`);
+  await openPath(`file://${props.content.voice.local.path}`);
 }
 
 function secondsToHHMMSS(totalSeconds: number) {
@@ -58,7 +58,7 @@ onMounted(async () => {
       </button>
     </div>
     <div class="ml-3 is-align-content-center">
-      {{ secondsToHHMMSS(content.voice_note.duration) }}
+      {{ secondsToHHMMSS(content.duration) }}
     </div>
   </div>
 </template>

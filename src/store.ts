@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import type { ChatFolder, Message, File, User, MessageWithStatus, MessageInteractionInfo, Chat, SecretChat } from './model';
+import type { ChatFolder, Message, File, User, MessageWithStatus, Chat, SecretChat } from './model';
 import { viewMessage } from './services/chats';
 
 type Store = {
@@ -52,8 +52,7 @@ type Store = {
   updateChat: (chatId: number, updater: (chat: Chat) => Chat) => void;
   updateSecretChat: (chat: SecretChat) => void;
   markMessageAsRead: (messageId: number) => Promise<void>;
-  updateMessage: (oldMessageId: number, message: Message) => void;
-  updateMessageInteractionInfo: (message_id: number, info: MessageInteractionInfo) => void;
+  updateMessage: (messageId: number, updater: (message: Message) => Message) => void;
   toggleAboutModal: () => void;
 }
 
@@ -159,8 +158,7 @@ export const store = reactive<Store>({
         store.messagesBubblesToLoad.push(message.id);
         messages.push({
           ...message,
-          read: message.id <= chat.last_read_inbox_message_id ||
-            (message.sender_id['@type'] === 'messageSenderUser' && message.sender_id.user_id === store.myId)
+          read: message.id <= chat.last_read_inbox_message_id || message.sender_user_id === store.myId
         });
       }
     }
@@ -183,11 +181,11 @@ export const store = reactive<Store>({
     const store = this as Store;
     store.currentMessages = store.currentMessages.map(m => {
       if (m.content['@type'] === 'messageDocument') {
-        if (m.content.document.document.id === file.id) {
-          m.content.document.document = file;
+        if (m.content.document.id === file.id) {
+          m.content.document = file;
         }
       } else if (m.content['@type'] === 'messagePhoto') {
-        for (const size of m.content.photo.sizes) {
+        for (const size of m.content.sizes) {
           if (size.photo.id === file.id) {
             size.photo = file;
             break;
@@ -232,16 +230,13 @@ export const store = reactive<Store>({
       }
     }
   },
-  updateMessage(oldMessageId: number, message: Message) {
+  updateMessage(messageId: number, updater: (message: Message) => Message) {
     const store = this as Store;
-    store.currentMessages = store.currentMessages.map(m => m.id === oldMessageId ? { ...message, read: m.read } : m);
-    store.messageLoaded(oldMessageId);
-    store.messageBubbleLoaded(oldMessageId);
+    store.currentMessages = store.currentMessages.map(m => m.id === messageId ? { ...updater(m), read: m.read } : m);
+    store.messageLoaded(messageId);
+    store.messageBubbleLoaded(messageId);
   },
   allReactions: {},
-  updateMessageInteractionInfo(message_id: number, info: MessageInteractionInfo) {
-    store.currentMessages = store.currentMessages.map(m => m.id === message_id ? { ...m, interaction_info: info } : m);
-  },
   aboutModalActive: false,
   toggleAboutModal: function () {
     const store = this as Store;

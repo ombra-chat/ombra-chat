@@ -21,8 +21,7 @@ const props = defineProps<{
 }>();
 
 const isMyMessage = computed(() => {
-  const sender = props.message.sender_id;
-  return sender['@type'] === 'messageSenderUser' && sender.user_id === store.myId;
+  return props.message.sender_user_id === store.myId;
 });
 
 const isPgpMessage = computed(() => {
@@ -30,29 +29,17 @@ const isPgpMessage = computed(() => {
     return false;
   }
   const { content } = props.message;
-  return content['@type'] === 'messageDocument'
-    && content.document.file_name.startsWith('ombra-chat-')
-    && content.document.file_name.endsWith('.pgp');
-});
-
-const isPgpTextMessage = computed(() => {
-  if (store.selectedChatKey === '') {
-    return false;
-  }
-  const { content } = props.message;
-  return content['@type'] === 'messageDocument'
-    && content.document.file_name.startsWith('ombra-chat-')
-    && content.document.file_name.endsWith('.txt.pgp');
+  return content['@type'] === 'messagePgpText' || content['@type'] === 'messagePgpFile';
 });
 
 const isPgpKeyMessage = computed(() => {
   const { content } = props.message;
   return content['@type'] === 'messageDocument'
-    && content.document.file_name.startsWith('ombra-chat-')
-    && content.document.file_name.endsWith('.key');
+    && content.file_name.startsWith('ombra-chat-')
+    && content.file_name.endsWith('.key');
 });
 
-const senderTitle = computed(() => getSenderTitle(props.message.sender_id));
+const senderTitle = computed(() => getSenderTitle(props.message));
 
 async function openMessageModal(message: Message) {
   store.selectedMessage = message;
@@ -63,20 +50,16 @@ const replyToSenderTitle = ref<string | null>(null);
 const replyToContent = ref<string | null>(null);
 
 async function loadReplyToMessage() {
-  const replyTo = props.message.reply_to;
-  if (replyTo === null) {
-    return null;
-  }
-  if (replyTo['@type'] !== 'messageReplyToMessage') {
-    return null;
+  if (!props.message.is_reply) {
+    return;
   }
   const message = await getRepliedMessage(props.message.chat_id, props.message.id);
   if (message === null) {
     return null;
   }
-  replyToSenderTitle.value = getSenderTitle(message.sender_id);
-  if (replyTo.quote !== null) {
-    replyToContent.value = truncateReplyContent(replyTo.quote.text.text);
+  replyToSenderTitle.value = getSenderTitle(message);
+  if (props.message.reply_quote !== null) {
+    replyToContent.value = truncateReplyContent(props.message.reply_quote);
   } else {
     replyToContent.value = truncateReplyContent(getMessageTextContent(message.content) || '');
   }
@@ -101,17 +84,10 @@ function formatDate(message: Message) {
 }
 
 async function removeReaction(reaction: MessageReaction) {
-  if (reaction.type['@type'] !== 'reactionTypeEmoji') {
-    return;
-  }
-  if (reaction.used_sender_id && reaction.used_sender_id['@type'] === 'messageSenderUser' && reaction.used_sender_id.user_id === store.myId) {
-    await removeMessageReaction(props.message, reaction.type.emoji);
+  if (reaction.user_id === store.myId) {
+    await removeMessageReaction(props.message, reaction.emoji);
   }
 }
-
-const reactions = computed(() => {
-  return props.message.interaction_info?.reactions?.reactions.filter(r => r.type['@type'] === 'reactionTypeEmoji') || [];
-});
 
 onMounted(async () => {
   await loadReplyToMessage();
@@ -140,9 +116,9 @@ onMounted(async () => {
         <strong class="mr-2">{{ replyToSenderTitle }}</strong>
         <span>{{ replyToContent }}</span>
       </div>
-      <PgpTextMessage v-if="message.content['@type'] === 'messageDocument' && isPgpTextMessage" :message="message"
+      <PgpTextMessage v-if="message.content['@type'] === 'messagePgpText'" :message="message"
         :content="message.content" />
-      <PgpDocumentMessage v-else-if="message.content['@type'] === 'messageDocument' && isPgpMessage" :message="message"
+      <PgpDocumentMessage v-else-if="message.content['@type'] === 'messagePgpFile'" :message="message"
         :content="message.content" />
       <PgpKeyMessage v-else-if="message.content['@type'] === 'messageDocument' && isPgpKeyMessage" :message="message"
         :content="message.content" />
@@ -159,10 +135,9 @@ onMounted(async () => {
       <NotSupportedMessage v-else :message="message" />
       <div class="message-footer mt-2">
         <div class="message-reactions">
-          <div v-for="reaction in reactions" class="mr-2">
-            <img :src="store.allReactions[reaction.type.emoji]" v-if="store.allReactions[reaction.type.emoji]"
-              width="20" height="20"
-              :class="{ 'my-reaction': reaction.used_sender_id && reaction.used_sender_id['@type'] === 'messageSenderUser' && reaction.used_sender_id.user_id === store.myId }"
+          <div v-for="reaction in message.reactions" class="mr-2">
+            <img :src="store.allReactions[reaction.emoji]" v-if="store.allReactions[reaction.emoji]" width="20"
+              height="20" :class="{ 'my-reaction': reaction.user_id === store.myId }"
               @click="() => removeReaction(reaction)" />
           </div>
         </div>

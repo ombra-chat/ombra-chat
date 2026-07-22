@@ -1,4 +1,13 @@
-use crate::{model::Chat, state};
+use tdlib::types::ReactionTypeEmoji;
+
+use crate::{
+    messages::{
+        content_builder::{MessageCleaner, MessagePreparer},
+        parser::parse_message,
+    },
+    model::{Chat, InputMessageContent, Message},
+    state,
+};
 
 #[tauri::command]
 pub async fn load_chats<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
@@ -31,7 +40,7 @@ pub async fn get_chat_history<R: tauri::Runtime>(
     from_message_id: i64,
     offset: i32,
     limit: i32,
-) -> Result<tdlib::enums::Messages, String> {
+) -> Result<Vec<Message>, String> {
     tdlib::functions::get_chat_history(
         chat_id,
         from_message_id,
@@ -41,6 +50,16 @@ pub async fn get_chat_history<R: tauri::Runtime>(
         state::get_client_id(&app),
     )
     .await
+    .map(|messages| match messages {
+        tdlib::enums::Messages::Messages(messages) => {
+            return messages
+                .messages
+                .iter()
+                .flatten()
+                .map(|m| parse_message(&app, m))
+                .collect();
+        }
+    })
     .map_err(|e| e.message)
 }
 
@@ -51,9 +70,11 @@ pub async fn send_message<R: tauri::Runtime>(
     reply_to: Option<tdlib::enums::InputMessageReplyTo>,
     options: Option<tdlib::types::MessageSendOptions>,
     reply_markup: Option<tdlib::enums::ReplyMarkup>,
-    input_message_content: tdlib::enums::InputMessageContent,
-) -> Result<tdlib::enums::Message, String> {
-    tdlib::functions::send_message(
+    content: InputMessageContent,
+) -> Result<Message, String> {
+    let input_message_content = content.prepare_message(&app, chat_id).await?;
+
+    let result = tdlib::functions::send_message(
         chat_id,
         None,
         reply_to,
@@ -62,8 +83,13 @@ pub async fn send_message<R: tauri::Runtime>(
         input_message_content,
         state::get_client_id(&app),
     )
-    .await
-    .map_err(|e| e.message)
+    .await;
+
+    content.cleanup(&app).await;
+
+    result
+        .map(|tdlib::enums::Message::Message(m)| parse_message(&app, &m))
+        .map_err(|e| e.message)
 }
 
 #[tauri::command]
@@ -107,7 +133,7 @@ pub async fn forward_message<R: tauri::Runtime>(
     from_chat_id: i64,
     message_id: i64,
     send_copy: bool,
-) -> Result<tdlib::enums::Messages, String> {
+) -> Result<Vec<Message>, String> {
     tdlib::functions::forward_messages(
         chat_id,
         None,
@@ -119,6 +145,14 @@ pub async fn forward_message<R: tauri::Runtime>(
         state::get_client_id(&app),
     )
     .await
+    .map(|tdlib::enums::Messages::Messages(messages)| {
+        return messages
+            .messages
+            .iter()
+            .flatten()
+            .map(|m| parse_message(&app, m))
+            .collect();
+    })
     .map_err(|e| e.message)
 }
 
@@ -127,9 +161,10 @@ pub async fn get_replied_message<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     chat_id: i64,
     message_id: i64,
-) -> Result<tdlib::enums::Message, String> {
+) -> Result<Message, String> {
     tdlib::functions::get_replied_message(chat_id, message_id, state::get_client_id(&app))
         .await
+        .map(|tdlib::enums::Message::Message(m)| parse_message(&app, &m))
         .map_err(|e| e.message)
 }
 
@@ -140,10 +175,7 @@ pub async fn create_new_secret_chat<R: tauri::Runtime>(
 ) -> Result<Chat, String> {
     tdlib::functions::create_new_secret_chat(user_id, state::get_client_id(&app))
         .await
-        .map(|c| {
-            let tdlib::enums::Chat::Chat(chat) = c;
-            Chat::from(&chat)
-        })
+        .map(|tdlib::enums::Chat::Chat(chat)| Chat::from(&chat))
         .map_err(|e| e.message)
 }
 
@@ -162,12 +194,13 @@ pub async fn add_message_reaction<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     chat_id: i64,
     message_id: i64,
-    reaction_type: tdlib::enums::ReactionType,
+    emoji: String,
 ) -> Result<(), String> {
+    let reaction = tdlib::enums::ReactionType::Emoji(ReactionTypeEmoji { emoji: emoji });
     tdlib::functions::add_message_reaction(
         chat_id,
         message_id,
-        reaction_type,
+        reaction,
         false,
         false,
         state::get_client_id(&app),
@@ -181,12 +214,13 @@ pub async fn remove_message_reaction<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     chat_id: i64,
     message_id: i64,
-    reaction_type: tdlib::enums::ReactionType,
+    emoji: String,
 ) -> Result<(), String> {
+    let reaction = tdlib::enums::ReactionType::Emoji(ReactionTypeEmoji { emoji: emoji });
     tdlib::functions::remove_message_reaction(
         chat_id,
         message_id,
-        reaction_type,
+        reaction,
         state::get_client_id(&app),
     )
     .await
@@ -197,7 +231,7 @@ pub async fn remove_message_reaction<R: tauri::Runtime>(
 pub async fn share_public_key<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     chat_id: i64,
-) -> Result<tdlib::enums::Message, String> {
+) -> Result<Message, String> {
     let public_key_path =
         crate::crypto::pgp::get_my_public_key_tmp_file(&app).map_err(|e| e.to_string())?;
 
@@ -224,5 +258,6 @@ pub async fn share_public_key<R: tauri::Runtime>(
         state::get_client_id(&app),
     )
     .await
+    .map(|tdlib::enums::Message::Message(m)| parse_message(&app, &m))
     .map_err(|e| e.message)
 }

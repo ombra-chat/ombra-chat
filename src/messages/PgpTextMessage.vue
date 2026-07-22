@@ -1,53 +1,31 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
-import { MessageDocument, MessageWithStatus } from '../model';
-import { decryptFileToString } from '../services/pgp';
-import { downloadFile } from '../services/files';
+import { MessagePgpText, MessageWithStatus } from '../model';
+import { decryptPgpTextMessage } from '../services/pgp';
 import { store } from '../store';
 
 const props = defineProps<{
   message: MessageWithStatus,
-  content: MessageDocument
+  content: MessagePgpText
 }>();
 
-const downloading = ref(false);
-const decrypting = ref(false);
-const textContent = ref('');
+const textContent = ref<string | null>(null);
 const decryptionError = ref(false);
-
-async function download() {
-  downloading.value = true;
-  const file = await downloadFile(props.content.document.document.id);
-  if (file?.local.is_downloading_completed) {
-    downloading.value = false;
-    await decrypt(file.local.path);
-  } else {
-    await download();
-  }
-}
-
-async function decrypt(path: string) {
-  decrypting.value = true;
-  try {
-    textContent.value = await decryptFileToString(path);
-  } catch (err) {
-    console.error(err);
-    decryptionError.value = true;
-  } finally {
-    decrypting.value = false;
-    await nextTick(() => {
-      store.messageLoaded(props.message.id);
-    });
-  }
-}
 
 watch(
   () => props.content,
   async (newContent) => {
-    if (!newContent.document.document.local.is_downloading_completed) {
-      await download();
+    if (newContent.text === null) {
+      try {
+        textContent.value = await decryptPgpTextMessage(newContent.document_id);
+      } catch {
+        decryptionError.value = true;
+      }
+      await nextTick(() => {
+        store.messageLoaded(props.message.id);
+      });
     } else {
-      decrypt(newContent.document.document.local.path);
+      textContent.value = newContent.text;
     }
   },
   { immediate: true }
@@ -55,7 +33,7 @@ watch(
 </script>
 
 <template>
-  <div v-if="downloading || decrypting">...</div>
+  <div v-if="textContent === null">...</div>
   <div v-else-if="decryptionError" class="message is-danger">
     <div class="message-body">
       Unable to decrypt message

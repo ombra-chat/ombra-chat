@@ -1,4 +1,4 @@
-use crate::emit;
+use crate::{emit, model::User};
 
 use tdlib::enums::Update;
 
@@ -7,8 +7,8 @@ pub async fn handle_users_update<R: tauri::Runtime>(
     update: &Update,
 ) -> bool {
     match update {
-        Update::User(value) => {
-            emit(app, "update-user", value);
+        Update::User(update) => {
+            emit(app, "update-user", User::from(update));
             return true;
         }
         _ => {
