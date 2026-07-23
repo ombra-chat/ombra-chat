@@ -90,10 +90,10 @@ export async function loadChats() {
   }
 }
 
-export async function selectChat(id: number) {
+export async function selectChat(id: number, reload: boolean = false) {
   try {
     if (store.selectedChat !== null) {
-      if (store.selectedChat.id === id) {
+      if (store.selectedChat.id === id && !reload) {
         return;
       }
       await invoke('close_chat', { id: store.selectedChat.id })

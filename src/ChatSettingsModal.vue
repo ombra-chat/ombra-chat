@@ -53,6 +53,8 @@ async function saveChatSettings() {
     return;
   }
 
+  // reload chat
+  await selectChat(store.selectedChat!.id, true);
   closeModal();
 }
 
@@ -135,7 +137,7 @@ watch(
               Enable PGP
             </label>
           </div>
-          <button class="button is-primary mt-2 mb-2" v-if="enablePgp" @click="openSelectKeyDialog">Select key</button>
+          <button class="button is-primary mt-3 mb-2 mr-2" v-if="enablePgp" @click="openSelectKeyDialog">Select key</button>
           <div v-if="enablePgp && store.selectedChatKey">
             <p>Encryption subkey: <code>{{ store.selectedChatKey }}</code></p>
           </div>

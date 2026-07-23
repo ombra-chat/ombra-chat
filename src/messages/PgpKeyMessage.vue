@@ -7,6 +7,7 @@ import { downloadFile } from '../services/files';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { store } from '../store';
 import { saveChatKey } from '../services/pgp';
+import { selectChat } from '../services/chats';
 
 const props = defineProps<{
   message: MessageWithStatus,
@@ -49,6 +50,7 @@ async function useKey() {
   if (path !== '') {
     await saveChatKey(path, keyFingerprint.value, store.selectedChat!.id);
     store.selectedChatKey = keyFingerprint.value;
+    await selectChat(store.selectedChat!.id, true);
   }
 }
 
