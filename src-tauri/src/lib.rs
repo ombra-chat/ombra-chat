@@ -61,6 +61,7 @@ pub fn run() {
             commands::pgp::get_chat_key,
             commands::pgp::decrypt_file,
             commands::pgp::decrypt_pgp_text_message,
+            commands::pgp::download_pgp_key_file,
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));

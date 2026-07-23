@@ -1,5 +1,7 @@
 use crate::{
-    crypto, state,
+    crypto::{self, pgp::get_pgp_key_fingerprint},
+    model::MessagePgpKey,
+    state,
     store::{self, ChatConfig},
 };
 use pgp::{composed::SignedPublicKey, types::KeyDetails};
@@ -127,6 +129,35 @@ pub async fn decrypt_pgp_text_message<R: tauri::Runtime>(
             let plaintext = crypto::pgp::decrypt_file_to_string(&app, &file.local.path)
                 .map_err(|e| e.to_string())?;
             Ok(plaintext)
+        }
+        Err(e) => Err(e.message),
+    }
+}
+
+#[tauri::command]
+pub async fn download_pgp_key_file<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    document_id: i32,
+) -> Result<MessagePgpKey, String> {
+    match tdlib::functions::download_file(document_id, 1, 0, 0, true, state::get_client_id(&app))
+        .await
+    {
+        Ok(tdlib::enums::File::File(file)) => {
+            let file_path = file.local.path;
+
+            let fingerprint: Option<String>;
+            match get_pgp_key_fingerprint(&file_path) {
+                Ok(key_fingerprint) => {
+                    fingerprint = Some(key_fingerprint);
+                }
+                Err(e) => return Err(e),
+            }
+
+            Ok(MessagePgpKey {
+                document_id: document_id,
+                path: Some(file_path.clone()),
+                fingerprint: fingerprint,
+            })
         }
         Err(e) => Err(e.message),
     }

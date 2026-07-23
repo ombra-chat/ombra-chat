@@ -10,7 +10,7 @@ use pgp::types::KeyDetails;
 use rand::thread_rng;
 use std::fs;
 use std::io::{Cursor, Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{error::Error, fs::File, io::BufReader};
 
 fn encrypt(
@@ -293,6 +293,21 @@ pub fn get_chat_encryption_keys<R: tauri::Runtime>(
     let my_key = state::get_my_encryption_key(app)?;
     let other_key = state::get_chat_encryption_key(app, chat_id)?;
     Ok(vec![my_key, other_key])
+}
+
+pub fn get_pgp_key_fingerprint(key_file_path: &str) -> Result<String, String> {
+    let path = Path::new(key_file_path);
+    if let Some(file_name) = path.file_name() {
+        if let Some(file_name) = file_name.to_str() {
+            return Ok(
+                file_name
+                    .to_string()
+                    .replace("ombra-chat-", "")
+                    .replace(".key", ""),
+            );
+        }
+    }
+    Err("Unable to extract key fingerprint".into())
 }
 
 pub fn get_my_public_key_tmp_file<R: tauri::Runtime>(

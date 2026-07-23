@@ -32,13 +32,6 @@ const isPgpMessage = computed(() => {
   return content['@type'] === 'messagePgpText' || content['@type'] === 'messagePgpFile';
 });
 
-const isPgpKeyMessage = computed(() => {
-  const { content } = props.message;
-  return content['@type'] === 'messageDocument'
-    && content.file_name.startsWith('ombra-chat-')
-    && content.file_name.endsWith('.key');
-});
-
 const senderTitle = computed(() => getSenderTitle(props.message));
 
 async function openMessageModal(message: Message) {
@@ -120,7 +113,7 @@ onMounted(async () => {
         :content="message.content" />
       <PgpDocumentMessage v-else-if="message.content['@type'] === 'messagePgpFile'" :message="message"
         :content="message.content" />
-      <PgpKeyMessage v-else-if="message.content['@type'] === 'messageDocument' && isPgpKeyMessage" :message="message"
+      <PgpKeyMessage v-else-if="message.content['@type'] === 'messagePgpKey'" :message="message"
         :content="message.content" />
       <TextMessage v-else-if="message.content['@type'] === 'messageText'" :message="message"
         :content="message.content" />

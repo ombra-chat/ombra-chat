@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue';
-import { MessageDocument, MessageWithStatus } from '../model';
+import { MessagePgpKey, MessageWithStatus } from '../model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faKey, faWarning } from '@fortawesome/free-solid-svg-icons';
-import { downloadFile } from '../services/files';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { store } from '../store';
-import { saveChatKey } from '../services/pgp';
+import { downloadPgpKeyFile, saveChatKey } from '../services/pgp';
 import { selectChat } from '../services/chats';
 
 const props = defineProps<{
   message: MessageWithStatus,
-  content: MessageDocument
+  content: MessagePgpKey
 }>();
 
-const downloading = ref(false);
+const path = ref<string | null>(null);
+const fingerprint = ref<string | null>(null);
 
 const isMyMessage = computed(() => {
   return props.message.sender_user_id === store.myId;
@@ -29,57 +29,48 @@ const isMyChat = computed(() => {
 });
 
 async function download() {
-  downloading.value = true;
-  const file = await downloadFile(props.content.document.id);
-  if (file?.local.is_downloading_completed) {
-    downloading.value = false;
-  } else {
-    await download();
-  }
+  const data = await downloadPgpKeyFile(props.content.document_id);
+  path.value = data.path;
+  fingerprint.value = data.fingerprint;
 }
 
 async function openFile() {
-  const path = props.content.document.local.path;
-  if (path !== '') {
-    await openPath(`file://${path}`);
-  }
+  await openPath(`file://${path.value}`);
 }
 
 async function useKey() {
-  const path = props.content.document.local.path;
-  if (path !== '') {
-    await saveChatKey(path, keyFingerprint.value, store.selectedChat!.id);
-    store.selectedChatKey = keyFingerprint.value;
+  if (fingerprint.value !== null && path.value !== null) {
+    await saveChatKey(path.value, fingerprint.value, store.selectedChat!.id);
+    store.selectedChatKey = fingerprint.value;
     await selectChat(store.selectedChat!.id, true);
   }
 }
 
-const keyFingerprint = computed(() =>
-  props.content.file_name.replace('ombra-chat-', '').replace('.key', '')
-)
-
 onMounted(async () => {
+  if (props.content.path && props.content.fingerprint) {
+    path.value = props.content.path;
+    fingerprint.value = props.content.fingerprint;
+  } else {
+    await download();
+  }
   await nextTick(() => {
     store.messageLoaded(props.message.id);
   });
-  if (!props.content.document.local.is_downloading_completed) {
-    await download();
-  }
 });
 </script>
 
 <template>
   <div class="notification has-background-warning-soft is-outlined p-2 mb-0">
     <p class="mb-2">Public PGP key</p>
-    <p class="mb-2">
-      <FontAwesomeIcon :icon="faKey" /><code class="ml-2">{{ keyFingerprint }}</code>
+    <p class="mb-2" v-if="fingerprint">
+      <FontAwesomeIcon :icon="faKey" /><code class="ml-2">{{ fingerprint }}</code>
     </p>
     <div class="mb-2">
-      <button class="button is-warning mr-2" type="button" @click="useKey" :disabled="downloading"
+      <button class="button is-warning mr-2" type="button" @click="useKey" :disabled="!path"
         v-if="!isMyMessage || isMyChat">
         Use this key
       </button>
-      <button class="button is-link" type="button" @click="openFile" :disabled="downloading">
+      <button class="button is-link" type="button" @click="openFile" :disabled="!path">
         Open key
       </button>
     </div>

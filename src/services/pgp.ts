@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { PublicKeyFingerprints } from "../model";
+import { MessagePgpKey, PublicKeyFingerprints } from "../model";
 
 export async function getMyKeyFingerprint(): Promise<PublicKeyFingerprints> {
   return await invoke<PublicKeyFingerprints>('get_my_key_fingerprint');
@@ -47,4 +47,8 @@ export async function decryptPgpTextMessage(documentId: number): Promise<string>
 
 export async function decryptPgpFileMessage(documentId: number): Promise<string> {
   return await invoke<string>('decrypt_pgp_file_message', { documentId });
+}
+
+export async function downloadPgpKeyFile(documentId: number): Promise<MessagePgpKey> {
+  return await invoke<MessagePgpKey>('download_pgp_key_file', { documentId });
 }

@@ -128,7 +128,14 @@ export type MessagePgpFile = {
   caption: string | null;
 }
 
-export type MessageContent = MessageText | MessagePhoto | MessageDocument | MessageAnimatedEmoji | MessageVoiceNote | MessagePgpText | MessagePgpFile;
+export type MessagePgpKey = {
+  '@type': 'messagePgpKey';
+  document_id: number;
+  path: string | null;
+  fingerprint: string | null;
+}
+
+export type MessageContent = MessageText | MessagePhoto | MessageDocument | MessageAnimatedEmoji | MessageVoiceNote | MessagePgpText | MessagePgpFile | MessagePgpKey;
 
 export type Message = {
   id: number;

@@ -1,11 +1,14 @@
 use std::path::Path;
 
 use crate::{
-    crypto::{self, pgp::get_plaintext_path},
+    crypto::{
+        self,
+        pgp::{get_pgp_key_fingerprint, get_plaintext_path},
+    },
     model::{
         File, Message, MessageAnimatedEmoji, MessageContent, MessageDocument, MessageError,
-        MessagePgpFile, MessagePgpText, MessagePhoto, MessageReaction, MessageSendingState,
-        MessageText, MessageVoiceNote, PhotoSize,
+        MessagePgpFile, MessagePgpKey, MessagePgpText, MessagePhoto, MessageReaction,
+        MessageSendingState, MessageText, MessageVoiceNote, PhotoSize,
     },
     store,
 };
@@ -78,11 +81,16 @@ fn parse_content<R: tauri::Runtime>(
             let file_name = &content.document.file_name;
 
             let has_encryption = store::get_chat_config(app, chat_id).map(|c| c.key) != None;
-            if has_encryption && file_name.starts_with("ombra-chat-") {
-                if file_name.ends_with(".txt.pgp") {
-                    return parse_pgp_text_message(app, content);
-                } else if file_name.ends_with(".pgp") {
-                    return parse_pgp_file_message(app, content);
+            if file_name.starts_with("ombra-chat-") {
+                if has_encryption {
+                    if file_name.ends_with(".txt.pgp") {
+                        return parse_pgp_text_message(app, content);
+                    } else if file_name.ends_with(".pgp") {
+                        return parse_pgp_file_message(app, content);
+                    }
+                }
+                if file_name.ends_with(".key") {
+                    return parse_pgp_key_message(content);
                 }
             }
 
@@ -217,6 +225,34 @@ fn parse_pgp_file_message<R: tauri::Runtime>(
         plaintext_path: plaintext_path,
         file_name: file_name,
         caption: caption,
+    })
+}
+
+fn parse_pgp_key_message(message: &tdlib::types::MessageDocument) -> MessageContent {
+    let doc = &message.document.document;
+
+    let path: Option<String>;
+    let fingerprint: Option<String>;
+    if doc.local.is_downloading_completed {
+        let file_path = doc.local.path.clone();
+        path = Some(file_path.clone());
+        match get_pgp_key_fingerprint(&file_path) {
+            Ok(key_fingerprint) => {
+                fingerprint = Some(key_fingerprint);
+            }
+            Err(e) => {
+                return MessageContent::Error(MessageError { text: e });
+            }
+        }
+    } else {
+        path = None;
+        fingerprint = None;
+    }
+
+    MessageContent::PgpKey(MessagePgpKey {
+        document_id: doc.id,
+        path: path,
+        fingerprint: fingerprint,
     })
 }
 

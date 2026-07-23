@@ -1,6 +1,4 @@
-use tdlib::enums::{
-    ChatAvailableReactions, ChatList, ChatType, ReactionType::Emoji, UserType,
-};
+use tdlib::enums::{ChatAvailableReactions, ChatList, ChatType, ReactionType::Emoji, UserType};
 
 #[derive(serde::Serialize, Clone)]
 pub enum ChatReactions {
@@ -288,7 +286,7 @@ pub struct Message {
 #[derive(serde::Serialize, Clone)]
 pub struct UpdateMessageSendSucceeded {
     pub message: Message,
-    pub old_message_id: i64
+    pub old_message_id: i64,
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -311,6 +309,8 @@ pub enum MessageContent {
     PgpText(MessagePgpText),
     #[serde(rename(serialize = "messagePgpFile", deserialize = "messagePgpFile"))]
     PgpFile(MessagePgpFile),
+    #[serde(rename(serialize = "messagePgpKey", deserialize = "messagePgpKey"))]
+    PgpKey(MessagePgpKey),
     #[serde(rename(serialize = "messageError", deserialize = "messageError"))]
     Error(MessageError),
     #[serde(rename(serialize = "messageUnsupported", deserialize = "messageUnsupported"))]
@@ -335,7 +335,7 @@ pub struct MessageDocument {
     pub document: File,
     pub caption: String,
     pub downloaded: bool,
-    pub downloading: bool
+    pub downloading: bool,
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -354,7 +354,7 @@ pub struct MessageVoiceNote {
 #[derive(serde::Serialize, Clone)]
 pub struct MessagePgpText {
     pub document_id: i32,
-    pub text: Option<String>
+    pub text: Option<String>,
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -363,12 +363,19 @@ pub struct MessagePgpFile {
     pub ciphertext_path: Option<String>,
     pub plaintext_path: Option<String>,
     pub file_name: String,
-    pub caption: Option<String>
+    pub caption: Option<String>,
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct MessagePgpKey {
+    pub document_id: i32,
+    pub path: Option<String>,
+    pub fingerprint: Option<String>,
 }
 
 #[derive(serde::Serialize, Clone)]
 pub struct MessageError {
-    pub text: String
+    pub text: String,
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -461,7 +468,10 @@ impl PhotoSize {
 pub enum InputMessageContent {
     #[serde(rename(serialize = "inputMessageText", deserialize = "inputMessageText"))]
     Text(InputMessageText),
-    #[serde(rename(serialize = "inputMessageDocument", deserialize = "inputMessageDocument"))]
+    #[serde(rename(
+        serialize = "inputMessageDocument",
+        deserialize = "inputMessageDocument"
+    ))]
     Document(InputMessageDocument),
     #[serde(rename(serialize = "inputMessagePhoto", deserialize = "inputMessagePhoto"))]
     Photo(InputMessagePhoto),
@@ -470,7 +480,6 @@ pub enum InputMessageContent {
     #[serde(rename(serialize = "inputMessagePgpFile", deserialize = "inputMessagePgpFile"))]
     PgpFile(InputMessagePgpFile),
 }
-
 
 #[derive(serde::Deserialize, Clone)]
 pub struct InputMessageText {
