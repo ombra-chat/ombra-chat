@@ -23,13 +23,19 @@ pub async fn handle_folders_update<R: tauri::Runtime>(
                 emit(
                     app,
                     "update-chat-added-to-folder",
-                    UpdateChatAddedToFolder::new(update.chat_id, 0),
+                    UpdateChatAddedToFolder {
+                        chat_id: update.chat_id,
+                        folder_id: 0,
+                    },
                 );
             } else if let tdlib::enums::ChatList::Folder(folder) = &update.chat_list {
                 emit(
                     app,
                     "update-chat-added-to-folder",
-                    UpdateChatAddedToFolder::new(update.chat_id, folder.chat_folder_id),
+                    UpdateChatAddedToFolder {
+                        chat_id: update.chat_id,
+                        folder_id: folder.chat_folder_id,
+                    },
                 );
             }
             return true;
@@ -39,13 +45,19 @@ pub async fn handle_folders_update<R: tauri::Runtime>(
                 emit(
                     app,
                     "update-chat-removed-from-folder",
-                    UpdateChatRemovedFromFolder::new(update.chat_id, 0),
+                    UpdateChatRemovedFromFolder {
+                        chat_id: update.chat_id,
+                        folder_id: 0,
+                    },
                 );
             } else if let tdlib::enums::ChatList::Folder(folder) = &update.chat_list {
                 emit(
                     app,
                     "update-chat-removed-from-folder",
-                    UpdateChatRemovedFromFolder::new(update.chat_id, folder.chat_folder_id),
+                    UpdateChatRemovedFromFolder {
+                        chat_id: update.chat_id,
+                        folder_id: folder.chat_folder_id,
+                    },
                 );
             }
             return true;

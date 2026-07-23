@@ -8,22 +8,22 @@ pub enum ChatReactions {
 
 #[derive(serde::Serialize, Clone)]
 pub struct Chat {
-    id: i64,
-    secret_chat_id: Option<i32>,
-    title: String,
-    unread_count: i32,
-    user_id: Option<i64>,
-    muted: bool,
-    secret: bool,
-    folders: Vec<i32>,
+    pub id: i64,
+    pub secret_chat_id: Option<i32>,
+    pub title: String,
+    pub unread_count: i32,
+    pub user_id: Option<i64>,
+    pub muted: bool,
+    pub secret: bool,
+    pub folders: Vec<i32>,
     // this field is set only if the chat is inside the main folder
-    pos: Option<i64>,
-    can_send: bool,
-    can_delete_for_all: bool,
-    can_delete_for_self: bool,
-    last_read_inbox_message_id: i64,
-    last_read_outbox_message_id: i64,
-    reactions: ChatReactions,
+    pub pos: Option<i64>,
+    pub can_send: bool,
+    pub can_delete_for_all: bool,
+    pub can_delete_for_self: bool,
+    pub last_read_inbox_message_id: i64,
+    pub last_read_outbox_message_id: i64,
+    pub reactions: ChatReactions,
 }
 
 impl Chat {
@@ -137,40 +137,27 @@ impl SecretChat {
 
 #[derive(serde::Serialize, Clone)]
 pub struct RemoveChatFromFolder {
-    folder_id: i32,
-    chat_id: i64,
-}
-
-impl RemoveChatFromFolder {
-    pub fn new(folder_id: i32, chat_id: i64) -> RemoveChatFromFolder {
-        RemoveChatFromFolder {
-            folder_id: folder_id,
-            chat_id: chat_id,
-        }
-    }
+    pub folder_id: i32,
+    pub chat_id: i64,
 }
 
 #[derive(serde::Serialize, Clone)]
 pub struct UpdateChatReadInbox {
-    chat_id: i64,
-    last_read_inbox_message_id: i64,
-    unread_count: i32,
+    pub chat_id: i64,
+    pub last_read_inbox_message_id: i64,
+    pub unread_count: i32,
 }
 
-impl UpdateChatReadInbox {
-    pub fn from(update: &tdlib::types::UpdateChatReadInbox) -> UpdateChatReadInbox {
-        UpdateChatReadInbox {
-            chat_id: update.chat_id,
-            last_read_inbox_message_id: update.last_read_inbox_message_id,
-            unread_count: update.unread_count,
-        }
-    }
+#[derive(serde::Serialize, Clone)]
+pub struct UpdateDeleteMessages {
+    pub chat_id: i64,
+    pub message_ids: Vec<i64>,
 }
 
 #[derive(serde::Serialize, Clone)]
 pub struct ChatFolder {
-    id: i32,
-    name: String,
+    pub id: i32,
+    pub name: String,
 }
 
 impl ChatFolder {
@@ -188,38 +175,20 @@ impl ChatFolder {
 
 #[derive(serde::Serialize, Clone)]
 pub struct UpdateChatAddedToFolder {
-    chat_id: i64,
-    folder_id: i32,
-}
-
-impl UpdateChatAddedToFolder {
-    pub fn new(chat_id: i64, folder_id: i32) -> UpdateChatAddedToFolder {
-        UpdateChatAddedToFolder {
-            chat_id: chat_id,
-            folder_id: folder_id,
-        }
-    }
+    pub chat_id: i64,
+    pub folder_id: i32,
 }
 
 #[derive(serde::Serialize, Clone)]
 pub struct UpdateChatRemovedFromFolder {
-    chat_id: i64,
-    folder_id: i32,
-}
-
-impl UpdateChatRemovedFromFolder {
-    pub fn new(chat_id: i64, folder_id: i32) -> UpdateChatRemovedFromFolder {
-        UpdateChatRemovedFromFolder {
-            chat_id: chat_id,
-            folder_id: folder_id,
-        }
-    }
+    pub chat_id: i64,
+    pub folder_id: i32,
 }
 
 #[derive(serde::Serialize, Clone)]
 pub struct User {
-    id: i64,
-    display_text: String,
+    pub id: i64,
+    pub display_text: String,
 }
 
 impl User {

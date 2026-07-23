@@ -1,5 +1,3 @@
-use tdlib::types::ReactionTypeEmoji;
-
 use crate::{
     messages::{
         builder::{MessageCleaner, MessagePreparer},
@@ -194,7 +192,7 @@ pub async fn add_message_reaction<R: tauri::Runtime>(
     message_id: i64,
     emoji: String,
 ) -> Result<(), String> {
-    let reaction = tdlib::enums::ReactionType::Emoji(ReactionTypeEmoji { emoji: emoji });
+    let reaction = tdlib::enums::ReactionType::Emoji(tdlib::types::ReactionTypeEmoji { emoji: emoji });
     tdlib::functions::add_message_reaction(
         chat_id,
         message_id,
@@ -214,7 +212,7 @@ pub async fn remove_message_reaction<R: tauri::Runtime>(
     message_id: i64,
     emoji: String,
 ) -> Result<(), String> {
-    let reaction = tdlib::enums::ReactionType::Emoji(ReactionTypeEmoji { emoji: emoji });
+    let reaction = tdlib::enums::ReactionType::Emoji(tdlib::types::ReactionTypeEmoji { emoji: emoji });
     tdlib::functions::remove_message_reaction(
         chat_id,
         message_id,

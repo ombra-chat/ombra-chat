@@ -1,5 +1,7 @@
 use crate::{
-    emit, messages::parser::{get_reactions_from_interaction_info, parse_message}, model::{UpdateMessageReactions, UpdateMessageSendSucceeded},
+    emit,
+    messages::parser::{get_reactions_from_interaction_info, parse_message},
+    model::{UpdateDeleteMessages, UpdateMessageReactions, UpdateMessageSendSucceeded},
 };
 
 use tdlib::enums::Update;
@@ -10,15 +12,26 @@ pub async fn handle_messages_update<R: tauri::Runtime>(
 ) -> bool {
     match update {
         Update::NewMessage(update) => {
-            emit(app, "update-new-message", parse_message(app, &update.message));
+            emit(
+                app,
+                "update-new-message",
+                parse_message(app, &update.message),
+            );
             return true;
         }
         Update::File(value) => {
             emit(app, "update-file", value);
             return true;
         }
-        Update::DeleteMessages(value) => {
-            emit(app, "update-delete-messages", value);
+        Update::DeleteMessages(update) => {
+            emit(
+                app,
+                "update-delete-messages",
+                UpdateDeleteMessages {
+                    chat_id: update.chat_id,
+                    message_ids: update.message_ids.clone(),
+                },
+            );
             return true;
         }
         Update::MessageSendSucceeded(update) => {

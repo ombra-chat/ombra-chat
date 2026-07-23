@@ -47,11 +47,6 @@ export type UpdateChatRemovedFromFolder = {
   folder_id: number;
 }
 
-export type FormattedText = {
-  text: string;
-  entities: any[];
-}
-
 export type LocalFile = {
   path: string;
   can_be_downloaded: boolean;

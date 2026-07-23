@@ -21,7 +21,11 @@ pub async fn handle_chats_update<R: tauri::Runtime>(
             emit(
                 app,
                 "update-chat-read-inbox",
-                UpdateChatReadInbox::from(&update),
+                UpdateChatReadInbox {
+                    chat_id: update.chat_id,
+                    last_read_inbox_message_id: update.last_read_inbox_message_id,
+                    unread_count: update.unread_count,
+                },
             );
             return true;
         }
@@ -39,7 +43,10 @@ pub async fn handle_chats_update<R: tauri::Runtime>(
                     emit(
                         app,
                         "remove-chat-from-folder",
-                        RemoveChatFromFolder::new(folder.chat_folder_id, update.chat_id),
+                        RemoveChatFromFolder {
+                            folder_id: folder.chat_folder_id,
+                            chat_id: update.chat_id,
+                        },
                     );
                 }
             }
