@@ -464,6 +464,12 @@ impl PhotoSize {
 }
 
 #[derive(serde::Deserialize, Clone)]
+pub struct InputMessageReplyTo {
+    pub message_id: i64,
+    pub quote: Option<String>,
+}
+
+#[derive(serde::Deserialize, Clone)]
 #[serde(tag = "@type")]
 pub enum InputMessageContent {
     #[serde(rename(serialize = "inputMessageText", deserialize = "inputMessageText"))]

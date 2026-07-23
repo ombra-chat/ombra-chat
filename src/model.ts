@@ -150,27 +150,10 @@ export type Message = {
   sending_state: 'Pending' | 'Failed' | null;
 }
 
-export type TextQuote = {
-  text: FormattedText;
-  position: number;
-  is_manual: boolean;
-}
-
-export type InputTextQuote = {
-  text: FormattedText;
-  position: number;
-}
-
-export type InputMessageReplyToMessage = {
-  '@type': 'inputMessageReplyToMessage';
+export type InputMessageReplyTo = {
   message_id: number;
-  quote: InputTextQuote | null;
-  // Identifier of the checklist task in the original message that was replied; 0 if none
-  checklist_task_id: number;
-  poll_option_id: string;
-}
-
-export type InputMessageReplyTo = InputMessageReplyToMessage;
+  quote: string | null;
+};
 
 export type InputMessageText = {
   '@type': 'inputMessageText',

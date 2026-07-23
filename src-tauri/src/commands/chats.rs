@@ -2,10 +2,10 @@ use tdlib::types::ReactionTypeEmoji;
 
 use crate::{
     messages::{
-        content_builder::{MessageCleaner, MessagePreparer},
+        builder::{MessageCleaner, MessagePreparer},
         parser::parse_message,
     },
-    model::{Chat, InputMessageContent, Message},
+    model::{Chat, InputMessageContent, InputMessageReplyTo, Message},
     state,
 };
 
@@ -67,9 +67,7 @@ pub async fn get_chat_history<R: tauri::Runtime>(
 pub async fn send_message<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     chat_id: i64,
-    reply_to: Option<tdlib::enums::InputMessageReplyTo>,
-    options: Option<tdlib::types::MessageSendOptions>,
-    reply_markup: Option<tdlib::enums::ReplyMarkup>,
+    reply_to: Option<InputMessageReplyTo>,
     content: InputMessageContent,
 ) -> Result<Message, String> {
     let input_message_content = content.prepare_message(&app, chat_id).await?;
@@ -77,9 +75,9 @@ pub async fn send_message<R: tauri::Runtime>(
     let result = tdlib::functions::send_message(
         chat_id,
         None,
-        reply_to,
-        options,
-        reply_markup,
+        reply_to.map(|r| r.to_tdlib()),
+        None,
+        None,
         input_message_content,
         state::get_client_id(&app),
     )

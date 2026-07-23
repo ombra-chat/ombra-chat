@@ -3,13 +3,30 @@ use std::path::Path;
 use image::GenericImageView;
 
 use crate::{
-    crypto,
-    model::{
-        InputMessageContent, InputMessageDocument, InputMessagePgpFile, InputMessagePgpText,
-        InputMessagePhoto, InputMessageText,
-    },
-    thumbnails,
+    crypto, model::{
+        InputMessageContent, InputMessageDocument, InputMessagePgpFile, InputMessagePgpText, InputMessagePhoto, InputMessageReplyTo, InputMessageText,
+    }, thumbnails,
 };
+
+impl InputMessageReplyTo {
+    pub fn to_tdlib(&self) -> tdlib::enums::InputMessageReplyTo {
+        let quote: Option<tdlib::types::InputTextQuote>;
+        if let Some(q) = &self.quote {
+            quote = Some(tdlib::types::InputTextQuote{
+                text: get_simple_formatted_text(q),
+                position: 0
+            })
+        } else {
+            quote = None;
+        }
+        tdlib::enums::InputMessageReplyTo::Message(tdlib::types::InputMessageReplyToMessage {
+            message_id: self.message_id,
+            quote: quote,
+            checklist_task_id: 0,
+            poll_option_id: "".into(),
+        })
+    }
+}
 
 pub trait MessagePreparer<T, R: tauri::Runtime> {
     async fn prepare_message(&self, app: &tauri::AppHandle<R>, chat_id: i64) -> Result<T, String>;

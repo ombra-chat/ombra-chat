@@ -1,2 +1,2 @@
-pub mod content_builder;
+pub mod builder;
 pub mod parser;

@@ -5,7 +5,7 @@ import { getSenderTitle, loadNewMessages, loadPreviousMessages, sendMessage, clo
 import { store } from './store';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
-import { InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageReplyTo, InputTextQuote } from './model';
+import { InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageReplyTo } from './model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPaperPlane, faGear, faPaperclip, faX, faKey, faLock, faChevronLeft } from '@fortawesome/free-solid-svg-icons';
 import { getFileName } from './services/files';
@@ -78,22 +78,9 @@ function getInputMessageReplyTo(): InputMessageReplyTo | null {
   if (store.replyToMessage === null) {
     return null;
   }
-  let quote: InputTextQuote | null = null;
-  if (store.replyToQuote !== null) {
-    quote = {
-      text: {
-        text: store.replyToQuote,
-        entities: []
-      },
-      position: 0
-    }
-  }
   return {
-    '@type': 'inputMessageReplyToMessage',
     message_id: store.replyToMessage.id,
-    checklist_task_id: 0,
-    poll_option_id: '',
-    quote
+    quote: store.replyToQuote
   };
 }
 

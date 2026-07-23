@@ -208,8 +208,6 @@ export async function sendMessage(chatId: number, replyTo: InputMessageReplyTo |
   return await invoke<Message>('send_message', {
     chatId,
     replyTo,
-    options: null,
-    replyMarkup: null,
     content
   });
 }
