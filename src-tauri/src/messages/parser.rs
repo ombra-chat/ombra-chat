@@ -7,6 +7,7 @@ use crate::{
         MessagePgpFile, MessagePgpText, MessagePhoto, MessageReaction, MessageSendingState,
         MessageText, MessageVoiceNote, PhotoSize,
     },
+    store,
 };
 
 pub fn parse_message<R: tauri::Runtime>(
@@ -50,15 +51,16 @@ pub fn parse_message<R: tauri::Runtime>(
         date: message.date,
         is_reply: is_reply,
         reply_quote: reply_quote,
-        content: parse_content(app, &message.content),
+        content: parse_content(app, &message.content, message.chat_id),
         reactions: get_reactions_from_interaction_info(&message.interaction_info),
         sending_state: sending_state,
     }
 }
 
-pub fn parse_content<R: tauri::Runtime>(
+fn parse_content<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     content: &tdlib::enums::MessageContent,
+    chat_id: i64,
 ) -> MessageContent {
     match content {
         tdlib::enums::MessageContent::MessageText(content) => {
@@ -74,7 +76,9 @@ pub fn parse_content<R: tauri::Runtime>(
         }
         tdlib::enums::MessageContent::MessageDocument(content) => {
             let file_name = &content.document.file_name;
-            if file_name.starts_with("ombra-chat-") {
+
+            let has_encryption = store::get_chat_config(app, chat_id).map(|c| c.key) != None;
+            if has_encryption && file_name.starts_with("ombra-chat-") {
                 if file_name.ends_with(".txt.pgp") {
                     return parse_pgp_text_message(app, content);
                 } else if file_name.ends_with(".pgp") {

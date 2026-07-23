@@ -1,6 +1,5 @@
 use crate::model::File;
 use crate::state;
-use image::GenericImageView;
 use std::fs;
 use std::path::Path;
 
@@ -13,19 +12,6 @@ pub async fn download_file<R: tauri::Runtime>(
         .await
         .map(|tdlib::enums::File::File(f)| File::from(&f))
         .map_err(|e| e.message)
-}
-
-#[tauri::command]
-pub fn get_image_size(path: &str) -> Option<(u32, u32)> {
-    let img_path = Path::new(path);
-    match image::open(img_path) {
-        Ok(img) => {
-            return Some(img.dimensions());
-        }
-        Err(_) => {
-            return None;
-        }
-    }
 }
 
 #[tauri::command]

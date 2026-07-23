@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use image::GenericImageView;
+
 use crate::{
     crypto,
     model::{
@@ -117,6 +119,21 @@ impl<R: tauri::Runtime> MessagePreparer<tdlib::types::InputMessagePhoto, R> for 
             }
         }
 
+        let img_path = Path::new(&self.path);
+        let width: i32;
+        let height: i32;
+        match image::open(img_path) {
+            Ok(img) => {
+                let dimensions = img.dimensions();
+                width = dimensions.0 as i32;
+                height = dimensions.1 as i32;
+            }
+            Err(e) => {
+                log::error!("Unable to compute image size: {}", e.to_string());
+                return Err("Unable to compute image size".into());
+            }
+        }
+
         Ok(tdlib::types::InputMessagePhoto {
             photo: tdlib::types::InputPhoto {
                 photo: tdlib::enums::InputFile::Local(tdlib::types::InputFileLocal {
@@ -125,8 +142,8 @@ impl<R: tauri::Runtime> MessagePreparer<tdlib::types::InputMessagePhoto, R> for 
                 thumbnail: thumbnail,
                 video: None,
                 added_sticker_file_ids: vec![],
-                width: self.width,
-                height: self.height,
+                width: width,
+                height: height,
             },
             caption: self.caption.as_ref().map(|t| get_simple_formatted_text(t)),
             show_caption_above_media: false,

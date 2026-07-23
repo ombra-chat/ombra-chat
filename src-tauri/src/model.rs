@@ -486,8 +486,6 @@ pub struct InputMessageDocument {
 #[derive(serde::Deserialize, Clone)]
 pub struct InputMessagePhoto {
     pub path: String,
-    pub width: i32,
-    pub height: i32,
     pub caption: Option<String>,
 }
 

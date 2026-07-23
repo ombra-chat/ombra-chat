@@ -173,8 +173,6 @@ export type InputMessageText = {
 export type InputMessagePhoto = {
   '@type': 'inputMessagePhoto';
   path: string;
-  width: number;
-  height: number;
   caption: string | null;
 }
 

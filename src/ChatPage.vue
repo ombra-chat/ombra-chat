@@ -8,13 +8,11 @@ import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { InputMessageContent, InputMessageDocument, InputMessagePhoto, InputMessageReplyTo, InputTextQuote } from './model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPaperPlane, faGear, faPaperclip, faX, faKey, faLock, faChevronLeft } from '@fortawesome/free-solid-svg-icons';
-import { getFileName, getImageSize } from './services/files';
+import { getFileName } from './services/files';
 import ChatSettingsModal from './ChatSettingsModal.vue';
 import MessageModal from './MessageModal.vue';
 
-type SimpleFile = { path: string };
-type ImageFile = { path: string; image: boolean; width: number; height: number };
-type SelectedFile = SimpleFile | ImageFile;
+type SelectedFile = { path: string; image: boolean; }
 
 const newMessageText = ref('');
 const selectedFiles = ref([] as SelectedFile[]);
@@ -162,12 +160,10 @@ function getInputMessageDocument(path: string, caption: string | null): InputMes
   };
 }
 
-function getInputMessagePhoto(file: ImageFile, caption: string | null): InputMessagePhoto {
+function getInputMessagePhoto(file: SelectedFile, caption: string | null): InputMessagePhoto {
   return {
     '@type': 'inputMessagePhoto',
     path: file.path,
-    width: file.width,
-    height: file.height,
     caption,
   }
 }
@@ -181,26 +177,11 @@ async function selectFiles() {
 }
 
 async function addFiles(files: string[]) {
-  const filesToAdd: SelectedFile[] = [];
-  for (const file of files) {
-    const image = await getImageInfo(file);
-    filesToAdd.push(image !== null ? image : { path: file });
-  }
+  const filesToAdd: SelectedFile[] = files.map(f => ({
+    path: f,
+    image: store.selectedChatKey === '' && isImage(f)
+  }));
   selectedFiles.value = selectedFiles.value.concat(filesToAdd);
-}
-
-async function getImageInfo(path: string): Promise<ImageFile | null> {
-  if (store.selectedChatKey !== '') {
-    return null;
-  }
-  if (!isImage(path)) {
-    return null;
-  }
-  const dimensions = await getImageSize(path);
-  if (dimensions === null) {
-    return null;
-  }
-  return { path, image: true, width: dimensions.width, height: dimensions.height };
 }
 
 function isImage(path: string) {
@@ -333,7 +314,7 @@ watch(() => store.selectedChat?.id, () => clear());
     <div id="files-box" class="p-1" v-if="selectedFiles.length > 0">
       <div v-for="(file, index) in selectedFiles" class="file-box">
         <div class="selected-file-name ml-1 nowrap">{{ getFileName(file.path) }}</div>
-        <div v-if="'image' in file" class="mr-3 selected-file-image-checkbox">
+        <div v-if="isImage(file.path) && store.selectedChatKey === ''" class="mr-3 selected-file-image-checkbox">
           <label class="checkbox">
             <input type="checkbox" v-model="file.image" />
             image

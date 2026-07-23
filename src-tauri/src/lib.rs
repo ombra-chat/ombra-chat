@@ -51,7 +51,6 @@ pub fn run() {
             commands::folders::add_chat_to_folder,
             commands::folders::remove_chat_from_folder,
             commands::files::download_file,
-            commands::files::get_image_size,
             commands::files::save_file,
             commands::pgp::get_my_key_fingerprint,
             commands::pgp::export_secret_key,
