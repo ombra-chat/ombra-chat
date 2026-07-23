@@ -14,12 +14,12 @@ const props = defineProps<{
 
 const downloading = ref(false);
 
-const downloaded = computed(() => props.content.voice.local.is_downloading_completed);
+const downloaded = computed(() => props.content.voice.path !== null);
 
 async function download() {
   downloading.value = true;
   const file = await downloadFile(props.content.voice.id);
-  if (file?.local.is_downloading_completed) {
+  if (file?.path) {
     downloading.value = false;
     props.content.voice = file;
   } else {
@@ -31,7 +31,7 @@ async function playAudio() {
   if (!downloaded.value) {
     await download()
   }
-  await openPath(`file://${props.content.voice.local.path}`);
+  await openPath(`file://${props.content.voice.path}`);
 }
 
 function secondsToHHMMSS(totalSeconds: number) {

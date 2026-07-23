@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { MessageDocument, MessageWithStatus } from '../model';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { downloadFile, saveFile } from '../services/files';
@@ -12,27 +12,31 @@ const props = defineProps<{
 }>();
 
 const downloading = ref(false);
+const path = ref<string | null>(null);
 
 async function download() {
   downloading.value = true;
   const file = await downloadFile(props.content.document.id);
-  if (file?.local.is_downloading_completed) {
+  if (!file) {
+    return;
+  }
+  if (file.path) {
     downloading.value = false;
+    path.value = file.path;
   } else {
     await download();
   }
 }
 
 async function openFile() {
-  const path = props.content.document.local.path;
-  if (path !== '') {
-    await openPath(`file://${path}`);
+  if (path.value) {
+    await openPath(`file://${path.value}`);
   }
 }
 
 async function openSaveDialog() {
-  const srcPath = props.content.document.local.path;
-  if (srcPath === '') {
+  const srcPath = path.value;
+  if (!srcPath) {
     return;
   }
   const targetPath = await save();
@@ -42,7 +46,14 @@ async function openSaveDialog() {
   await saveFile(srcPath, targetPath);
 }
 
-const downloaded = computed(() => props.content.document.local.is_downloading_completed);
+const downloaded = computed(() => path.value !== null);
+
+watch(
+  () => props.content,
+  async (newContent) => {
+    path.value = newContent.document.path;
+  }
+);
 
 onMounted(async () => {
   await nextTick(() => {

@@ -23,10 +23,13 @@ const decryptionError = ref(false);
 async function download() {
   loading.value = true;
   const file = await downloadFile(props.content.document_id);
-  if (file?.local.is_downloading_completed) {
-    ciphertextPath.value = file.local.path;
-    props.content.ciphertext_path = file.local.path;
-    await decrypt(file.local.path);
+  if (!file) {
+    return;
+  }
+  if (file.path) {
+    ciphertextPath.value = file.path;
+    props.content.ciphertext_path = file.path;
+    await decrypt(file.path);
   } else {
     await download();
   }

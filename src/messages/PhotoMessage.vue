@@ -32,10 +32,8 @@ async function selectPhotoSize(content: MessagePhoto) {
 }
 
 async function setPhoto(content: MessagePhoto, photo: File, size: PhotoSize) {
-  if (photo.local.is_downloading_completed) {
-    if (photo.local.path !== '') {
-      photoSrc.value = convertFileSrc(photo.local.path);
-    }
+  if (photo.path) {
+    photoSrc.value = convertFileSrc(photo.path);
   } else {
     const file = await downloadFile(photo.id);
     if (file) {
@@ -61,10 +59,10 @@ async function openPhoto() {
 }
 
 async function openPhotoInNewWindow(photo: File, largerSize: PhotoSize) {
-  if (photo.local.is_downloading_completed) {
+  if (photo.path) {
     const imageViewer = await getImageViewer();
     if (imageViewer === 'system') {
-      await openPath(`file://${photo.local.path}`);
+      await openPath(`file://${photo.path}`);
     } else {
       await openPhotoInTauriWindows(photo, largerSize);
     }
@@ -79,7 +77,7 @@ async function openPhotoInNewWindow(photo: File, largerSize: PhotoSize) {
 async function openPhotoInTauriWindows(photo: File, largerSize: PhotoSize) {
   const windows = await getAllWebviewWindows();
   const webview = new WebviewWindow(`picture-${windows.length}`, {
-    url: 'picture.html?path=' + encodeURIComponent(photo.local.path),
+    url: 'picture.html?path=' + encodeURIComponent(photo.path!),
     title: 'OmbraChat - Picture',
     width: largerSize.width,
     height: largerSize.height,

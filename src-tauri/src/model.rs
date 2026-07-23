@@ -355,62 +355,24 @@ pub struct UpdateMessageReactions {
 }
 
 #[derive(serde::Serialize, Clone)]
-struct LocalFile {
-    path: String,
-    can_be_downloaded: bool,
-    can_be_deleted: bool,
-    is_downloading_active: bool,
-    is_downloading_completed: bool,
-}
-
-impl LocalFile {
-    fn from(file: &tdlib::types::LocalFile) -> LocalFile {
-        LocalFile {
-            path: file.path.clone(),
-            can_be_downloaded: file.can_be_downloaded,
-            can_be_deleted: file.can_be_deleted,
-            is_downloading_active: file.is_downloading_active,
-            is_downloading_completed: file.is_downloading_completed,
-        }
-    }
-}
-
-#[derive(serde::Serialize, Clone)]
-struct RemoteFile {
-    id: String,
-    unique_id: String,
-    is_uploading_active: bool,
-    is_uploading_completed: bool,
-    uploaded_size: i64,
-}
-
-impl RemoteFile {
-    fn from(file: &tdlib::types::RemoteFile) -> RemoteFile {
-        RemoteFile {
-            id: file.id.clone(),
-            unique_id: file.unique_id.clone(),
-            is_uploading_active: file.is_uploading_active,
-            is_uploading_completed: file.is_uploading_completed,
-            uploaded_size: file.uploaded_size,
-        }
-    }
-}
-
-#[derive(serde::Serialize, Clone)]
 pub struct File {
-    id: i32,
-    size: i64,
-    local: LocalFile,
-    remote: RemoteFile,
+    pub id: i32,
+    pub size: i64,
+    pub path: Option<String>,
 }
 
 impl File {
     pub fn from(file: &tdlib::types::File) -> File {
+        let path: Option<String>;
+        if file.local.is_downloading_completed {
+            path = Some(file.local.path.clone());
+        } else {
+            path = None;
+        }
         File {
             id: file.id,
             size: file.size,
-            local: LocalFile::from(&file.local),
-            remote: RemoteFile::from(&file.remote),
+            path: path,
         }
     }
 }

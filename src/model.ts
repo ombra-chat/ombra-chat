@@ -47,7 +47,7 @@ export type UpdateChatRemovedFromFolder = {
   folder_id: number;
 }
 
-export type LocalFile = {
+/*export type LocalFile = {
   path: string;
   can_be_downloaded: boolean;
   can_be_deleted: boolean;
@@ -61,13 +61,12 @@ export type RemoteFile = {
   is_uploading_active: boolean;
   is_uploading_completed: boolean;
   uploaded_size: number;
-}
+}*/
 
 export type File = {
   id: number;
   size: number;
-  local: LocalFile;
-  remote: RemoteFile;
+  path: string | null;
 }
 
 export type PhotoSize = {
