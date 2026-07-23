@@ -24,7 +24,7 @@ const isMyMessage = computed(() => {
   return props.message.sender_user_id === store.myId;
 });
 
-const isPgpMessage = computed(() => {
+const isEncryptedMessage = computed(() => {
   if (store.selectedChatKey === '') {
     return false;
   }
@@ -90,7 +90,7 @@ onMounted(async () => {
 
 <template>
   <div class="card m-2 message-bubble"
-    :class="{ 'has-background-success-soft': isMyMessage, 'is-pgp': isPgpMessage, 'unread': !message.read }"
+    :class="{ 'has-background-success-soft': isMyMessage, 'is-encrypted': isEncryptedMessage, 'unread': !message.read }"
     :data-message-id="message.id">
     <div class="card-content p-3">
       <div class="message-header">
@@ -148,11 +148,11 @@ onMounted(async () => {
 </template>
 
 <style>
-.is-pgp {
+.is-encrypted {
   border: 2px blue dashed;
 }
 
-.is-pgp.unread {
+.is-encrypted.unread {
   border: 2px blueviolet dashed;
 }
 
@@ -202,11 +202,11 @@ onMounted(async () => {
 }
 
 @media (prefers-color-scheme: dark) {
-  .is-pgp {
+  .is-encrypted {
     border: 2px rgb(23, 220, 255) dashed;
   }
 
-  .is-pgp.unread {
+  .is-encrypted.unread {
     border: 2px rgb(223, 188, 255) dashed;
   }
 
