@@ -136,6 +136,7 @@ impl Client {
             Update::Option(option) => {
                 if option.name == "my_id" {
                     if let OptionValue::Integer(value) = option.value {
+                        state::set_my_id(&app, value.value);
                         emit(app, "my-id", value.value);
                     }
                 }

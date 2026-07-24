@@ -12,26 +12,6 @@
     "core:window:allow-set-title",
     "core:window:allow-set-icon",
     "core:window:allow-set-theme",
-    "core:webview:allow-create-webview-window",
-    {
-      "identifier": "opener:allow-open-path",
-      "allow": [
-        {
-          "path": "**/.*/tdlib/photos/*"
-        },
-        {
-          "path": "**/.*/tdlib/voice/*"
-        },
-        {
-          "path": "**/.*/tdlib/documents/*"
-        },
-        {
-          "path": "**/.*/pgp/messages/*"
-        },
-        {
-          "path": "**/.*/keys/*"
-        }
-      ]
-    }
+    "core:webview:allow-create-webview-window"
   ]
 }

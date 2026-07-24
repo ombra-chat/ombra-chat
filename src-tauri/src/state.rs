@@ -6,6 +6,7 @@ use crate::crypto;
 
 #[derive(Default)]
 pub struct AppState {
+    my_id: Option<i64>,
     my_key: Option<SignedSecretKey>,
     keys_cache: HashMap<i64, PublicSubkey>,
     pgp_passphrase: String,
@@ -17,6 +18,7 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Self {
         AppState {
+            my_id: None,
             my_key: None,
             keys_cache: HashMap::new(),
             pgp_passphrase: "".into(),
@@ -74,6 +76,18 @@ pub fn set_logged_in<R: tauri::Runtime>(app: &tauri::AppHandle<R>, logged_in: bo
     let state = app.state::<Mutex<AppState>>();
     let mut state = state.lock().unwrap();
     state.logged_in = logged_in;
+}
+
+pub fn set_my_id<R: tauri::Runtime>(app: &tauri::AppHandle<R>, my_id: i64) {
+    let state = app.state::<Mutex<AppState>>();
+    let mut state = state.lock().unwrap();
+    state.my_id = Some(my_id);
+}
+
+pub fn get_my_id<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<i64> {
+    let state = app.state::<Mutex<AppState>>();
+    let state = state.lock().unwrap();
+    state.my_id
 }
 
 pub fn get_my_key<R: tauri::Runtime>(

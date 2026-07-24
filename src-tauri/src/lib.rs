@@ -1,4 +1,5 @@
 mod model;
+mod files;
 mod messages;
 mod commands;
 mod crypto;
@@ -10,6 +11,8 @@ mod thumbnails;
 use serde::Serialize;
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
+
+use crate::files::set_allowed_files_paths;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -65,6 +68,7 @@ pub fn run() {
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));
+            set_allowed_files_paths(app.handle()).unwrap();
             Ok(())
         })
         .on_window_event(|window, event| match event {

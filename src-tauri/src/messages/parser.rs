@@ -5,12 +5,13 @@ use crate::{
         self,
         pgp::{get_pgp_key_fingerprint, get_plaintext_path},
     },
+    files::{allow_opening_file, is_file_accessible},
     model::{
         File, Message, MessageAnimatedEmoji, MessageContent, MessageDocument, MessageError,
         MessagePgpFile, MessagePgpKey, MessagePgpText, MessagePhoto, MessageReaction,
         MessageSendingState, MessageText, MessageVoiceNote, PhotoSize,
     },
-    store,
+    state, store,
 };
 
 pub fn parse_message<R: tauri::Runtime>(
@@ -54,7 +55,7 @@ pub fn parse_message<R: tauri::Runtime>(
         date: message.date,
         is_reply: is_reply,
         reply_quote: reply_quote,
-        content: parse_content(app, &message.content, message.chat_id),
+        content: parse_content(app, &message),
         reactions: get_reactions_from_interaction_info(&message.interaction_info),
         sending_state: sending_state,
     }
@@ -62,9 +63,9 @@ pub fn parse_message<R: tauri::Runtime>(
 
 fn parse_content<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
-    content: &tdlib::enums::MessageContent,
-    chat_id: i64,
+    message: &tdlib::types::Message,
 ) -> MessageContent {
+    let content = &message.content;
     match content {
         tdlib::enums::MessageContent::MessageText(content) => {
             return MessageContent::Text(MessageText {
@@ -80,7 +81,8 @@ fn parse_content<R: tauri::Runtime>(
         tdlib::enums::MessageContent::MessageDocument(content) => {
             let file_name = &content.document.file_name;
 
-            let has_encryption = store::get_chat_config(app, chat_id).map(|c| c.key) != None;
+            let has_encryption =
+                store::get_chat_config(app, message.chat_id).map(|c| c.key) != None;
             if file_name.starts_with("ombra-chat-") {
                 if has_encryption {
                     if file_name.ends_with(".txt.pgp") {
@@ -94,13 +96,23 @@ fn parse_content<R: tauri::Runtime>(
                 }
             }
 
+            let local = &content.document.document.local;
+
+            let downloaded = local.is_downloading_completed;
+            if downloaded && is_my_message(app, message) && !is_file_accessible(app, &local.path) {
+                // My messages are considered trusted and can reference files located in any folder.
+                // This is necessary because files recently uploaded by myself can be located anywhere
+                // since they are not copied in tdlib directory if it is not necessary.
+                allow_opening_file(app, &local.path);
+            }
+
             return MessageContent::Document(MessageDocument {
                 file_name: file_name.clone(),
                 document: File::from(&content.document.document),
                 mime_type: content.document.mime_type.clone(),
                 caption: content.caption.text.clone(),
-                downloaded: content.document.document.local.is_downloading_completed,
-                downloading: content.document.document.local.is_downloading_active,
+                downloaded: downloaded,
+                downloading: local.is_downloading_active,
             });
         }
         tdlib::enums::MessageContent::MessageAnimatedEmoji(content) => {
@@ -294,4 +306,16 @@ pub fn get_reactions_from_interaction_info(
         }
     }
     return reactions;
+}
+
+fn is_my_message<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    message: &tdlib::types::Message,
+) -> bool {
+    if let tdlib::enums::MessageSender::User(user) = &message.sender_id {
+        if let Some(my_id) = state::get_my_id(app) {
+            return user.user_id == my_id;
+        }
+    }
+    false
 }

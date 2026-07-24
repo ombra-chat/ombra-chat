@@ -1,7 +1,6 @@
 use crate::model::File;
 use crate::state;
-use std::fs;
-use std::path::Path;
+use std::{fs, path::Path};
 
 #[tauri::command]
 pub async fn download_file<R: tauri::Runtime>(
