@@ -232,7 +232,7 @@ fn parse_pgp_file_message<R: tauri::Runtime>(
     }
 
     MessageContent::PgpFile(MessagePgpFile {
-        document_id: doc.id,
+        document: File::from(&doc),
         ciphertext_path: ciphertext_path,
         plaintext_path: plaintext_path,
         file_name: file_name,

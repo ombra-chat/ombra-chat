@@ -5,9 +5,18 @@ export function getFileName(path: string): string {
   return path.split('/').pop()?.split('\\').pop()!;
 }
 
-export async function downloadFile(fileId: number): Promise<File | null> {
+export async function downloadFile(file: File | number): Promise<File | null> {
   try {
-    return await invoke('download_file', { fileId });
+    let sync = true;
+    if (typeof file === 'object') {
+      if (file.size > 1_000_000) {
+        sync = false;
+      }
+    }
+    return await invoke('download_file', { 
+      fileId: typeof file === 'number' ? file : file.id,
+      sync
+    });
   } catch (err) {
     console.error(err);
     return null;

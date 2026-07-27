@@ -6,8 +6,9 @@ use std::{fs, path::Path};
 pub async fn download_file<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     file_id: i32,
+    sync: bool,
 ) -> Result<File, String> {
-    tdlib::functions::download_file(file_id, 1, 0, 0, false, state::get_client_id(&app))
+    tdlib::functions::download_file(file_id, 1, 0, 0, sync, state::get_client_id(&app))
         .await
         .map(|tdlib::enums::File::File(f)| File::from(&f))
         .map_err(|e| e.message)

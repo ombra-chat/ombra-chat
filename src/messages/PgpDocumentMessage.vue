@@ -22,7 +22,7 @@ const decryptionError = ref(false);
 
 async function download() {
   loading.value = true;
-  const file = await downloadFile(props.content.document_id);
+  const file = await downloadFile(props.content.document);
   if (!file) {
     return;
   }
@@ -30,8 +30,6 @@ async function download() {
     ciphertextPath.value = file.path;
     props.content.ciphertext_path = file.path;
     await decrypt(file.path);
-  } else {
-    await download();
   }
 }
 
@@ -76,6 +74,9 @@ watch(
     caption.value = newContent.caption || '';
     ciphertextPath.value = newContent.ciphertext_path;
     plaintextPath.value = newContent.plaintext_path;
+    if (ciphertextPath.value) {
+      await decrypt(ciphertextPath.value);
+    }
     await nextTick(() => {
       store.messageLoaded(props.message.id);
     });

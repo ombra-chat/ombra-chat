@@ -2,7 +2,7 @@ use crate::{emit, model::User};
 
 use tdlib::enums::Update;
 
-pub async fn handle_users_update<R: tauri::Runtime>(
+pub fn handle_users_update<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     update: &Update,
 ) -> bool {

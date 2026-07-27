@@ -328,7 +328,7 @@ pub struct MessagePgpText {
 
 #[derive(serde::Serialize, Clone)]
 pub struct MessagePgpFile {
-    pub document_id: i32,
+    pub document: File,
     pub ciphertext_path: Option<String>,
     pub plaintext_path: Option<String>,
     pub file_name: String,
@@ -359,6 +359,7 @@ pub struct File {
     pub id: i32,
     pub size: i64,
     pub path: Option<String>,
+    pub downloading: bool,
 }
 
 impl File {
@@ -373,6 +374,7 @@ impl File {
             id: file.id,
             size: file.size,
             path: path,
+            downloading: file.local.is_downloading_active,
         }
     }
 }

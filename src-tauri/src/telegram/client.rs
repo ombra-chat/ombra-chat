@@ -85,19 +85,19 @@ impl Client {
             self.last_update = Some(SystemTime::now());
         }
 
-        if chats::handle_chats_update(app, &update).await {
+        if chats::handle_chats_update(app, &update) {
             if self.initial_loading == None {
                 self.initial_loading = Some(true);
             }
             return;
         }
-        if folders::handle_folders_update(app, &update).await {
+        if folders::handle_folders_update(app, &update) {
             return;
         }
-        if messages::handle_messages_update(app, &update).await {
+        if messages::handle_messages_update(app, &update) {
             return;
         }
-        if users::handle_users_update(app, &update).await {
+        if users::handle_users_update(app, &update) {
             return;
         }
         if effects::handle_effects_update(app, &update).await {

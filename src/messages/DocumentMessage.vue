@@ -16,15 +16,13 @@ const path = ref<string | null>(null);
 
 async function download() {
   downloading.value = true;
-  const file = await downloadFile(props.content.document.id);
+  const file = await downloadFile(props.content.document);
   if (!file) {
     return;
   }
   if (file.path) {
     downloading.value = false;
     path.value = file.path;
-  } else {
-    await download();
   }
 }
 
@@ -49,9 +47,9 @@ async function openSaveDialog() {
 const downloaded = computed(() => path.value !== null);
 
 watch(
-  () => props.content,
-  async (newContent) => {
-    path.value = newContent.document.path;
+  () => props.content.document,
+  async (newDocument) => {
+    path.value = newDocument.path;
   }
 );
 

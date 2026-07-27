@@ -2,7 +2,7 @@
 import { faPlay } from '@fortawesome/free-solid-svg-icons';
 import { MessageVoiceNote, MessageWithStatus } from '../model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { nextTick, onMounted, ref, watch } from 'vue';
 import { downloadFile } from '../services/files';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { store } from '../store';
@@ -13,25 +13,21 @@ const props = defineProps<{
 }>();
 
 const downloading = ref(false);
-
-const downloaded = computed(() => props.content.voice.path !== null);
-
-async function download() {
-  downloading.value = true;
-  const file = await downloadFile(props.content.voice.id);
-  if (file?.path) {
-    downloading.value = false;
-    props.content.voice = file;
-  } else {
-    await download();
-  }
-}
+const path = ref<string | null>(null)
 
 async function playAudio() {
-  if (!downloaded.value) {
-    await download()
+  if (path.value) {
+    await openPath(`file://${path.value}`);
+    return;
   }
-  await openPath(`file://${props.content.voice.path}`);
+
+  downloading.value = true;
+  const file = await downloadFile(props.content.voice);
+  if (file && file.path) {
+    downloading.value = false;
+    path.value = file.path;
+    await openPath(`file://${path.value}`);
+  }
 }
 
 function secondsToHHMMSS(totalSeconds: number) {
@@ -42,6 +38,17 @@ function secondsToHHMMSS(totalSeconds: number) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
+
+watch(
+  () => props.content.voice,
+  async (voice) => {
+    path.value = voice.path;
+    if (downloading.value && path.value) {
+      downloading.value = false;
+      await openPath(`file://${path.value}`);
+    }
+  }
+);
 
 onMounted(async () => {
   await nextTick(() => {

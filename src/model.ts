@@ -47,22 +47,6 @@ export type UpdateChatRemovedFromFolder = {
   folder_id: number;
 }
 
-/*export type LocalFile = {
-  path: string;
-  can_be_downloaded: boolean;
-  can_be_deleted: boolean;
-  is_downloading_active: boolean;
-  is_downloading_completed: boolean;
-}
-
-export type RemoteFile = {
-  id: string;
-  unique_id: string;
-  is_uploading_active: boolean;
-  is_uploading_completed: boolean;
-  uploaded_size: number;
-}*/
-
 export type File = {
   id: number;
   size: number;
@@ -115,7 +99,7 @@ export type MessagePgpText = {
 
 export type MessagePgpFile = {
   '@type': 'messagePgpFile';
-  document_id: number;
+  document: File;
   ciphertext_path: string | null;
   plaintext_path: string | null;
   file_name: string;
@@ -178,10 +162,6 @@ export type InputMessagePgpFile = {
 }
 
 export type InputMessageContent = InputMessageText | InputMessagePhoto | InputMessageDocument | InputMessagePgpText | InputMessagePgpFile;
-
-export type UpdateFile = {
-  file: File;
-}
 
 export type PublicKeyFingerprints = {
   primary: string;

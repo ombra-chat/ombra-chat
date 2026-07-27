@@ -8,7 +8,7 @@ use crate::{
 
 use tdlib::enums::{ChatList, Update};
 
-pub async fn handle_chats_update<R: tauri::Runtime>(
+pub fn handle_chats_update<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     update: &Update,
 ) -> bool {

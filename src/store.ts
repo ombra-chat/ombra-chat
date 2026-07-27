@@ -180,17 +180,25 @@ export const store = reactive<Store>({
   updateFile(file: File) {
     const store = this as Store;
     store.currentMessages = store.currentMessages.map(m => {
-      if (m.content['@type'] === 'messageDocument') {
-        if (m.content.document.id === file.id) {
-          m.content.document = file;
-        }
-      } else if (m.content['@type'] === 'messagePhoto') {
-        for (const size of m.content.sizes) {
-          if (size.photo.id === file.id) {
-            size.photo = file;
-            break;
+      switch (m.content['@type']) {
+        case 'messageDocument':
+          if (m.content.document.id === file.id) {
+            m.content.document = file;
           }
-        }
+          break;
+        case 'messagePhoto':
+          for (const size of m.content.sizes) {
+            if (size.photo.id === file.id) {
+              size.photo = file;
+              break;
+            }
+          }
+          break;
+        case 'messageVoiceNote':
+          if (file.path) {
+            m.content.voice = file;
+          }
+          break;
       }
       return m;
     });

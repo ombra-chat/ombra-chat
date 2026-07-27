@@ -49,7 +49,6 @@ async function photoLoaded() {
 }
 
 async function openPhoto() {
-  console.log('openPhoto')
   const sizes = props.content.sizes;
   if (sizes.length === 0) {
     return;
