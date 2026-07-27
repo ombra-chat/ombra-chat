@@ -73,7 +73,7 @@ impl Client {
                 match SystemTime::now().duration_since(last_update) {
                     Ok(offset) => {
                         if offset > Duration::from_millis(200) {
-                            emit(&app, "initial-loading-done", {});
+                            emit(&app, "initial-loading-done", ());
                             self.initial_loading = Some(false);
                         }
                     }

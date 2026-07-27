@@ -65,6 +65,7 @@ pub fn run() {
             commands::pgp::decrypt_file,
             commands::pgp::decrypt_pgp_text_message,
             commands::pgp::download_pgp_key_file,
+            commands::pgp::change_passphrase,
         ])
         .setup(|app| {
             app.manage(Mutex::new(state::AppState::new()));

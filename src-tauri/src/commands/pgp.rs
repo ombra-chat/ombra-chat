@@ -162,3 +162,17 @@ pub async fn download_pgp_key_file<R: tauri::Runtime>(
         Err(e) => Err(e.message),
     }
 }
+
+#[tauri::command]
+pub async fn change_passphrase<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    new_passphrase: String,
+) -> Result<(), String> {
+    let key = state::get_my_key(&app).map_err(|e| e.to_string())?;
+    let old_passphrase = state::get_pgp_passphrase(&app);
+    let new_sec_key_armored = crypto::pgp::change_key_passphrase(&key, &old_passphrase, &new_passphrase)
+        .map_err(|e| e.to_string())?;
+    store::set_secret_key(&app, &new_sec_key_armored);
+    state::set_pgp_passphrase(&app, &new_passphrase);
+    Ok(())
+}

@@ -3,7 +3,7 @@ import { store } from './store';
 import Dropdown from './components/Dropdown.vue';
 import { onMounted, ref, watch } from 'vue';
 import { getDefaultChatFolder, getHideMarginRight, getImageViewer, setDefaultChatFolder, setHideMarginRight, setImageViewer, setTheme } from './settings/settings';
-import { exportPublicKey, exportSecretKey, getMyKeyFingerprint } from './services/pgp';
+import { changeKeyPassphrase, exportPublicKey, exportSecretKey, getMyKeyFingerprint } from './services/pgp';
 import { save } from '@tauri-apps/plugin-dialog';
 import { getCurrentWindow, Theme } from '@tauri-apps/api/window';
 import { PublicKeyFingerprints } from './model';
@@ -12,6 +12,13 @@ import { faLock, faKey } from '@fortawesome/free-solid-svg-icons';
 
 const selectedId = ref(0);
 const myKeyFingerprint = ref<PublicKeyFingerprints | null>(null);
+
+const newPassphrase = ref('');
+const newPassphraseConfirm = ref('');
+const passphraseError = ref('');
+const passphraseUpdated = ref(false);
+const updatingPassphrase = ref(false);
+
 const theme = ref<Theme>('light');
 const keyError = ref('');
 const imageViewer = ref<'system' | 'app'>('system');
@@ -64,6 +71,29 @@ async function openSavePublicKeyDialog() {
   await exportPublicKey(targetPath);
 }
 
+async function changePassphrase() {
+  if (updatingPassphrase.value) {
+    return;
+  }
+  passphraseError.value = '';
+  passphraseUpdated.value = false;
+  if (newPassphrase.value !== newPassphraseConfirm.value) {
+    passphraseError.value = "Passphrases don't match";
+    return;
+  }
+  try {
+    updatingPassphrase.value = true;
+    await changeKeyPassphrase(newPassphrase.value);
+    newPassphrase.value = '';
+    newPassphraseConfirm.value = '';
+    passphraseUpdated.value = true;
+  } catch (err) {
+    passphraseError.value = err.message;
+  } finally {
+    updatingPassphrase.value = false;
+  }
+}
+
 watch(
   () => theme.value,
   async (newValue) => {
@@ -102,6 +132,39 @@ watch(
 
         <button class="button is-link" @click="openSaveSecretKeyDialog">Export secret key</button>
         <button class="button is-primary ml-2" @click="openSavePublicKeyDialog">Export public key</button>
+
+        <p class="menu-label mt-4">Change passphrase</p>
+        <form @submit.prevent="changePassphrase">
+          <div class="field">
+            <label class="label mb-0" for="new-passphrase">New PGP passphrase</label>
+            <div class="control">
+              <input class="input" type="password" id="new-passphrase" v-model="newPassphrase" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="label mb-0" for="new-passphrase-confirm">Confirm New PGP passphrase</label>
+            <div class="control">
+              <input class="input" type="password" id="new-passphrase-confirm" v-model="newPassphraseConfirm" />
+            </div>
+          </div>
+          <div v-if="passphraseError" class="message is-danger mb-2">
+            <div class="message-body">
+              {{ passphraseError }}
+            </div>
+          </div>
+          <div v-if="passphraseUpdated" class="message is-success mb-2">
+            <div class="message-body">
+              Passphrase successfully updated
+            </div>
+          </div>
+          <div class="field is-grouped mt-1">
+            <div class="control">
+              <button class="button is-link" type="submit" :disabled="updatingPassphrase">
+                Change
+              </button>
+            </div>
+          </div>
+        </form>
 
         <p class="menu-label mt-4">Theme</p>
         <div class="control">

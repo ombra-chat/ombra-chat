@@ -52,3 +52,7 @@ export async function decryptPgpFileMessage(documentId: number): Promise<string>
 export async function downloadPgpKeyFile(documentId: number): Promise<MessagePgpKey> {
   return await invoke<MessagePgpKey>('download_pgp_key_file', { documentId });
 }
+
+export async function changeKeyPassphrase(newPassphrase: string): Promise<void> {
+  await invoke<void>('change_passphrase', { newPassphrase });
+}

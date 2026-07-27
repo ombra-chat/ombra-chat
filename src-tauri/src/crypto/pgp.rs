@@ -1,4 +1,4 @@
-use crate::crypto::utils;
+use crate::crypto::{self, utils};
 use crate::{state, store};
 use pgp::composed::{
     ArmorOptions, Deserializable, EncryptionCaps, KeyType, Message, MessageBuilder,
@@ -6,7 +6,7 @@ use pgp::composed::{
 };
 use pgp::crypto::sym::SymmetricKeyAlgorithm;
 use pgp::packet::PublicSubkey;
-use pgp::types::KeyDetails;
+use pgp::types::{KeyDetails, Password};
 use rand::thread_rng;
 use std::fs;
 use std::io::{Cursor, Read, Write};
@@ -299,12 +299,10 @@ pub fn get_pgp_key_fingerprint(key_file_path: &str) -> Result<String, String> {
     let path = Path::new(key_file_path);
     if let Some(file_name) = path.file_name() {
         if let Some(file_name) = file_name.to_str() {
-            return Ok(
-                file_name
-                    .to_string()
-                    .replace("ombra-chat-", "")
-                    .replace(".key", ""),
-            );
+            return Ok(file_name
+                .to_string()
+                .replace("ombra-chat-", "")
+                .replace(".key", ""));
         }
     }
     Err("Unable to extract key fingerprint".into())
@@ -326,6 +324,29 @@ pub fn get_my_public_key_tmp_file<R: tauri::Runtime>(
     file.write_all(key_data.as_bytes())?;
 
     Ok(path.display().to_string())
+}
+
+pub fn change_key_passphrase(
+    sign_sec_key: &SignedSecretKey,
+    old_passphrase: &str,
+    new_passphrase: &str,
+) -> Result<String, Box<dyn Error>> {
+    log::trace!("change_key_passphrase");
+
+    let mut sign_sec_key = sign_sec_key.to_owned();
+
+    let old_password = Password::from(old_passphrase);
+    sign_sec_key.primary_key.remove_password(&old_password)?;
+
+    let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
+    let new_password = Password::from(new_passphrase);
+    sign_sec_key
+        .primary_key
+        .set_password(&mut rng, &new_password)?;
+
+    let armored = crypto::pgp::get_armored_private_key(&sign_sec_key)?;
+
+    Ok(armored)
 }
 
 #[cfg(test)]
@@ -355,5 +376,23 @@ mod tests {
 
         assert_eq!(String::from_utf8(decrypted1).unwrap(), message);
         assert_eq!(String::from_utf8(decrypted2).unwrap(), message);
+    }
+
+    #[test]
+    fn change_passphrase() {
+        let passphrase1 = "foo";
+        let passphrase2 = "bar";
+        let message = "secret message";
+
+        let sec_key1 = generate_key(passphrase1).unwrap();
+        let enc_key1 = get_encryption_key_from_secret_key(&sec_key1).unwrap();
+        let encrypted = encrypt_string_to_string(&vec![enc_key1], message).unwrap();
+
+        let sec_key2_armored = change_key_passphrase(&sec_key1, passphrase1, passphrase2).unwrap();
+        let sec_key2 = SignedSecretKey::from_string(&sec_key2_armored).unwrap().0;
+
+        let decrypted = decrypt_armored(&sec_key2, passphrase2, encrypted.into_bytes()).unwrap();
+
+        assert_eq!(String::from_utf8(decrypted).unwrap(), message);
     }
 }
