@@ -21,12 +21,12 @@ watch(
       } catch {
         decryptionError.value = true;
       }
-      await nextTick(() => {
-        store.messageLoaded(props.message.id);
-      });
     } else {
       textContent.value = newContent.text;
     }
+    await nextTick(() => {
+      store.messageLoaded(props.message.id);
+    });
   },
   { immediate: true }
 );
