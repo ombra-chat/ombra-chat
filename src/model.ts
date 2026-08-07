@@ -126,6 +126,10 @@ export type Message = {
   content: MessageContent;
   reactions: MessageReaction[];
   sending_state: 'Pending' | 'Failed' | null;
+  forwarded_from: {
+    chat_id: number | null;
+    chat_title: string | null;
+  } | null;
 }
 
 export type InputMessageReplyTo = {

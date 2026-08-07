@@ -239,6 +239,43 @@ pub struct MessageReaction {
 }
 
 #[derive(serde::Serialize, Clone)]
+pub struct ForwardedFrom {
+    pub chat_id: Option<i64>,
+    pub chat_title: Option<String>,
+}
+
+impl ForwardedFrom {
+    pub fn from(message_forward_info: &tdlib::types::MessageForwardInfo) -> ForwardedFrom {
+        match &message_forward_info.origin {
+            tdlib::enums::MessageOrigin::User(origin) => {
+                return ForwardedFrom {
+                    chat_id: Some(origin.sender_user_id),
+                    chat_title: None,
+                }
+            }
+            tdlib::enums::MessageOrigin::HiddenUser(origin) => {
+                return ForwardedFrom {
+                    chat_id: None,
+                    chat_title: Some(origin.sender_name.clone()),
+                }
+            }
+            tdlib::enums::MessageOrigin::Chat(origin) => {
+                return ForwardedFrom {
+                    chat_id: Some(origin.sender_chat_id),
+                    chat_title: Some(origin.author_signature.clone()),
+                }
+            }
+            tdlib::enums::MessageOrigin::Channel(origin) => {
+                return ForwardedFrom {
+                    chat_id: Some(origin.chat_id),
+                    chat_title: None,
+                }
+            }
+        }
+    }
+}
+
+#[derive(serde::Serialize, Clone)]
 pub struct Message {
     pub id: i64,
     pub sender_user_id: Option<i64>,
@@ -247,6 +284,7 @@ pub struct Message {
     pub date: i32,
     pub is_reply: bool,
     pub reply_quote: Option<String>,
+    pub forwarded_from: Option<ForwardedFrom>,
     pub content: MessageContent,
     pub reactions: Vec<MessageReaction>,
     pub sending_state: Option<MessageSendingState>,

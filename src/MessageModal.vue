@@ -3,14 +3,16 @@ import { computed, nextTick, ref } from 'vue';
 import { deleteMessage, forwardMessage, selectChat } from './services/chats';
 import { store } from './store';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faAngleDown, faAngleUp } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDown, faAngleUp, faLock, faWarning } from '@fortawesome/free-solid-svg-icons';
 import { addMessageReaction } from './services/effects';
+import { getChatKey } from './services/pgp';
 
 const selectingChat = ref(false);
 const forwarding = ref(false);
 const forwardingFilter = ref('');
 const sendCopy = ref(false);
 const reactionCardCollapsed = ref(true);
+const showPgpWarningFor = ref<number | null>(null); // chat id
 
 function closeModal() {
   selectingChat.value = false;
@@ -19,6 +21,7 @@ function closeModal() {
   sendCopy.value = false;
   reactionCardCollapsed.value = true;
   store.selectedMessage = null;
+  showPgpWarningFor.value = null;
   store.toggleMessageModal();
 }
 
@@ -39,6 +42,22 @@ async function forwardMsg(chatId: number) {
     return;
   }
   forwarding.value = true;
+  const targetChatKey = await getChatKey(chatId);
+  if (targetChatKey) {
+    showPgpWarningFor.value = chatId;
+    return;
+  }
+  await forwardMessage(selectedMessage, chatId, sendCopy.value);
+  await selectChat(chatId);
+  closeModal();
+}
+
+async function confirmForwardUnencrypted() {
+  const selectedMessage = store.selectedMessage;
+  const chatId = showPgpWarningFor.value;
+  if (selectedMessage === null || chatId === null) {
+    return;
+  }
   await forwardMessage(selectedMessage, chatId, sendCopy.value);
   await selectChat(chatId);
   closeModal();
@@ -120,7 +139,7 @@ const reactions = computed<Record<string, string>>(() => {
       (store.selectedChat!.reactions as string[]).includes(e)
     ));
   }
-})
+});
 </script>
 
 <template>
@@ -132,17 +151,39 @@ const reactions = computed<Record<string, string>>(() => {
         <button class="delete" aria-label="close" @click="closeModal"></button>
       </header>
       <section class="modal-card-body p-3" v-if="selectingChat" id="forward-body">
-        <input type="text" class="input mb-3" v-model="forwardingFilter" id="forwarding-filter" />
-        <div class="menu" id="forward-to-chat-selector">
-          <ul class="menu-list">
-            <li v-for="chat in chats" class="chat-row nowrap" :key="chat.id">
-              <a href="#" class="nowrap" @click="() => forwardMsg(chat.id)">
-                <span class="chat-title">
-                  {{ chat.title }}
-                </span>
-              </a>
-            </li>
-          </ul>
+        <div v-if="showPgpWarningFor">
+          <div class="message is-warning my-3">
+            <div class="message-body">
+              <FontAwesomeIcon :icon="faWarning" />
+              <strong>Warning</strong>: forwarded messages will be sent in clear even in PGP encrypted chats.
+              Are you sure that you want to proceed?
+            </div>
+          </div>
+          <div class="my-3">
+            <button class="button is-primary mr-3" @click="confirmForwardUnencrypted">
+              Yes, forward anyway
+            </button>
+            <button class="button is-danger" @click="closeModal">
+              No, cancel
+            </button>
+          </div>
+        </div>
+        <div v-else>
+          <input type="text" class="input mb-3" v-model="forwardingFilter" id="forwarding-filter" />
+          <div class="menu" id="forward-to-chat-selector">
+            <ul class="menu-list">
+              <li v-for="chat in chats" class="chat-row nowrap" :key="chat.id">
+                <a href="#" class="nowrap" @click="() => forwardMsg(chat.id)">
+                  <span class="chat-title">
+                    <span class="mr-1" v-if="chat.secret">
+                      <FontAwesomeIcon :icon="faLock" />
+                    </span>
+                    {{ chat.title }}
+                  </span>
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
         <div class="pt-2" id="send-copy-wrapper">
           <label class="checkbox">

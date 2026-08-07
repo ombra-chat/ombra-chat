@@ -248,6 +248,21 @@ export function getSenderTitle(message: Message): string {
   return '';
 }
 
+export function getForwardedFromTitle(message: Message): string {
+  if (message.forwarded_from) {
+    if (message.forwarded_from.chat_title) {
+      return message.forwarded_from.chat_title;
+    }
+    if (message.forwarded_from.chat_id) {
+      const chat = store.getChat(message.forwarded_from.chat_id);
+      if (chat) {
+        return chat.title;
+      }
+    }
+  }
+  return '';
+}
+
 export async function getRepliedMessage(chatId: number, messageId: number): Promise<Message | null> {
   try {
     return await invoke<Message>('get_replied_message', {

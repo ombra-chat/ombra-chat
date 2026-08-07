@@ -4,14 +4,9 @@ use crate::{
     crypto::{
         self,
         pgp::{get_pgp_key_fingerprint, get_plaintext_path},
-    },
-    files::{allow_opening_file, is_file_accessible},
-    model::{
-        File, Message, MessageAnimatedEmoji, MessageContent, MessageDocument, MessageError,
-        MessagePgpFile, MessagePgpKey, MessagePgpText, MessagePhoto, MessageReaction,
-        MessageSendingState, MessageText, MessageVoiceNote, PhotoSize,
-    },
-    state, store,
+    }, files::{allow_opening_file, is_file_accessible}, model::{
+        File, ForwardedFrom, Message, MessageAnimatedEmoji, MessageContent, MessageDocument, MessageError, MessagePgpFile, MessagePgpKey, MessagePgpText, MessagePhoto, MessageReaction, MessageSendingState, MessageText, MessageVoiceNote, PhotoSize,
+    }, state, store,
 };
 
 pub fn parse_message<R: tauri::Runtime>(
@@ -47,6 +42,11 @@ pub fn parse_message<R: tauri::Runtime>(
         }
     }
 
+    let mut forwarded_from: Option<ForwardedFrom> = None;
+    if let Some(forward_info) = &message.forward_info {
+        forwarded_from = Some(ForwardedFrom::from(forward_info));
+    }
+
     Message {
         id: message.id,
         sender_user_id: sender_user_id,
@@ -58,6 +58,7 @@ pub fn parse_message<R: tauri::Runtime>(
         content: parse_content(app, &message),
         reactions: get_reactions_from_interaction_info(&message.interaction_info),
         sending_state: sending_state,
+        forwarded_from: forwarded_from
     }
 }
 

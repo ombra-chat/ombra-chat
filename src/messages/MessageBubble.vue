@@ -11,7 +11,7 @@ import { faGear, faCheck, faCheckDouble } from '@fortawesome/free-solid-svg-icon
 import { store } from '../store';
 import { computed, onMounted, ref } from 'vue';
 import DocumentMessage from './DocumentMessage.vue';
-import { getMessageTextContent, getRepliedMessage, getSenderTitle } from '../services/chats';
+import { getForwardedFromTitle, getMessageTextContent, getRepliedMessage, getSenderTitle, selectChat } from '../services/chats';
 import { removeMessageReaction } from '../services/effects';
 import AnimatedEmojiMessage from './AnimatedEmojiMessage.vue';
 import VoiceNoteMessage from './VoiceNoteMessage.vue';
@@ -33,6 +33,7 @@ const isEncryptedMessage = computed(() => {
 });
 
 const senderTitle = computed(() => getSenderTitle(props.message));
+const forwardedFromTitle = computed(() => getForwardedFromTitle(props.message));
 
 async function openMessageModal(message: Message) {
   store.selectedMessage = message;
@@ -109,6 +110,13 @@ onMounted(async () => {
         <strong class="mr-2">{{ replyToSenderTitle }}</strong>
         <span>{{ replyToContent }}</span>
       </div>
+      <div class="message-forwared-from p-2 mb-2 has-background-primary-soft" v-if="message.forwarded_from">
+        Forwarded from
+        <a href="#" @click="() => selectChat(message.forwarded_from!.chat_id!)" v-if="message.forwarded_from.chat_id">
+          {{ forwardedFromTitle }}
+        </a>
+        <strong class="mr-2" v-else>{{ forwardedFromTitle }}</strong>
+      </div>
       <PgpTextMessage v-if="message.content['@type'] === 'messagePgpText'" :message="message"
         :content="message.content" />
       <PgpDocumentMessage v-else-if="message.content['@type'] === 'messagePgpFile'" :message="message"
@@ -173,7 +181,8 @@ onMounted(async () => {
   flex-grow: 1;
 }
 
-.message-reply-to {
+.message-reply-to,
+.message-forwared-from {
   border-radius: 6px;
 }
 
