@@ -99,12 +99,11 @@ export const store = reactive<Store>({
   addChatToFolder(folder_id: number, chat_id: number) {
     const store = this as Store;
     let chats = store.chatFoldersMap[folder_id];
-    if (chats === undefined) {
-      chats = [chat_id];
-    } else {
+    if (chats) {
       chats.push(chat_id);
+    } else {
+      store.chatFoldersMap[folder_id] = [chat_id];
     }
-    store.chatFoldersMap[folder_id] = chats;
   },
   removeChatFromFolder(folder_id: number, chat_id: number) {
     const chatFoldersMap = (this as Store).chatFoldersMap;

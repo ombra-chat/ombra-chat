@@ -21,11 +21,6 @@ export type ChatPosition = {
   pos: number;
 }
 
-export type RemoveChatFromFolder = {
-  chat_id: number;
-  folder_id: number;
-}
-
 export type SecretChat = {
   id: number;
   user_id: number;

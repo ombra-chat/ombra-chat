@@ -1,17 +1,11 @@
 use crate::{
     emit,
-    model::{
-        get_chat_position, Chat, ChatPosition, RemoveChatFromFolder, SecretChat,
-        UpdateChatReadInbox,
-    },
+    model::{get_chat_position, Chat, ChatPosition, SecretChat, UpdateChatReadInbox},
 };
 
 use tdlib::enums::{ChatList, Update};
 
-pub fn handle_chats_update<R: tauri::Runtime>(
-    app: &tauri::AppHandle<R>,
-    update: &Update,
-) -> bool {
+pub fn handle_chats_update<R: tauri::Runtime>(app: &tauri::AppHandle<R>, update: &Update) -> bool {
     match update {
         Update::NewChat(update) => {
             emit(app, "update-new-chat", Chat::from(&update.chat));
@@ -38,17 +32,6 @@ pub fn handle_chats_update<R: tauri::Runtime>(
         Update::ChatPosition(update) => {
             if update.position.list == ChatList::Main {
                 emit(app, "update-chat-position", ChatPosition::from(update));
-            } else if let ChatList::Folder(folder) = &update.position.list {
-                if update.position.order == 0 {
-                    emit(
-                        app,
-                        "remove-chat-from-folder",
-                        RemoveChatFromFolder {
-                            folder_id: folder.chat_folder_id,
-                            chat_id: update.chat_id,
-                        },
-                    );
-                }
             }
             return true;
         }

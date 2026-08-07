@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event'
 import { Window } from "@tauri-apps/api/window"
 import { store } from '../store'
-import { Chat, ChatPosition, InputMessageContent, InputMessageReplyTo, Message, MessageContent, RemoveChatFromFolder, SecretChat, UpdateChatReadInbox, UpdateDeleteMessages, File, UpdateMessageReactions, UpdateMessageSendSucceeded } from '../model';
+import { Chat, ChatPosition, InputMessageContent, InputMessageReplyTo, Message, MessageContent, SecretChat, UpdateChatReadInbox, UpdateDeleteMessages, File, UpdateMessageReactions, UpdateMessageSendSucceeded } from '../model';
 import { invoke } from '@tauri-apps/api/core';
 import { getChatKey } from './pgp';
 
@@ -39,10 +39,6 @@ export async function handleChatsUpdates() {
         }
         return c;
       });
-    }),
-    await listen<RemoveChatFromFolder>('remove-chat-from-folder', (event) => {
-      const update = event.payload;
-      store.removeChatFromFolder(update.folder_id, update.chat_id);
     }),
     await listen<UpdateChatReadInbox>('update-chat-read-inbox', (event) => {
       const update = event.payload;

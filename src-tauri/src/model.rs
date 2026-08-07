@@ -136,12 +136,6 @@ impl SecretChat {
 }
 
 #[derive(serde::Serialize, Clone)]
-pub struct RemoveChatFromFolder {
-    pub folder_id: i32,
-    pub chat_id: i64,
-}
-
-#[derive(serde::Serialize, Clone)]
 pub struct UpdateChatReadInbox {
     pub chat_id: i64,
     pub last_read_inbox_message_id: i64,
