@@ -199,7 +199,7 @@ const reactions = computed<Record<string, string>>(() => {
           Reply to message
         </button><br />
 
-        <div class="card" v-if="Object.entries(reactions).length > 0">
+        <div class="card" v-if="Object.entries(reactions).length > 0 && store.selectedChat!.id !== store.myId">
           <header class="card-header" @click="() => (reactionCardCollapsed = !reactionCardCollapsed)"
             id="reactions-card-header">
             <p class="card-header-title">Add reaction</p>
@@ -212,10 +212,18 @@ const reactions = computed<Record<string, string>>(() => {
           </header>
           <div class="card-content p-3" v-if="!reactionCardCollapsed">
             <div class="content">
-              <button class="button" type="button" v-for="[emoji, image] in Object.entries(reactions)"
-                @click="() => addReaction(emoji)">
-                <img :src="image" width="20" height="20" />
-              </button>
+              <div class="message is-warning mb-2" v-if="store.selectedChatKey">
+                <div class="message-body">
+                  <FontAwesomeIcon :icon="faWarning" />
+                  <strong>Warning</strong>: reactions will be sent in clear even in PGP encrypted chats.
+                </div>
+              </div>
+              <div>
+                <button class="button" type="button" v-for="[emoji, image] in Object.entries(reactions)"
+                  @click="() => addReaction(emoji)">
+                  <img :src="image" width="20" height="20" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
