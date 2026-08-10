@@ -185,6 +185,11 @@ export const store = reactive<Store>({
             m.content.document = file;
           }
           break;
+        case 'messagePgpFile':
+          if (m.content.document.id === file.id) {
+            m.content.document = file;
+          }
+          break;
         case 'messagePhoto':
           for (const size of m.content.sizes) {
             if (size.photo.id === file.id) {

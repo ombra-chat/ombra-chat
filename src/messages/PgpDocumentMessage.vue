@@ -68,6 +68,17 @@ async function openSaveDialog() {
 }
 
 watch(
+  () => props.content.document,
+  async (newDocument) => {
+    if (newDocument.path) {
+      ciphertextPath.value = newDocument.path;
+      props.content.ciphertext_path = newDocument.path;
+      await decrypt(newDocument.path);
+    }
+  }
+);
+
+watch(
   () => props.content,
   async (newContent) => {
     fileName.value = newContent.file_name;
