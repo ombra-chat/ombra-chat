@@ -63,7 +63,7 @@ onMounted(async () => {
   <div class="notification has-background-warning-soft is-outlined p-2 mb-0">
     <p class="mb-2">Public PGP key</p>
     <p class="mb-2" v-if="fingerprint">
-      <FontAwesomeIcon :icon="faKey" /><code class="ml-2">{{ fingerprint }}</code>
+      <FontAwesomeIcon :icon="faKey" /><code class="ml-2">{{ fingerprint.toUpperCase() }}</code>
     </p>
     <div class="mb-2">
       <button class="button is-warning mr-2" type="button" @click="useKey" :disabled="!path"

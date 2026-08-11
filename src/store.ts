@@ -54,6 +54,8 @@ type Store = {
   markMessageAsRead: (messageId: number) => Promise<void>;
   updateMessage: (messageId: number, updater: (message: Message) => Message) => void;
   toggleAboutModal: () => void;
+  chatKeyModalActive: boolean;
+  toggleChatKeyModal: () => void;
 }
 
 export const store = reactive<Store>({
@@ -253,5 +255,10 @@ export const store = reactive<Store>({
   toggleAboutModal: function () {
     const store = this as Store;
     store.aboutModalActive = !store.aboutModalActive;
+  },
+  chatKeyModalActive: false,
+  toggleChatKeyModal: function () {
+    const store = this as Store;
+    store.chatKeyModalActive = !store.chatKeyModalActive;
   }
 });

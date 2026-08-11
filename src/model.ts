@@ -25,6 +25,8 @@ export type SecretChat = {
   id: number;
   user_id: number;
   state: 'Pending' | 'Ready' | 'Closed'
+  key_hash_hex: string[];
+  key_hash_img: number[][];
 }
 
 export type ChatFolder = {

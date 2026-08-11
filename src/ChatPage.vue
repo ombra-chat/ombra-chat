@@ -11,6 +11,7 @@ import { faPaperPlane, faGear, faPaperclip, faX, faKey, faLock, faChevronLeft } 
 import { getFileName } from './services/files';
 import ChatSettingsModal from './ChatSettingsModal.vue';
 import MessageModal from './MessageModal.vue';
+import ChatKeyModal from './ChatKeyModal.vue';
 
 type SelectedFile = { path: string; image: boolean; }
 
@@ -223,6 +224,21 @@ const canWriteMessages = computed(() => {
     || (secretChatState.value !== '' && secretChatState.value !== 'Ready')
 });
 
+const secretChatKey = computed<string>(() => {
+  if (!store.selectedChat) {
+    return '';
+  }
+  if (!store.selectedChat.secret) {
+    return ''
+  }
+  const id = store.selectedChat.secret_chat_id as number;
+  const secretChat = store.secretChatsMap[id];
+  if (!secretChat) {
+    return '';
+  }
+  return secretChat.key_hash_hex.join(' ');
+});
+
 let unlistener: UnlistenFn | undefined = undefined;
 
 onMounted(async () => {
@@ -274,10 +290,16 @@ watch(() => store.selectedChat?.id, () => clear());
             </span>
           </div>
         </div>
-        <div v-if="store.selectedChatKey !== ''" class="ml-2 mt-1 nowrap">
+        <button type="button" v-if="store.selectedChatKey !== ''" class="ml-2 mt-1 nowrap key-button"
+          @click="store.toggleChatKeyModal">
           <FontAwesomeIcon :icon="faKey" />
-          <code class="ml-2">{{ store.selectedChatKey }}</code>
-        </div>
+          <code class="ml-2">{{ store.selectedChatKey.toUpperCase() }}</code>
+        </button>
+        <button type="button" v-if="secretChatKey !== ''" class="ml-2 mt-1 pt-1 nowrap key-button"
+          @click="store.toggleChatKeyModal">
+          <FontAwesomeIcon :icon="faLock" />
+          <code class="ml-2">{{ secretChatKey }}</code>
+        </button>
       </div>
       <div id="chat-settings-btn-wrapper">
         <button type="button" class="button mx-2" @click="store.toggleChatSettingsModal" aria-label="Settings">
@@ -336,6 +358,7 @@ watch(() => store.selectedChat?.id, () => clear());
   </div>
   <ChatSettingsModal />
   <MessageModal />
+  <ChatKeyModal />
 </template>
 
 <style>
@@ -362,6 +385,10 @@ watch(() => store.selectedChat?.id, () => clear());
 
 #chat-title .has-text-link {
   text-align: center;
+}
+
+.key-button {
+  max-width: calc(100% - 50px);
 }
 
 #chat-content {

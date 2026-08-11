@@ -88,7 +88,7 @@ async function changePassphrase() {
     newPassphraseConfirm.value = '';
     passphraseUpdated.value = true;
   } catch (err) {
-    passphraseError.value = err.message;
+    passphraseError.value = (err as Error).message;
   } finally {
     updatingPassphrase.value = false;
   }
@@ -118,10 +118,10 @@ watch(
         <p class="menu-label mt-4">PGP Key</p>
         <div v-if="myKeyFingerprint" class="mb-2">
           <div>
-            <FontAwesomeIcon :icon="faKey" class="mr-1" />Primary: <code>{{ myKeyFingerprint.primary }}</code>
+            <FontAwesomeIcon :icon="faKey" class="mr-1" />Primary: <code>{{ myKeyFingerprint.primary.toUpperCase() }}</code>
           </div>
           <div v-for="enc_key in myKeyFingerprint.encryption_keys">
-            <FontAwesomeIcon :icon="faLock" class="mr-1" />Encryption: <code>{{ enc_key }}</code>
+            <FontAwesomeIcon :icon="faLock" class="mr-1" />Encryption: <code>{{ enc_key.toUpperCase() }}</code>
           </div>
         </div>
         <div v-if="keyError" class="message is-danger mb-2">

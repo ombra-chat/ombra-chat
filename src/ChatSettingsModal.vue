@@ -139,12 +139,12 @@ watch(
           </div>
           <button class="button is-primary mt-3 mb-2 mr-2" v-if="enablePgp" @click="openSelectKeyDialog">Select key</button>
           <div v-if="enablePgp && store.selectedChatKey">
-            <p>Encryption subkey: <code>{{ store.selectedChatKey }}</code></p>
+            <p>Encryption subkey: <code>{{ store.selectedChatKey.toUpperCase() }}</code></p>
           </div>
           <div v-if="loadedKey !== null">
-            <p>Master key: <code>{{ loadedKey.primary }}</code></p>
+            <p>Master key: <code>{{ loadedKey.primary.toUpperCase() }}</code></p>
             <p v-if="loadedKey.encryption_keys.length === 1">
-              Encryption subkey: <code>{{ loadedKey.encryption_keys[0] }}</code>
+              Encryption subkey: <code>{{ loadedKey.encryption_keys[0].toUpperCase() }}</code>
             </p>
             <div v-else>
               <p>Select encryption subkey:</p>

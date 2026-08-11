@@ -1,3 +1,4 @@
+use base64::prelude::*;
 use tdlib::enums::{ChatAvailableReactions, ChatList, ChatType, ReactionType::Emoji, UserType};
 
 #[derive(serde::Serialize, Clone)]
@@ -117,6 +118,8 @@ pub struct SecretChat {
     id: i32,
     user_id: i64,
     state: SecretChatState,
+    key_hash_hex: Vec<String>,
+    key_hash_img: Vec<Vec<u8>>,
 }
 
 impl SecretChat {
@@ -127,12 +130,69 @@ impl SecretChat {
             tdlib::enums::SecretChatState::Ready => SecretChatState::Ready,
             tdlib::enums::SecretChatState::Closed => SecretChatState::Closed,
         };
+        let decoded_key_hash: Vec<u8> = BASE64_STANDARD.decode(&chat.key_hash).unwrap_or(vec![]);
         SecretChat {
             id: chat.id,
             user_id: chat.user_id,
             state: state,
+            key_hash_hex: get_key_hash_hex(&decoded_key_hash),
+            key_hash_img: get_key_hash_img(&decoded_key_hash),
         }
     }
+}
+
+fn get_key_hash_hex(decoded: &Vec<u8>) -> Vec<String> {
+    let mut result: Vec<String> = vec![];
+    let hex_string = hex::encode(&decoded).to_uppercase();
+    let mut i = 0;
+    let mut current_row: Vec<String> = vec![];
+    while i < 64 && i < hex_string.len() {
+        if i > 0 && i % 16 == 0 {
+            result.push(current_row.join(" "));
+            current_row.clear();
+        }
+        if let Some(data) = hex_string.get(i..(i + 2)) {
+            current_row.push(String::from(data));
+        } else {
+            break;
+        }
+        i += 2;
+    }
+    if current_row.len() > 0 {
+        result.push(current_row.join(" "));
+    }
+    result
+}
+
+fn get_key_hash_img(decoded: &Vec<u8>) -> Vec<Vec<u8>> {
+    let mut result: Vec<Vec<u8>> = vec![];
+    let mut current_row: Vec<u8> = vec![];
+    for b in decoded {
+        let mut i = 0;
+        while i < 8 {
+            if current_row.len() == 12 {
+                result.push(current_row.clone());
+                current_row.clear();
+            }
+            let b0 = b >> i & 1;
+            let b1 = b >> (i + 1) & 1;
+            if b1 == 0 && b0 == 0 {
+                current_row.push(0);
+            }
+            if b1 == 0 && b0 == 1 {
+                current_row.push(1);
+            }
+            if b1 == 1 && b0 == 0 {
+                current_row.push(2);
+            }
+            if b1 == 1 && b0 == 1 {
+                current_row.push(3);
+            }
+            i += 2;
+        }
+    }
+    result.push(current_row.clone());
+    result
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -478,4 +538,39 @@ pub struct InputMessagePgpText {
 pub struct InputMessagePgpFile {
     pub path: String,
     pub caption: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_key_hash_hex() {
+        let base64_key = "gAgW4CAbiALapa8WM40B9c1xeUs6bdqu8auGx3VTyxnBT3oY";
+        let decoded_key_hash: Vec<u8> = BASE64_STANDARD.decode(&base64_key).unwrap_or(vec![]);
+        let result = get_key_hash_hex(&decoded_key_hash);
+        assert_eq!(result.len(), 4);
+        assert_eq!(result[0], "80 08 16 E0 20 1B 88 02");
+        assert_eq!(result[1], "DA A5 AF 16 33 8D 01 F5");
+        assert_eq!(result[2], "CD 71 79 4B 3A 6D DA AE");
+        assert_eq!(result[3], "F1 AB 86 C7 75 53 CB 19");
+    }
+
+    #[test]
+    fn build_key_hash_img() {
+        let base64_key = "gAgW4CAbiALapa8WM40B9c1xeUs6bdqu8auGx3VTyxnBT3oY";
+        let decoded_key_hash: Vec<u8> = BASE64_STANDARD.decode(&base64_key).unwrap_or(vec![]);
+        let result = get_key_hash_img(&decoded_key_hash);
+        assert_eq!(result.len(), 12);
+        assert_eq!(result[0].len(), 12);
+        assert_eq!(result[11].len(), 12);
+        assert_eq!(result[0][0], 0);
+        assert_eq!(result[0][1], 0);
+        assert_eq!(result[0][2], 0);
+        assert_eq!(result[0][3], 2);
+        assert_eq!(result[11][0], 3);
+        assert_eq!(result[11][1], 3);
+        assert_eq!(result[11][2], 0);
+        assert_eq!(result[11][3], 1);
+    }
 }
