@@ -2,9 +2,16 @@ use base64::prelude::*;
 use tdlib::enums::{ChatAvailableReactions, ChatList, ChatType, ReactionType::Emoji, UserType};
 
 #[derive(serde::Serialize, Clone)]
+#[serde(untagged)]
 pub enum ChatReactions {
-    All,
+    All(String),
     Some(Vec<String>),
+}
+
+impl Default for ChatReactions {
+    fn default() -> Self {
+        ChatReactions::All("All".into())
+    }
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -42,7 +49,7 @@ impl Chat {
         let reactions: ChatReactions;
         match &chat.available_reactions {
             ChatAvailableReactions::All(_) => {
-                reactions = ChatReactions::All;
+                reactions = ChatReactions::default();
             }
             ChatAvailableReactions::Some(r) => {
                 let mut emojis: Vec<String> = vec![];
@@ -431,7 +438,7 @@ pub struct MessagePgpFile {
 pub struct MessagePgpKey {
     pub document_id: i32,
     pub path: Option<String>,
-    pub key_info: Option<PublicKeyCompleteInfo>
+    pub key_info: Option<PublicKeyCompleteInfo>,
 }
 
 #[derive(serde::Serialize, Clone)]
