@@ -2,10 +2,11 @@ use std::path::Path;
 
 use crate::{
     crypto::{
-        self,
-        pgp::{get_pgp_key_fingerprint, get_plaintext_path},
+        self, pgp::{get_key_file_complete_info, get_plaintext_path},
     }, files::{allow_opening_file, is_file_accessible}, model::{
-        File, ForwardedFrom, Message, MessageAnimatedEmoji, MessageContent, MessageDocument, MessageError, MessagePgpFile, MessagePgpKey, MessagePgpText, MessagePhoto, MessageReaction, MessageSendingState, MessageText, MessageVoiceNote, PhotoSize,
+        File, ForwardedFrom, Message, MessageAnimatedEmoji, MessageContent, MessageDocument,
+        MessageError, MessagePgpFile, MessagePgpKey, MessagePgpText, MessagePhoto, MessageReaction,
+        MessageSendingState, MessageText, MessageVoiceNote, PhotoSize, PublicKeyCompleteInfo,
     }, state, store,
 };
 
@@ -58,7 +59,7 @@ pub fn parse_message<R: tauri::Runtime>(
         content: parse_content(app, &message),
         reactions: get_reactions_from_interaction_info(&message.interaction_info),
         sending_state: sending_state,
-        forwarded_from: forwarded_from
+        forwarded_from: forwarded_from,
     }
 }
 
@@ -245,27 +246,29 @@ fn parse_pgp_key_message(message: &tdlib::types::MessageDocument) -> MessageCont
     let doc = &message.document.document;
 
     let path: Option<String>;
-    let fingerprint: Option<String>;
+    let key_info: Option<PublicKeyCompleteInfo>;
     if doc.local.is_downloading_completed {
         let file_path = doc.local.path.clone();
         path = Some(file_path.clone());
-        match get_pgp_key_fingerprint(&file_path) {
-            Ok(key_fingerprint) => {
-                fingerprint = Some(key_fingerprint);
+        match get_key_file_complete_info(&file_path) {
+            Ok(info) => {
+                key_info = Some(info);
             }
             Err(e) => {
-                return MessageContent::Error(MessageError { text: e });
+                return MessageContent::Error(MessageError {
+                    text: e.to_string(),
+                })
             }
         }
     } else {
         path = None;
-        fingerprint = None;
+        key_info = None;
     }
 
     MessageContent::PgpKey(MessagePgpKey {
         document_id: doc.id,
         path: path,
-        fingerprint: fingerprint,
+        key_info: key_info,
     })
 }
 

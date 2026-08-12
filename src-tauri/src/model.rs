@@ -431,7 +431,7 @@ pub struct MessagePgpFile {
 pub struct MessagePgpKey {
     pub document_id: i32,
     pub path: Option<String>,
-    pub fingerprint: Option<String>,
+    pub key_info: Option<PublicKeyCompleteInfo>
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -538,6 +538,13 @@ pub struct InputMessagePgpText {
 pub struct InputMessagePgpFile {
     pub path: String,
     pub caption: Option<String>,
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct PublicKeyCompleteInfo {
+    pub id_key_fingerprint: String,
+    pub encryption_key_fingerprint: String,
+    pub armored_data: String,
 }
 
 #[cfg(test)]

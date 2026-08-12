@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { store } from './store';
 import { SecretChat } from './model';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faWarning } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faKey, faWarning } from '@fortawesome/free-solid-svg-icons';
+import { getChatKeyCompleteInfo } from './services/pgp';
+
+let pgpIdKeyFingerprint = ref('');
+let pgpEncryptionKeyFingerprint = ref('');
+let pgpKeyArmored = ref('');
 
 function closeModal() {
   store.toggleChatKeyModal();
@@ -23,6 +28,22 @@ const secretChat = computed<SecretChat | null>(() => {
   }
   return secretChat;
 });
+
+watch(() => store.selectedChatKey, async () => {
+  if (!store.selectedChat) {
+    return;
+  }
+  if (store.selectedChatKey) {
+    const info = await getChatKeyCompleteInfo(store.selectedChat.id);
+    pgpIdKeyFingerprint.value = info.id_key_fingerprint;
+    pgpEncryptionKeyFingerprint.value = info.encryption_key_fingerprint;
+    pgpKeyArmored.value = info.armored_data;
+  } else {
+    pgpIdKeyFingerprint.value = '';
+    pgpEncryptionKeyFingerprint.value = '';
+    pgpKeyArmored.value = '';
+  }
+});
 </script>
 
 <template>
@@ -37,7 +58,21 @@ const secretChat = computed<SecretChat | null>(() => {
         <div v-if="store.selectedChatKey" class="mb-4">
           <h4 class="subtitle has-text-centered mt-4">PGP chat key</h4>
           <div class="has-text-centered">
-            <code>{{ store.selectedChatKey.toUpperCase() }}</code>
+            <div>
+              <FontAwesomeIcon :icon="faUser" />
+              <code>{{ pgpIdKeyFingerprint.toUpperCase() }}</code>
+            </div>
+            <div class="is-size-7 is-italic">identity</div>
+          </div>
+          <div class="has-text-centered mt-2">
+            <div>
+              <FontAwesomeIcon :icon="faKey" />
+              <code>{{ pgpEncryptionKeyFingerprint.toUpperCase() }}</code>
+            </div>
+            <div class="is-size-7 is-italic">encryption</div>
+          </div>
+          <div class="mt-4 mb-5">
+            <pre>{{ pgpKeyArmored }}</pre>
           </div>
         </div>
         <div v-if="secretChat">

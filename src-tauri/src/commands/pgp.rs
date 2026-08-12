@@ -1,8 +1,5 @@
 use crate::{
-    crypto::{self, pgp::get_pgp_key_fingerprint},
-    model::MessagePgpKey,
-    state,
-    store::{self, ChatConfig},
+    crypto::{self, pgp::{get_key_file_complete_info}}, model::{MessagePgpKey, PublicKeyCompleteInfo}, state, store::{self, ChatConfig},
 };
 use pgp::{composed::SignedPublicKey, types::KeyDetails};
 use serde::{Deserialize, Serialize};
@@ -71,6 +68,15 @@ pub fn get_fingerprints(key: &SignedPublicKey) -> Result<PublicKeyFingerprints, 
         primary: key.fingerprint().to_string(),
         encryption_keys,
     })
+}
+
+#[tauri::command]
+pub fn get_chat_key_complete_info<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    chat_id: i64,
+) -> Result<PublicKeyCompleteInfo, String> {
+    let info = crypto::pgp::get_chat_key_complete_info(&app, chat_id).map_err(|e| e.to_string())?;
+    Ok(info)
 }
 
 #[tauri::command]
@@ -145,18 +151,18 @@ pub async fn download_pgp_key_file<R: tauri::Runtime>(
         Ok(tdlib::enums::File::File(file)) => {
             let file_path = file.local.path;
 
-            let fingerprint: Option<String>;
-            match get_pgp_key_fingerprint(&file_path) {
-                Ok(key_fingerprint) => {
-                    fingerprint = Some(key_fingerprint);
+            let key_info: Option<PublicKeyCompleteInfo>;
+            match get_key_file_complete_info(&file_path) {
+                Ok(info) => {
+                    key_info = Some(info);
                 }
-                Err(e) => return Err(e),
+                Err(e) => return Err(e.to_string()),
             }
 
             Ok(MessagePgpKey {
                 document_id: document_id,
                 path: Some(file_path.clone()),
-                fingerprint: fingerprint,
+                key_info: key_info,
             })
         }
         Err(e) => Err(e.message),
@@ -170,8 +176,9 @@ pub async fn change_passphrase<R: tauri::Runtime>(
 ) -> Result<(), String> {
     let key = state::get_my_key(&app).map_err(|e| e.to_string())?;
     let old_passphrase = state::get_pgp_passphrase(&app);
-    let new_sec_key_armored = crypto::pgp::change_key_passphrase(&key, &old_passphrase, &new_passphrase)
-        .map_err(|e| e.to_string())?;
+    let new_sec_key_armored =
+        crypto::pgp::change_key_passphrase(&key, &old_passphrase, &new_passphrase)
+            .map_err(|e| e.to_string())?;
     store::set_secret_key(&app, &new_sec_key_armored);
     state::set_pgp_passphrase(&app, &new_passphrase);
     Ok(())

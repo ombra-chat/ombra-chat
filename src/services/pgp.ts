@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { MessagePgpKey, PublicKeyFingerprints } from "../model";
+import { MessagePgpKey, PublicKeyCompleteInfo, PublicKeyFingerprints } from "../model";
 
 export async function getMyKeyFingerprint(): Promise<PublicKeyFingerprints> {
   return await invoke<PublicKeyFingerprints>('get_my_key_fingerprint');
@@ -31,6 +31,10 @@ export async function saveChatKey(keyFile: string, encryptionKeyFingerprint: str
 
 export async function getChatKey(chatId: number): Promise<string> {
   return await invoke<string | null>('get_chat_key', { chatId }) || '';
+}
+
+export async function getChatKeyCompleteInfo(chatId: number): Promise<PublicKeyCompleteInfo> {
+  return await invoke<PublicKeyCompleteInfo>('get_chat_key_complete_info', { chatId }) || '';
 }
 
 export async function removeChatKey(chatId: number): Promise<void> {

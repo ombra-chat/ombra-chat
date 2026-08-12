@@ -1,4 +1,5 @@
 use crate::crypto::{self, utils};
+use crate::model::PublicKeyCompleteInfo;
 use crate::{state, store};
 use pgp::composed::{
     ArmorOptions, Deserializable, EncryptionCaps, KeyType, Message, MessageBuilder,
@@ -10,7 +11,7 @@ use pgp::types::{KeyDetails, Password};
 use rand::thread_rng;
 use std::fs;
 use std::io::{Cursor, Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::{error::Error, fs::File, io::BufReader};
 
 fn encrypt(
@@ -212,12 +213,17 @@ pub fn load_public_key(armored: &str) -> Result<SignedPublicKey, Box<dyn Error>>
     Ok(key)
 }
 
-pub fn load_public_key_from_file(key_path: &str) -> Result<SignedPublicKey, Box<dyn Error>> {
-    log::trace!("load_public_key_from_file");
+pub fn load_public_key_armored_from_file(key_path: &str) -> Result<String, Box<dyn Error>> {
     let file = File::open(key_path)?;
     let mut reader = BufReader::new(file);
     let mut armored_data = String::new();
     reader.read_to_string(&mut armored_data)?;
+    Ok(armored_data)
+}
+
+pub fn load_public_key_from_file(key_path: &str) -> Result<SignedPublicKey, Box<dyn Error>> {
+    log::trace!("load_public_key_from_file");
+    let armored_data = load_public_key_armored_from_file(key_path)?;
     Ok(load_public_key(&armored_data)?)
 }
 
@@ -295,19 +301,6 @@ pub fn get_chat_encryption_keys<R: tauri::Runtime>(
     Ok(vec![my_key, other_key])
 }
 
-pub fn get_pgp_key_fingerprint(key_file_path: &str) -> Result<String, String> {
-    let path = Path::new(key_file_path);
-    if let Some(file_name) = path.file_name() {
-        if let Some(file_name) = file_name.to_str() {
-            return Ok(file_name
-                .to_string()
-                .replace("ombra-chat-", "")
-                .replace(".key", ""));
-        }
-    }
-    Err("Unable to extract key fingerprint".into())
-}
-
 pub fn get_my_public_key_tmp_file<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
 ) -> Result<String, Box<dyn Error>> {
@@ -347,6 +340,27 @@ pub fn change_key_passphrase(
     let armored = crypto::pgp::get_armored_private_key(&sign_sec_key)?;
 
     Ok(armored)
+}
+
+pub fn get_key_file_complete_info(
+    key_file_path: &str,
+) -> Result<PublicKeyCompleteInfo, Box<dyn Error>> {
+    let public_key = crypto::pgp::load_public_key_from_file(&key_file_path)?;
+    let encryption_key = crypto::pgp::get_encryption_key_from_public_key(&public_key)?;
+    let armored_data = public_key.to_armored_string(ArmorOptions::default())?;
+    Ok(PublicKeyCompleteInfo {
+        id_key_fingerprint: public_key.fingerprint().to_string(),
+        encryption_key_fingerprint: encryption_key.fingerprint().to_string(),
+        armored_data: armored_data,
+    })
+}
+
+pub fn get_chat_key_complete_info<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    chat_id: i64,
+) -> Result<PublicKeyCompleteInfo, Box<dyn Error>> {
+    let key_path = crypto::pgp::get_chat_key_path(app, chat_id)?;
+    get_key_file_complete_info(&key_path)
 }
 
 #[cfg(test)]

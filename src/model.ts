@@ -107,7 +107,7 @@ export type MessagePgpKey = {
   '@type': 'messagePgpKey';
   document_id: number;
   path: string | null;
-  fingerprint: string | null;
+  key_info: PublicKeyCompleteInfo | null;
 }
 
 export type MessageContent = MessageText | MessagePhoto | MessageDocument | MessageAnimatedEmoji | MessageVoiceNote | MessagePgpText | MessagePgpFile | MessagePgpKey;
@@ -219,4 +219,10 @@ export type UpdateMessageReactions = {
   chat_id: number;
   message_id: number;
   reactions: MessageReaction[];
+}
+
+export type PublicKeyCompleteInfo = {
+  id_key_fingerprint: string;
+  encryption_key_fingerprint: string;
+  armored_data: string;
 }
