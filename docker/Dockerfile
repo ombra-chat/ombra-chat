@@ -3,6 +3,8 @@ FROM ghcr.io/ombra-chat/builder:v0.0.6 AS builder-stage
 RUN git clone https://github.com/ombra-chat/tdlib-rs.git
 RUN git clone https://github.com/ombra-chat/ombra-chat.git
 
+RUN cd tdlib-rs && git checkout 7c6972dd2d2aa2fcd62dc9660682c9bac2a12c39
+
 WORKDIR /ombra-chat
 
 ARG TAG=master
