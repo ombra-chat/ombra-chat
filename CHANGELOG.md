@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+* Big refactoring, moving a lot of logic from front-end to back-end; this should improve stability when TDLib types are updated
+* Improved file download; file <1MB are downloaded synchronously, while bigger ones asynchronously
+* Added option to change PGP key passphrase
+* Supported displaying of secret chat key
+* Improved visualization of PGP keys
+* Updated Tauri dependencies
+
 ## 0.3.5
 
 * Fixed bug in sending document and photos
