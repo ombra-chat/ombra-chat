@@ -28,7 +28,25 @@ The app is named OmbraChat because "ombra" means "shadow" in Italian.
 
 Currently it has been tested only on Linux, but it could work also on other OS.
 
-Have a look at the [changelog](CHANGELOG.md) to see the implemented features.
+Source code available on [GitHub](https://github.com/ombra-chat/ombra-chat) and [Codeberg](https://codeberg.org/zonia3000/ombra-chat).
+
+## Implemented features
+
+* Text messages
+* Photo messages
+* Document messages
+* Sharing of documents using drag and drop
+* PGP encrypted text and document messages
+* Easy sharing and trusting of public PGP keys
+* Basic secret chats support (still buggy)
+* Encrypted Telegram's local database
+* Selection of default chat folder
+* Chat folders creation and editing
+* Chat deletion
+* Basic reactions
+* Emoji messages (read-only, not animated)
+* Listening of voice messages (not sending)
+* Light/Dark theme
 
 ## Why?
 
@@ -143,6 +161,10 @@ Be also aware that TDLib log may contain sensitive data in plaintext.
 ## AI policy
 
 LLM contributions are **not** welcome and it is forbidden to use this code to train AI models.
+
+DuckDuckGo AI has been used sporadically in this project to improve some sentences in this README file and to receive some suggestions about Rust syntax. DuckDuckGo states that it doesn't use the data to further train the AI.
+
+The maintainer of this project is concerned about ethical issues related to AI and tries to use it as little as possibile.
 
 ## License
 
