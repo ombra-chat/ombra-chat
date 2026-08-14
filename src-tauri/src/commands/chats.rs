@@ -15,10 +15,102 @@ pub async fn load_chats<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(
 }
 
 #[tauri::command]
-pub async fn open_chat<R: tauri::Runtime>(app: tauri::AppHandle<R>, id: i64) -> Result<(), String> {
-    tdlib::functions::open_chat(id, state::get_client_id(&app))
+pub async fn open_chat<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    chat_id: i64,
+    last_read_inbox_message_id: i64,
+) -> Result<Vec<Message>, String> {
+    let client_id = state::get_client_id(&app);
+
+    tdlib::functions::open_chat(chat_id, client_id)
         .await
-        .map_err(|e| e.message)
+        .map_err(|e| e.message)?;
+
+    let mut messages: Vec<Message> = vec![];
+
+    if let Some(last_message) =
+        get_last_message(&app, chat_id, last_read_inbox_message_id, client_id)
+            .await
+            .map_err(|e| e.message)?
+    {
+        let last_message_id = last_message.id;
+
+        let previous_messages =
+            tdlib::functions::get_chat_history(chat_id, last_message_id, 0, 20, false, client_id)
+                .await
+                .map(|messages| match messages {
+                    tdlib::enums::Messages::Messages(result) => {
+                        return result
+                            .messages
+                            .iter()
+                            .flatten()
+                            .map(|m| parse_message(&app, m))
+                            .collect::<Vec<Message>>();
+                    }
+                })
+                .map_err(|e| e.message)?;
+
+        for message in previous_messages {
+            messages.push(message);
+        }
+        messages.push(last_message);
+    }
+
+    Ok(messages)
+}
+
+/**
+ * Retrieve only the last message; this is done because in some cases tdlib sends only
+ * one message in any case at the first load, so it is better to always expect to receive
+ * only one message when the chat is opened, in order to handle message loading in a more
+ * deterministic way; next messages are requested in chunks of 20 or 10 messages
+ */
+async fn get_last_message<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    chat_id: i64,
+    last_read_inbox_message_id: i64,
+    client_id: i32,
+) -> Result<Option<Message>, tdlib::types::Error> {
+    let tdlib::enums::Messages::Messages(result) =
+        tdlib::functions::get_chat_history(chat_id, 0, 0, 1, false, client_id).await?;
+
+    if result.messages.len() != 1 {
+        return Ok(None);
+    }
+
+    if let Some(message) = &result.messages[0] {
+        let last_message = parse_message(&app, message);
+
+        // check if the last message has been written by myself (handle edge case)
+        if last_message.sender_user_id == state::get_my_id(app) {
+            return Ok(Some(last_message));
+        }
+
+        // get the last read message
+        let tdlib::enums::Messages::Messages(result) = tdlib::functions::get_chat_history(
+            chat_id,
+            last_read_inbox_message_id,
+            -1,
+            1,
+            false,
+            client_id,
+        )
+        .await?;
+
+        if result.messages.len() == 0 {
+            // this happens when the last read message has been deleted
+            return Ok(Some(last_message));
+        }
+
+        if result.messages.len() == 1 {
+            if let Some(message) = &result.messages[0] {
+                let last_message = parse_message(&app, message);
+                return Ok(Some(last_message));
+            }
+        }
+    }
+
+    Ok(None)
 }
 
 #[tauri::command]
@@ -192,7 +284,8 @@ pub async fn add_message_reaction<R: tauri::Runtime>(
     message_id: i64,
     emoji: String,
 ) -> Result<(), String> {
-    let reaction = tdlib::enums::ReactionType::Emoji(tdlib::types::ReactionTypeEmoji { emoji: emoji });
+    let reaction =
+        tdlib::enums::ReactionType::Emoji(tdlib::types::ReactionTypeEmoji { emoji: emoji });
     tdlib::functions::add_message_reaction(
         chat_id,
         message_id,
@@ -212,7 +305,8 @@ pub async fn remove_message_reaction<R: tauri::Runtime>(
     message_id: i64,
     emoji: String,
 ) -> Result<(), String> {
-    let reaction = tdlib::enums::ReactionType::Emoji(tdlib::types::ReactionTypeEmoji { emoji: emoji });
+    let reaction =
+        tdlib::enums::ReactionType::Emoji(tdlib::types::ReactionTypeEmoji { emoji: emoji });
     tdlib::functions::remove_message_reaction(
         chat_id,
         message_id,

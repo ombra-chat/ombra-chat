@@ -30,6 +30,17 @@ async function chatContentScrolled(event: Event) {
   await markVisibleMessagesAsRead();
 }
 
+function isFirstMessageVisible() {
+  const container = document.getElementById('chat-content')!;
+  const containerRect = container.getBoundingClientRect();
+  const bubble = document.querySelector('.message-bubble');
+  if (!bubble) {
+    return false;
+  }
+  const bubbleRect = bubble.getBoundingClientRect();
+  return bubbleRect.bottom >= containerRect.top && bubbleRect.bottom <= containerRect.bottom;
+}
+
 async function markVisibleMessagesAsRead() {
   const container = document.getElementById('chat-content')!;
   const containerRect = container.getBoundingClientRect();
@@ -262,6 +273,18 @@ watch(
         scrollToMessage(store.scrollTargetMessageId);
         store.loadingNewMessages = false;
         await markVisibleMessagesAsRead();
+        if (store.selectedChat && store.selectedChat.unread_count > 0) {
+          const chatContent = document.getElementById('chat-content');
+          if (chatContent && chatContent.scrollTop === 0) {
+            if (isFirstMessageVisible()) {
+              // chat has only a few messages, autoload new ones
+              await loadNewMessages();
+            } else {
+              // slightly move scroll up, to always detect user scroll event on new messages
+              chatContent.scrollTop = -1;
+            }
+          }
+        }
       });
     }
   }

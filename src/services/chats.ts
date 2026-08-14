@@ -93,17 +93,21 @@ export async function selectChat(id: number, reload: boolean = false) {
       }
       await invoke('close_chat', { id: store.selectedChat.id })
     }
-    await invoke('open_chat', { id });
     store.clearMessages();
     store.lastMessageId = 0;
     store.selectChat(id);
+    if (!store.selectedChat) {
+      return;
+    }
     store.selectedChatKey = await getChatKey(id);
     store.loadingNewMessages = true;
-    const lastMessage = await getLastMessage();
-    if (lastMessage) {
-      store.scrollTargetMessageId = lastMessage.id;
-      store.addMessages([lastMessage]);
-      await loadPreviousMessages(lastMessage);
+    const messages = await invoke<Message[]>('open_chat', {
+      chatId: id,
+      lastReadInboxMessageId: store.selectedChat.last_read_inbox_message_id
+    });
+    if (messages.length > 0) {
+      store.scrollTargetMessageId = messages[messages.length - 1].id;
+      store.addMessages(messages);
     }
   } catch (err) {
     console.error(err);
@@ -120,52 +124,6 @@ export async function closeCurrentChat() {
   } catch (err) {
     console.error(err);
   }
-}
-
-/**
- * Retrieve only the last message; this is done because in some cases tdlib sends only
- * one message in any case at the first load, so it is better to always expect to receive
- * only one message when the chat is opened, in order to handle message loading in a more
- * deterministic way; next messages are requested in chunks of 20 or 10 messages
- */
-async function getLastMessage(): Promise<Message | null> {
-  const chat = store.selectedChat;
-  if (chat === null) {
-    return null;
-  }
-
-  let result = await invoke<Message[]>('get_chat_history', {
-    chatId: chat.id,
-    fromMessageId: 0,
-    offset: 0,
-    limit: 1
-  });
-
-  if (result.length !== 1) {
-    return null;
-  }
-
-  const lastMessage = result[0];
-
-  // check if the last message has been written by myself (handle edge case)
-  if (lastMessage.sender_user_id === store.myId) {
-    return lastMessage;
-  }
-
-  // the last read message
-  result = await invoke<Message[]>('get_chat_history', {
-    chatId: chat.id,
-    fromMessageId: chat.last_read_inbox_message_id,
-    offset: -1,
-    limit: 1
-  });
-
-  if (store.lastMessageId == 0 && result.length == 0) {
-    // this happens when the last read message has been deleted
-    return lastMessage;
-  }
-
-  return result[0];
 }
 
 export async function loadPreviousMessages(fromMessage: Message | undefined = undefined) {
