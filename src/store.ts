@@ -170,7 +170,7 @@ export const store = reactive<Store>({
         });
       }
     }
-    messages.sort((m1: MessageWithStatus, m2: MessageWithStatus) => m1.id < m2.id ? -1 : 1);
+    messages.sort((m1: MessageWithStatus, m2: MessageWithStatus) => m1.date < m2.date ? -1 : 1);
     store.lastMessageId = messages[messages.length - 1].id;
   },
   clearMessages() {
