@@ -250,13 +250,23 @@ pub struct UpdateChatRemovedFromFolder {
 pub struct User {
     pub id: i64,
     pub display_text: String,
+    pub phone_number: String,
+    pub usernames: Vec<String>,
 }
 
 impl User {
     pub fn from(update: &tdlib::types::UpdateUser) -> User {
+        let mut usernames = vec![];
+        if let Some(values) = &update.user.usernames {
+            for username in &values.active_usernames {
+                usernames.push(username.clone());
+            }
+        }
         return User {
             id: update.user.id,
             display_text: get_user_display_text(&update.user),
+            phone_number: update.user.phone_number.clone(),
+            usernames: usernames,
         };
     }
 }

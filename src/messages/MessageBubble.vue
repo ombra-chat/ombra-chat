@@ -97,7 +97,11 @@ onMounted(async () => {
       <div class="message-header">
         <div class="message-sender">
           <p v-if="senderTitle" class="mb-2 wrap">
-            <strong class="has-text-link-on-scheme">{{ senderTitle }}</strong>
+            <button v-if="message.sender_user_id" class="has-text-link-on-scheme has-text-weight-bold"
+              @click="() => store.toggleUserModal(message.sender_user_id)">
+              {{ senderTitle }}
+            </button>
+            <strong class="has-text-link-on-scheme" v-else>{{ senderTitle }}</strong>
           </p>
         </div>
         <div class="message-actions">

@@ -12,6 +12,7 @@ import { getFileName } from './services/files';
 import ChatSettingsModal from './ChatSettingsModal.vue';
 import MessageModal from './MessageModal.vue';
 import ChatKeyModal from './ChatKeyModal.vue';
+import UserModal from './UserModal.vue';
 
 type SelectedFile = { path: string; image: boolean; }
 
@@ -307,7 +308,11 @@ watch(() => store.selectedChat?.id, () => clear());
             </button>
           </div>
           <div class="is-flex-grow-1 has-text-centered is-align-self-center">
-            {{ store.selectedChat.title }}
+            <button type="button" class="is-text py-0 has-text-weight-bold"
+              @click="() => store.toggleUserModal(store.selectedChat?.user_id)" v-if="store.selectedChat.user_id">
+              {{ store.selectedChat.title }}
+            </button>
+            <strong v-else>{{ store.selectedChat.title }}</strong>
             <span class="ml-1" v-if="store.selectedChat.secret">
               <FontAwesomeIcon :icon="faLock" />
             </span>
@@ -382,6 +387,7 @@ watch(() => store.selectedChat?.id, () => clear());
   <ChatSettingsModal />
   <MessageModal />
   <ChatKeyModal />
+  <UserModal />
 </template>
 
 <style>

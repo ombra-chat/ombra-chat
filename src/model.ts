@@ -177,6 +177,8 @@ export type UpdateDeleteMessages = {
 export type User = {
   id: number;
   display_text: string;
+  phone_number: string;
+  usernames: string[];
 }
 
 export type UpdateChatReadInbox = {

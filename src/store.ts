@@ -10,6 +10,7 @@ type Store = {
   settingsModalActive: boolean;
   chatSettingsModalActive: boolean;
   messageModalActive: boolean;
+  userModalUserId: number | null;
   foldersModalActive: boolean;
   chatFolders: ChatFolder[];
   chatsMap: Record<number, Chat>;
@@ -37,6 +38,7 @@ type Store = {
   toggleSettingsModal: () => void;
   toggleChatSettingsModal: () => void;
   toggleMessageModal: () => void;
+  toggleUserModal: (userId?: number | null) => void;
   addChat: (chat: Chat) => void;
   deleteChat: (chatId: number) => void;
   addChatToFolder: (folder_id: number, chat_id: number) => void;
@@ -70,6 +72,7 @@ export const store = reactive<Store>({
   settingsModalActive: false,
   chatSettingsModalActive: false,
   messageModalActive: false,
+  userModalUserId: null,
   foldersModalActive: false,
   toggleSettingsModal() {
     const store = this as Store;
@@ -82,6 +85,10 @@ export const store = reactive<Store>({
   toggleMessageModal() {
     const store = this as Store;
     store.messageModalActive = !store.messageModalActive;
+  },
+  toggleUserModal(userId: number | null = null) {
+    const store = this as Store;
+    store.userModalUserId = userId;
   },
   chatFolders: [],
   chatsMap: {},
