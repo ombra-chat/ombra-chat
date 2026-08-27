@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+* Displayed private chat username and phone number
+* Minor performance improvements
+
 ## 0.4.0
 
 * Big refactoring, moving a lot of logic from front-end to back-end; this should improve stability when TDLib types are updated
