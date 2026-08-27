@@ -6,6 +6,7 @@ use crate::{
     model::{Chat, InputMessageContent, InputMessageReplyTo, Message},
     state,
 };
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 #[tauri::command]
 pub async fn load_chats<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
@@ -42,7 +43,7 @@ pub async fn open_chat<R: tauri::Runtime>(
                     tdlib::enums::Messages::Messages(result) => {
                         return result
                             .messages
-                            .iter()
+                            .par_iter()
                             .flatten()
                             .map(|m| parse_message(&app, m))
                             .collect::<Vec<Message>>();
@@ -144,7 +145,7 @@ pub async fn get_chat_history<R: tauri::Runtime>(
         tdlib::enums::Messages::Messages(messages) => {
             return messages
                 .messages
-                .iter()
+                .par_iter()
                 .flatten()
                 .map(|m| parse_message(&app, m))
                 .collect();
