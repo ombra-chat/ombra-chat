@@ -75,14 +75,8 @@ export async function handleChatsUpdates() {
 }
 
 export async function loadChats() {
-  let chatsLoaded = false;
-  while (!chatsLoaded) {
-    try {
-      await invoke('load_chats');
-    } catch (err) {
-      chatsLoaded = true;
-    }
-  }
+  await invoke('load_chats');
+  store.initialLoading = false;
 }
 
 export async function selectChat(id: number, reload: boolean = false) {

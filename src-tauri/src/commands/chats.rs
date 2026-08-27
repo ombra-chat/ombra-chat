@@ -10,9 +10,16 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 #[tauri::command]
 pub async fn load_chats<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<(), String> {
-    tdlib::functions::load_chats(None, 20, state::get_client_id(&app))
-        .await
-        .map_err(|e| e.message)
+    let client_id = state::get_client_id(&app);
+    loop {
+        if let Err(err) = tdlib::functions::load_chats(None, 20, client_id).await {
+            if err.code == 404 {
+                return Ok(());
+            } else {
+                return Err(err.message);
+            }
+        }
+    }
 }
 
 #[tauri::command]
