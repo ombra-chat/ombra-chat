@@ -3,23 +3,18 @@ use crate::{emit, settings, state};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::{atomic::AtomicBool, mpsc::channel};
-use std::time::{Duration, SystemTime};
 use std::{env, thread};
 use tdlib::enums::OptionValue;
 use tdlib::types::LogStreamFile;
 
 pub struct Client {
     client_id: i32,
-    initial_loading: Option<bool>,
-    last_update: Option<SystemTime>,
 }
 
 impl Client {
     pub fn new() -> Self {
         Client {
             client_id: tdlib::create_client(),
-            initial_loading: None,
-            last_update: None,
         }
     }
 
@@ -68,27 +63,7 @@ impl Client {
         use tdlib::enums::AuthorizationState;
         use tdlib::enums::Update;
 
-        if self.initial_loading == Some(true) {
-            if let Some(last_update) = self.last_update {
-                match SystemTime::now().duration_since(last_update) {
-                    Ok(offset) => {
-                        if offset > Duration::from_millis(200) {
-                            emit(&app, "initial-loading-done", ());
-                            self.initial_loading = Some(false);
-                        }
-                    }
-                    Err(err) => {
-                        log::error!("Unable to compute duration: {}", err);
-                    }
-                }
-            }
-            self.last_update = Some(SystemTime::now());
-        }
-
         if chats::handle_chats_update(app, &update) {
-            if self.initial_loading == None {
-                self.initial_loading = Some(true);
-            }
             return;
         }
         if folders::handle_folders_update(app, &update) {
